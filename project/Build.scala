@@ -14,7 +14,7 @@ object BigtopBuild extends Build {
     "ReportGrid"  at "http://nexus.reportgrid.com/content/repositories/public-snapshots"
   )
 
-  lazy val scalaz        = "org.scalaz"              %% "scalaz-core"    % "6.0.3"
+  lazy val scalaz        = "org.scalaz"              %% "scalaz-core"    % "7.0-SNAPSHOT"
   lazy val blueeyesCore  = "com.reportgrid"          %% "blueeyes-core"  % "0.6.0-SNAPSHOT"
   lazy val blueeyesMongo = "com.reportgrid"          %% "blueeyes-mongo" % "0.6.0-SNAPSHOT"
   lazy val blueeyesJson  = "com.reportgrid"          %% "blueeyes-json"  % "0.6.0-SNAPSHOT"
