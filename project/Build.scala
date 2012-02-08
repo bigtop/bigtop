@@ -10,33 +10,32 @@ object BigtopBuild extends Build {
     "Sonatype"    at "http://oss.sonatype.org/content/repositories/releases",
     "Scala Tools" at "http://scala-tools.org/repo-snapshots",
     "JBoss"       at "http://repository.jboss.org/nexus/content/groups/public",
-    "Akka"        at "http://akka.io/repository"
+    "Akka"        at "http://akka.io/repository",
+    "ReportGrid"  at "http://nexus.reportgrid.com/content/repositories/public-snapshots"
   )
 
-  lazy val scalaz      = "org.scalaz"              %% "scalaz-core" % "6.0.3"
-  lazy val blueeyes    = "com.reportgrid"          %% "blueeyes"    % "0.4.24"
-  lazy val specs       = "org.scala-tools.testing" %% "specs"       % "1.6.9"
-  lazy val scalacheck  = "org.scala-tools.testing" %% "scalacheck"  % "1.9"
-  lazy val configgy    = "net.lag"                 %  "configgy"    % "2.0.0"
-  lazy val jbCrypt     = "org.mindrot"             %  "jbcrypt"     % "0.3m"
-  lazy val redisclient = "net.debasishg"           %% "redisclient" % "2.4.2"
+  lazy val scalaz        = "org.scalaz"              %% "scalaz-core"    % "6.0.3"
+  lazy val blueeyesCore  = "com.reportgrid"          %% "blueeyes-core"  % "0.6.0-SNAPSHOT"
+  lazy val blueeyesMongo = "com.reportgrid"          %% "blueeyes-mongo" % "0.6.0-SNAPSHOT"
+  lazy val blueeyesJson  = "com.reportgrid"          %% "blueeyes-json"  % "0.6.0-SNAPSHOT"
+  lazy val specs2        = "org.specs2"              %% "specs2"         % "1.7"
+  lazy val scalacheck    = "org.scala-tools.testing" %% "scalacheck"     % "1.9"
+  lazy val configgy      = "net.lag"                 %  "configgy"       % "2.0.0"
+  lazy val jbCrypt       = "org.mindrot"             %  "jbcrypt"        % "0.3m"
+  lazy val redisclient   = "net.debasishg"           %% "redisclient"    % "2.4.2"
 
   val blueeyesSettings = Seq(
     resolvers := bigtopResolvers,
     libraryDependencies ++= Seq(
-      blueeyes,
-      specs      % "test",
+      blueeyesCore,
+      blueeyesMongo,
+      blueeyesJson,
+      specs2     % "test",
       scalacheck % "test",
       configgy   % "compile" intransitive(),
       jbCrypt
     ),
-    exportJars := true,
-    ivyXML :=
-      <dependencies>
-        <dependency org="com.reportgrid" name="blueeyes_2.9.1" rev="0.4.24">
-          <exclude module="configgy"/>
-        </dependency>
-      </dependencies>
+    exportJars := true
   )
 
   lazy val root = Project(
