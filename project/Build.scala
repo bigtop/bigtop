@@ -19,6 +19,7 @@ object BigtopBuild extends Build {
   lazy val scalacheck  = "org.scala-tools.testing" %% "scalacheck"  % "1.9"
   lazy val configgy    = "net.lag"                 %  "configgy"    % "2.0.0"
   lazy val jbCrypt     = "org.mindrot"             %  "jbcrypt"     % "0.3m"
+  lazy val redisclient = "net.debasishg"           %% "redisclient" % "2.4.2"
 
   val blueeyesSettings = Seq(
     resolvers := bigtopResolvers,
@@ -65,14 +66,15 @@ object BigtopBuild extends Build {
     ) : _*
   ).dependsOn(core)
 
-  lazy val redis = Project{
-    id = "redis"
+  lazy val redis = Project(
+    id = "redis",
     base = file("redis")
   ).settings(
     Project.defaultSettings ++
     blueeyesSettings ++
     Seq(
-      version := bigtopVersion
+      version := bigtopVersion,
+      libraryDependencies += redisclient
     ) : _*
   ).dependsOn(core)
 
