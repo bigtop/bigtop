@@ -54,6 +54,28 @@ object BigtopBuild extends Build {
     ) : _*
   ).dependsOn(core)
 
+  lazy val session = Project(
+    id = "session",
+    base = file("session")
+  ).settings(
+    Project.defaultSettings ++
+    blueeyesSettings ++
+    Seq(
+      version := bigtopVersion
+    ) : _*
+  ).dependsOn(core)
+
+  lazy val redis = Project{
+    id = "redis"
+    base = file("redis")
+  ).settings(
+    Project.defaultSettings ++
+    blueeyesSettings ++
+    Seq(
+      version := bigtopVersion
+    ) : _*
+  ).dependsOn(core)
+
   lazy val core = Project(
     id = "core",
     base = file("core")
