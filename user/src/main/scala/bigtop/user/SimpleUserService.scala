@@ -1,18 +1,18 @@
 package bigtop
 package user
 
+import akka.dispatch.Promise
 import blueeyes.BlueEyesServer
 import blueeyes.persistence.mongo.{ConfigurableMongo, Mongo, Database}
-import blueeyes.concurrent.Future._
-import blueeyes.core.service.HttpServiceContext
+import blueeyes.core.service.ServiceContext
 
 trait SimpleUserService extends UserService[SimpleUserConfig,SimpleUser] with ConfigurableMongo {
 
-  def initialize(context: HttpServiceContext) = {
+  def initialize(context: ServiceContext) = {
     val mongoConfig = context.config.configMap("mongo")
     val mongoFacade = mongo(mongoConfig)
     val config = SimpleUserConfig(mongoConfig, mongoFacade)
-    config.future
+    Promise.successful(config)
   }
 
   def makeActions(config: SimpleUserConfig) =

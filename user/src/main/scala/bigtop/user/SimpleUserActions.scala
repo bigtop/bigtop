@@ -1,13 +1,14 @@
 package bigtop
 package user
 
-import akka.dispatch.Future
+import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
 import blueeyes.persistence.mongo._
 import blueeyes.json.JsonAST._
-import scalaz.{NonEmptyList,Scalaz,Validation}
-import Scalaz._
+import scalaz.{NonEmptyList, Validation, ValidationNEL}
+import scalaz.std.option.optionSyntax._
+import scalaz.syntax.validation._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
 import net.lag.configgy.ConfigMap
 
@@ -39,7 +40,7 @@ class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
                       .from(collection)
                       .where("username" === username))
 
-    user map{ u => u.toSuccess("user" -> "Does not exist").liftFailNel.flatMap(read _) }
+    user map{ u => u.toSuccess("user" -> "Does not exist").toValidationNel.flatMap(read _) }
   }
 
   def add(user: SimpleUser): UserValidation = {
@@ -61,12 +62,11 @@ class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
 
 
   private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[NonEmptyList[Error],S] = {
-    val ans = new Future[ValidationNEL[Error,S]]
-    f foreach { v => ans.deliver(mapper(v).success[Error].liftFailNel) }
-    f ifCanceled { e =>
-      ans.deliver {
-        ("error" ->
-         (e map { _.getMessage } getOrElse("Unknown"))).fail[S].liftFailNel
+    val ans = Promise[ValidationNEL[Error,S]]
+    f foreach { v => ans.success(mapper(v).success[Error].toValidationNel) }
+    f recover { case e =>
+      ans.success {
+        ("error" -> e.getMessage).fail[S].toValidationNel
       }
     }
 

@@ -2,24 +2,24 @@ package bigtop
 package user
 
 import bigtop.concurrent._
-import bigtop.concurrent.Implicits._
-import blueeyes.concurrent.Future._
+import bigtop.concurrent.FutureImplicits._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import scalaz._
-import Scalaz._
+import scalaz.Validation
+import scalaz.syntax.validation._
+
 
 trait UserActions[U <: User] extends UserTypes[U] {
-  
+
   /** The protocol writes the external representation of the user. It should omit fields such as the password that are not to be displayed publically */
   def protocol: Format[Error,U]
   def store: UserStore[U]
-  
+
   def login(username: String, password: String): JsonValidation =
     for {
       user <- store.get(username)
       ans  <- if(user.isPasswordOk(password)) {
-                protocol.write(user).successNel[(String, String)].fv
+                protocol.write(user).success[Error].toValidationNel.fv
               } else {
                 ("password" -> "Password is incorrect.").failNel.fv
               }
@@ -37,7 +37,7 @@ trait UserActions[U <: User] extends UserTypes[U] {
     } yield protocol.write(user)
 
   def update(username: String, data: JValue): UnitValidation =
-    for { 
+    for {
       oldUser <- store.get(username)
       newUser <- protocol.update(oldUser, data).fv
       savedUser <- store.add(newUser)
