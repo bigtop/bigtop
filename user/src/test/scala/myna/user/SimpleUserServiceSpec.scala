@@ -1,22 +1,22 @@
 package bigtop
 package user
 
+import akka.dispatch.{Await, Future}
+import akka.util.Duration
+import akka.util.duration._
 import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST.JValue
 import blueeyes.persistence.mongo.ConfigurableMongo
-import blueeyes.concurrent.Future
 import blueeyes.core.http.{HttpStatus, HttpResponse}
 import blueeyes.core.http.HttpStatusCodes._
 import org.specs.matcher.Matcher
 
 
-class SimpleUserServiceSpec extends BlueEyesServiceSpecification 
-    with SimpleUserService 
+class SimpleUserServiceSpec extends BlueEyesServiceSpecification
+    with SimpleUserService
     with ConfigurableMongo
 {
-  noDetailedDiffs
-
   import ErrorImplicits._
 
   override def configuration = """
@@ -47,15 +47,15 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
            "Response content \"" + content + "\" is not \"" + expectedContent + "\"")
 
         case _ =>
-          (false, 
+          (false,
            "Response \"" + response + "\" is a BadRequest",
            "Response \"" + response + "\" is not a BadRequest or has no content")
       }
   }
 
   def getValue[A](f: Future[A]) = {
-    f.value must eventually(beSomething)
-    f.value.get
+    val ans = Await.result(f, Duration("3s"))
+    ans
   }
 
   "/v1/user/new" should {
@@ -75,7 +75,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
       val response = getValue(f)
 
       response must BeBadRequest(ErrorCode.NoUserGiven)
-    } 
+    }
 
   }
 
