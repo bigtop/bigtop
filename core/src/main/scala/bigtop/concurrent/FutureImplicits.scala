@@ -42,4 +42,4 @@ trait FutureImplicits extends AkkaDefaults {
 
 }
 
-object Futuremplicits extends FutureImplicits
+object FutureImplicits extends FutureImplicits
