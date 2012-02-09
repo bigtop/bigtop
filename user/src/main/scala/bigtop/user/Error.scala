@@ -4,15 +4,14 @@ package user
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST.JValue
 import blueeyes.core.data.Bijection
-import blueeyes.core.http.{HttpResponse,HttpStatus,HttpStatusCodes}
+import blueeyes.core.http.{HttpResponse, HttpStatus, HttpStatusCodes}
 import blueeyes.core.http.HttpStatusCodes._
-import scalaz.{NonEmptyList,Scalaz,Semigroup}
-import Scalaz._
+import scalaz.{NonEmptyList, Scalaz, Semigroup}
 
 case class Errors(errors: NonEmptyList[Error]) {
 
   def toResponse[T](implicit b: Bijection[JValue,T], w: Writer[Errors]): HttpResponse[T] =
-    HttpResponse(status = HttpStatus(BadRequest), 
+    HttpResponse(status = HttpStatus(BadRequest),
                  content = Some(b(w.write(this))))
 
 }
@@ -39,12 +38,13 @@ object ErrorCode {
 trait ErrorImplicits {
 
   implicit val errorsSemigroup: Semigroup[Errors] = new Semigroup[Errors] {
+    import NonEmptyList._
     def append(s1: Errors, s2: => Errors) =
-      Errors(Semigroup.NonEmptyListSemigroup.append(s1.errors, s2.errors))
+      Errors((s1.errors.list <::: s2.errors))
   }
 
   implicit def errorToErrors(error: Error) =
-    Errors(nel(error))
+    Errors(NonEmptyList(error))
 
   implicit def nonEmptyListErrorToErrors(errors: NonEmptyList[Error]) =
     Errors(errors)
@@ -54,9 +54,8 @@ trait ErrorImplicits {
     implicit val w = errorWriter
   }
   implicit val errorNelWriter = new Writer[NonEmptyList[Error]] {
-    def write(e: NonEmptyList[Error]) = errorsWriter.write(e)
+    def write(e: NonEmptyList[Error]) = errorsWriter.write(Errors(e))
   }
 }
 
 object ErrorImplicits extends ErrorImplicits
-
