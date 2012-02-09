@@ -2,18 +2,18 @@ package bigtop
 package user
 
 import bigtop.concurrent._
-import bigtop.concurrent.Implicits._
+import bigtop.concurrent.FutureImplicits._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import scalaz._
-import Scalaz._
+import scalaz.{NonEmptyList, ValidationNEL}
+
 
 trait User {
 
   def username: String
-  
+
   def isPasswordOk(passwd: String): Boolean
-  
+
 }
 
 trait UserTypes[U <: User] {
@@ -39,12 +39,11 @@ trait Updater[E,T] {
 trait Format[E,T] extends Reader[E,T] with Writer[T] with Updater[E,T]
 
 trait UserStore[U <: User] extends UserTypes[U] {
-  
-  def get(username: String): UserValidation
-  
-  def add(user: U): UserValidation
-  
-  def delete(username: String): UnitValidation
-  
-}
 
+  def get(username: String): UserValidation
+
+  def add(user: U): UserValidation
+
+  def delete(username: String): UnitValidation
+
+}

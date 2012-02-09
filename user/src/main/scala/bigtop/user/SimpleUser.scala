@@ -1,13 +1,13 @@
 package bigtop
 package user
 
-import bigtop.json.{Implicits=>JsonImplicits}
+import bigtop.json.JsonImplicits
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import scalaz._
-import Scalaz._
+import scalaz.Validation
+import scalaz.syntax.validation._
 
-case class Password private(val hash: String) 
+case class Password private(val hash: String)
 
 object Password {
 
@@ -40,7 +40,7 @@ trait SimpleUserInternalWriter extends Writer[SimpleUser] {
 
 trait SimpleUserExternalReader extends Reader[Error,SimpleUser] {
   import JsonImplicits._
-  
+
   def read(data: JValue) =
     for {
       username <- data./[Error,String]("username", ErrorCode.NoUserGiven)
@@ -50,7 +50,7 @@ trait SimpleUserExternalReader extends Reader[Error,SimpleUser] {
 
 trait SimpleUserInternalReader extends Reader[Error,SimpleUser] {
   import JsonImplicits._
-  
+
   def read(data: JValue) =
     for {
       username <- data./[Error,String]("username", ErrorCode.NoUserGiven)
@@ -58,12 +58,12 @@ trait SimpleUserInternalReader extends Reader[Error,SimpleUser] {
     } yield SimpleUser(username, Password.fromHash(password))
 }
 
-trait SimpleUserExternalFormat extends Format[Error,SimpleUser] 
+trait SimpleUserExternalFormat extends Format[Error,SimpleUser]
      with SimpleUserExternalWriter
      with SimpleUserExternalReader
 {
   def update(user: SimpleUser, data: JValue) =
-    ("everything" -> "failed").fail.liftFailNel
+    ("everything" -> "failed").fail.toValidationNel
 }
 
 trait SimpleUserExternalImplicits {
