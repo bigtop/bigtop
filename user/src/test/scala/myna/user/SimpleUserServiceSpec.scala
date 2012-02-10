@@ -10,8 +10,7 @@ import blueeyes.json.JsonAST.JValue
 import blueeyes.persistence.mongo.ConfigurableMongo
 import blueeyes.core.http.{HttpStatus, HttpResponse}
 import blueeyes.core.http.HttpStatusCodes._
-import org.specs.matcher.Matcher
-
+import org.specs2.matcher.Matcher
 
 class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     with SimpleUserService
@@ -37,19 +36,14 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     }
   """
 
-  case class BeBadRequest(expected: Errors) extends Matcher[HttpResponse[JValue]] {
-    def apply(response: => HttpResponse[JValue]) =
+  def beBadRequest(expected: Errors): Matcher[HttpResponse[JValue]] = beLike {
+    response: HttpResponse[JValue] =>
       response match {
         case HttpResponse(status, _, Some(content), _) if status.code == BadRequest =>
           val expectedContent: JValue = errorsWriter.write(expected)
-          (content == expectedContent,
-           "Response content \"" + content + "\" is \"" + expectedContent + "\"",
-           "Response content \"" + content + "\" is not \"" + expectedContent + "\"")
+        content mustEqual expectedContent
 
-        case _ =>
-          (false,
-           "Response \"" + response + "\" is a BadRequest",
-           "Response \"" + response + "\" is not a BadRequest or has no content")
+        case _ => ko
       }
   }
 
@@ -74,7 +68,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
       val f = service.post[JValue]("/v1/user/new")(json)
       val response = getValue(f)
 
-      response must BeBadRequest(ErrorCode.NoUserGiven)
+      response must beBadRequest(ErrorCode.NoUserGiven)
     }
 
   }

@@ -18,7 +18,7 @@ object BigtopBuild extends Build {
   lazy val blueeyesCore  = "com.reportgrid"          %% "blueeyes-core"  % "0.6.0-SNAPSHOT"
   lazy val blueeyesMongo = "com.reportgrid"          %% "blueeyes-mongo" % "0.6.0-SNAPSHOT"
   lazy val blueeyesJson  = "com.reportgrid"          %% "blueeyes-json"  % "0.6.0-SNAPSHOT"
-  lazy val specs2        = "org.specs2"              %% "specs2"         % "1.7"
+  lazy val specs2        = "org.specs2"              %% "specs2"         % "1.8-SNAPSHOT"
   lazy val scalacheck    = "org.scala-tools.testing" %% "scalacheck"     % "1.9"
   lazy val configgy      = "net.lag"                 %  "configgy"       % "2.0.0"
   lazy val jbCrypt       = "org.mindrot"             %  "jbcrypt"        % "0.3m"
