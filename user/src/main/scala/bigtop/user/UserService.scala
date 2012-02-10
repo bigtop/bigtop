@@ -20,41 +20,38 @@ import scalaz.{NonEmptyList, Scalaz, Validation, Success, Failure}
 import scalaz.syntax.validation._
 import scalaz.std.option.optionSyntax._
 import scalaz.std.option._
-import bigtop.json.JsonImplicits
+import bigtop.json._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
+import bigtop.problem.{Problem, ProblemWriters}
+import bigtop.problem.Problems._
 
 
-trait UserService[Config,U <: User]
+trait UserService[U <: User]
      extends BlueEyesServiceBuilder
      with HttpRequestCombinators
      with BijectionsChunkJson
      with BijectionsChunkFutureJson
      with UserTypes[U]
-{
+     with ProblemWriters
+{ self: UserActionsFactory[U] =>
+
   import FutureImplicits._
-  import ErrorImplicits._
+  import JsonFormatters._
 
-  def initialize(context: ServiceContext): Future[Config]
-  def makeActions(config: Config): UserActions[U]
-  implicit def writer: Writer[U]
-
-  implicit def identityWriter: Writer[JValue] = new Writer[JValue] {
-    def write(j: JValue) = j
-  }
   implicit def defaultTimeout = Timeout(3.seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('user).toSuccess[Error](ErrorCode.NoUserGiven).toValidationNel.fv
+    req.parameters.get('user).toSuccess[Problem[String]](Request.NoUser).fv
 
   /** Get content as JSON and transform to future validation */
   def getContent(request: HttpRequest[Future[JValue]]): JsonValidation =
     request.content.fold(
-      some = _.map(_.success[Error].toValidationNel).fv,
-      none = ErrorCode.NoContent.fail[JValue].toValidationNel.fv
+      some = _.map(_.success[Problem[String]]).fv,
+      none = (Request.NoContent : Problem[String]).fail[JValue].fv
     )
 
-  def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[NonEmptyList[Error],T]])
-                (implicit w: Writer[T]):
+  def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem[String],T]])
+                (implicit w: JsonWriter[T]):
                   HttpService[Future[JValue], Future[HttpResponse[JValue]]] = {
     (req: HttpRequest[Future[JValue]]) => f(req).fold (
       failure = _.toResponse[JValue],
@@ -67,11 +64,11 @@ trait UserService[Config,U <: User]
       requestLogging(defaultTimeout) {
         healthMonitor(defaultTimeout) { monitor => context =>
           startup {
-            initialize(context)
+            setup(context)
           } ->
           request { config: Config =>
             import JsonImplicits._
-            val actions = makeActions(config)
+            val actions = create(config)
 
             path("/v1") {
               path("/user") {
@@ -82,7 +79,7 @@ trait UserService[Config,U <: User]
                         for {
                           data <- getContent(req)
                           user <- actions.create(data)
-                        } yield user
+                        } yield actions.formatter.write(user)
                     )
                   }
                 } ~
@@ -94,9 +91,9 @@ trait UserService[Config,U <: User]
                           for {
                             name <- getUser(req)
                             json <- getContent(req)
-                            pwd  <- json./[Error,String]("password", ErrorCode.NoPassword).fv
+                            pwd  <- json./[Problem[String],String]("password", Request.NoPassword).fv
                             user <- actions.login(name, pwd)
-                          } yield user
+                          } yield actions.formatter.write(user)
                       )
                     }
                   } ~

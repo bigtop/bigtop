@@ -1,8 +1,12 @@
 package bigtop
 package user
 
+
 import bigtop.concurrent._
 import bigtop.concurrent.FutureImplicits._
+import bigtop.json._
+import bigtop.problem.Problem
+import bigtop.problem.Problems._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.Validation
@@ -11,35 +15,37 @@ import scalaz.syntax.validation._
 
 trait UserActions[U <: User] extends UserTypes[U] {
 
-  /** The protocol writes the external representation of the user. It should omit fields such as the password that are not to be displayed publically */
-  def protocol: Format[Error,U]
+  def updater:   JsonUpdater[Problem[String],U]
+  /** Formatter for the *external* representation of the User. That is, the user as is displayed to the web browser. */
+  def formatter: JsonFormat[Problem[String], U]
+
   def store: UserStore[U]
 
-  def login(username: String, password: String): JsonValidation =
+  def login(username: String, password: String): UserValidation =
     for {
       user <- store.get(username)
       ans  <- if(user.isPasswordOk(password)) {
-                protocol.write(user).success[Error].toValidationNel.fv
+                user.success[Problem[String]].fv
               } else {
-                ("password" -> "Password is incorrect.").failNel.fv
+                (Request.NoPassword : Problem[String]).fail.fv
               }
     } yield ans
 
-  def create(data: JValue): JsonValidation =
+  def create(data: JValue): UserValidation =
     for {
-      unsavedUser <- protocol.read(data).fv
+      unsavedUser <- formatter.read(data).fv
       savedUser   <- store.add(unsavedUser)
-    } yield protocol.write(savedUser)
+    } yield savedUser
 
-  def read(username: String): JsonValidation =
+  def read(username: String): UserValidation =
     for {
       user <- store.get(username)
-    } yield protocol.write(user)
+    } yield user
 
   def update(username: String, data: JValue): UnitValidation =
     for {
       oldUser <- store.get(username)
-      newUser <- protocol.update(oldUser, data).fv
+      newUser <- updater.update(oldUser, data).fv
       savedUser <- store.add(newUser)
     } yield ()
 

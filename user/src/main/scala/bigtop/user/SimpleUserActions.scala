@@ -10,6 +10,8 @@ import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
+import bigtop.problem.{Problem, InternalError}
+import bigtop.problem.Problems._
 import net.lag.configgy.ConfigMap
 
 case class SimpleUserConfig(config: ConfigMap, mongo: Mongo) {
@@ -18,8 +20,8 @@ case class SimpleUserConfig(config: ConfigMap, mongo: Mongo) {
 
 class SimpleUserActions(config: SimpleUserConfig) extends UserActions[SimpleUser] {
 
-  def protocol = new SimpleUserExternalFormat {}
-
+  def updater = new SimpleUserExternalFormat {}
+  def formatter = updater
   def store = new SimpleUserStore(config)
 
 }
@@ -40,7 +42,7 @@ class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
                       .from(collection)
                       .where("username" === username))
 
-    user map{ u => u.toSuccess("user" -> "Does not exist").toValidationNel.flatMap(read _) }
+    user map{ u => u.toSuccess(Request.NoUser).flatMap(read _) }
   }
 
   def add(user: SimpleUser): UserValidation = {
@@ -61,12 +63,12 @@ class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
   }
 
 
-  private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[NonEmptyList[Error],S] = {
-    val ans = Promise[ValidationNEL[Error,S]]
-    f foreach { v => ans.success(mapper(v).success[Error].toValidationNel) }
+  private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem[String],S] = {
+    val ans = Promise[Validation[Problem[String],S]]
+    f foreach { v => ans.success(mapper(v).success[Problem[String]]) }
     f recover { case e =>
       ans.success {
-        ("error" -> e.getMessage).fail[S].toValidationNel
+        InternalError(e.getMessage).fail[S]
       }
     }
 

@@ -4,6 +4,7 @@ package user
 
 import bigtop.concurrent._
 import bigtop.concurrent.FutureImplicits._
+import bigtop.problem.Problem
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.{NonEmptyList, ValidationNEL}
@@ -18,18 +19,8 @@ trait User {
 
 trait UserTypes[U <: User] {
 
-  type JsonValidation = FutureValidation[NonEmptyList[Error], JValue]
-  type UserValidation = FutureValidation[NonEmptyList[Error], U]
-  type UnitValidation = FutureValidation[NonEmptyList[Error], Unit]
-
-}
-
-trait UserStore[U <: User] extends UserTypes[U] {
-
-  def get(username: String): UserValidation
-
-  def add(user: U): UserValidation
-
-  def delete(username: String): UnitValidation
+  type JsonValidation = FutureValidation[Problem[String], JValue]
+  type UserValidation = FutureValidation[Problem[String], U]
+  type UnitValidation = FutureValidation[Problem[String], Unit]
 
 }

@@ -1,7 +1,9 @@
 package bigtop
 package user
 
-import bigtop.json.JsonImplicits
+import bigtop.problem.Problem
+import bigtop.problem.Problems._
+import bigtop.json._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.Validation
@@ -25,45 +27,47 @@ case class SimpleUser(val username: String, val password: Password) extends User
 
 }
 
-trait SimpleUserExternalWriter extends Writer[SimpleUser] {
+trait SimpleUserExternalWriter extends JsonWriter[SimpleUser] {
   def write(user: SimpleUser) =
     ("typename" -> "simpleuser") ~
     ("username" -> user.username)
 }
 
-trait SimpleUserInternalWriter extends Writer[SimpleUser] {
+trait SimpleUserInternalWriter extends JsonWriter[SimpleUser] {
   def write(user: SimpleUser) =
     ("typename" -> "simpleuser") ~
     ("username" -> user.username) ~
     ("password" -> user.password.hash)
 }
 
-trait SimpleUserExternalReader extends Reader[Error,SimpleUser] {
+trait SimpleUserExternalReader extends JsonReader[Problem[String],SimpleUser] {
   import JsonImplicits._
 
   def read(data: JValue) =
     for {
-      username <- data./[Error,String]("username", ErrorCode.NoUserGiven)
-      password <- data./[Error,String]("password", ErrorCode.NoPassword)
+      username <- data./[Problem[String],String]("username", Request.NoUser)
+      password <- data./[Problem[String],String]("password", Request.NoPassword)
     } yield SimpleUser(username, Password.fromPassword(password))
 }
 
-trait SimpleUserInternalReader extends Reader[Error,SimpleUser] {
+trait SimpleUserInternalReader extends JsonReader[Problem[String],SimpleUser] {
   import JsonImplicits._
 
   def read(data: JValue) =
     for {
-      username <- data./[Error,String]("username", ErrorCode.NoUserGiven)
-      password <- data./[Error,String]("password", ErrorCode.NoPassword)
+      username <- data./[Problem[String],String]("username", Request.NoUser)
+      password <- data./[Problem[String],String]("password", Request.NoPassword)
     } yield SimpleUser(username, Password.fromHash(password))
 }
 
-trait SimpleUserExternalFormat extends Format[Error,SimpleUser]
+trait SimpleUserExternalFormat extends JsonFormat[Problem[String],SimpleUser]
+     with JsonUpdater[Problem[String],SimpleUser]
      with SimpleUserExternalWriter
      with SimpleUserExternalReader
 {
   def update(user: SimpleUser, data: JValue) =
-    ("everything" -> "failed").fail.toValidationNel
+    // Not implemented. Just a hack to get it to compile.
+    Request.NoContent.fail
 }
 
 trait SimpleUserExternalImplicits {
