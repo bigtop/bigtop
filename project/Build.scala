@@ -11,7 +11,8 @@ object BigtopBuild extends Build {
     "Scala Tools" at "http://scala-tools.org/repo-snapshots",
     "JBoss"       at "http://repository.jboss.org/nexus/content/groups/public",
     "Akka"        at "http://akka.io/repository",
-    "ReportGrid"  at "http://nexus.reportgrid.com/content/repositories/public-snapshots"
+    "ReportGrid"  at "http://nexus.reportgrid.com/content/repositories/public-snapshots",
+    "Untyped"     at "http://repo.untyped.com/"
   )
 
   lazy val scalaz        = "org.scalaz"              %% "scalaz-core"    % "7.0-SNAPSHOT"
