@@ -1,12 +1,12 @@
 package bigtop
 package user
 
+
 import bigtop.concurrent._
 import bigtop.concurrent.FutureImplicits._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.{NonEmptyList, ValidationNEL}
-
 
 trait User {
 
@@ -23,20 +23,6 @@ trait UserTypes[U <: User] {
   type UnitValidation = FutureValidation[NonEmptyList[Error], Unit]
 
 }
-
-trait Reader[E,T] {
-  def read(j: JValue): ValidationNEL[E,T]
-}
-
-trait Writer[T] {
-  def write(t: T): JValue
-}
-
-trait Updater[E,T] {
-  def update(t: T, j: JValue): ValidationNEL[E,T]
-}
-
-trait Format[E,T] extends Reader[E,T] with Writer[T] with Updater[E,T]
 
 trait UserStore[U <: User] extends UserTypes[U] {
 
