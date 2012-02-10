@@ -8,7 +8,7 @@ import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST.JValue
 import blueeyes.persistence.mongo.ConfigurableMongo
-import blueeyes.core.http.{HttpStatus, HttpResponse}
+import blueeyes.core.http.{HttpStatus, HttpResponse, MimeTypes}
 import blueeyes.core.http.HttpStatusCodes._
 import org.specs2.matcher.Matcher
 
@@ -17,6 +17,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     with ConfigurableMongo
 {
   import ErrorImplicits._
+  import MimeTypes._
 
   override def configuration = """
     services {
@@ -26,11 +27,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
             servers = ["localhost"]
             database = "user"
             collection = ["users"]
-
-            dropBeforeStart {
-              myna = ["users"]
-            }
-          }
+         }
         }
       }
     }
@@ -55,8 +52,8 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
   "/v1/user/new" should {
 
     "return new user give username and password" in {
-      val json = ("username" -> "noel") ~ ("password" -> "secret")
-      val f = service.post[JValue]("/v1/user/new")(json)
+      val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
+      val f = service.contentType[JValue](application/json).post("/v1/user/new")(body)
       val response = getValue(f)
 
       response.status mustEqual HttpStatus(OK)
@@ -64,8 +61,8 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     }
 
     "return error given bad input" in {
-      val json = ("froobarname" -> "noel") ~ ("password" -> "secret")
-      val f = service.post[JValue]("/v1/user/new")(json)
+      val body: JValue = ("froobarname" -> "noel") ~ ("password" -> "secret")
+      val f = service.contentType[JValue](application/json).post("/v1/user/new")(body)
       val response = getValue(f)
 
       response must beBadRequest(ErrorCode.NoUserGiven)
