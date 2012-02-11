@@ -11,13 +11,15 @@ import blueeyes.persistence.mongo.ConfigurableMongo
 import blueeyes.core.http.{HttpStatus, HttpResponse, MimeTypes}
 import blueeyes.core.http.HttpStatusCodes._
 import org.specs2.matcher.Matcher
+import bigtop.problem.{Problem, ProblemWriters}
+import bigtop.problem.Problems._
 
 class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     with SimpleUserService
     with ConfigurableMongo
 {
-  import ErrorImplicits._
   import MimeTypes._
+  import ProblemWriters._
 
   override def configuration = """
     services {
@@ -33,16 +35,8 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     }
   """
 
-  def beBadRequest(expected: Errors): Matcher[HttpResponse[JValue]] = beLike {
-    response: HttpResponse[JValue] =>
-      response match {
-        case HttpResponse(status, _, Some(content), _) if status.code == BadRequest =>
-          val expectedContent: JValue = errorsWriter.write(expected)
-        content mustEqual expectedContent
-
-        case _ => ko
-      }
-  }
+  def beBadRequest(expected: Problem[String]): Matcher[HttpResponse[JValue]] =
+    beEqualTo(expected.toResponse[JValue])
 
   def getValue[A](f: Future[A]) = {
     val ans = Await.result(f, Duration("3s"))
@@ -65,7 +59,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
       val f = service.contentType[JValue](application/json).post("/v1/user/new")(body)
       val response = getValue(f)
 
-      response must beBadRequest(ErrorCode.NoUserGiven)
+      response must beBadRequest(Request.NoUser)
     }
 
   }

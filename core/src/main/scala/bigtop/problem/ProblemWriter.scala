@@ -30,3 +30,5 @@ trait ProblemWriters {
   }
 
 }
+
+object ProblemWriters extends ProblemWriters
