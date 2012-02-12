@@ -1,28 +1,35 @@
 package bigtop
 package session
 
-import scala.collection.mutable.HashMap
-import com.twitter.util.LruMap
+import akka.dispatch.{Future, Promise}
+import bigtop.json.JsonFormatters
 import bigtop.user.{UserActions, User}
 import bigtop.util.Uuid
+import blueeyes.json.JsonAST._
+import blueeyes.json.JsonDSL._
+import com.twitter.util.{LruMap,SynchronizedLruMap}
+import scala.collection.mutable.HashMap
 
-trait SessionAction[U <: User]{ self: UserActions[U] =>
+trait SessionActions[U <: User] extends JsonFormatters {
 
-  val map = new SynchronizedLruMap[String, JValue](16384)
+  def userActions: UserActions[U]
 
-  def new(username: String, password: String) =
+  val map = new SynchronizedLruMap[Uuid, JValue](16384)
+
+  def create(username: String, password: String) =
     for {
-      json <- login(username, password)
+      json <- userActions.login(username, password)
     } yield {
       val key = Uuid.create()
-      map += (key, new HashMap[String, JValue]())
+      map.put(key, new HashMap[String, JValue]())
       key
     }
 
-  def get(session: Uuid, key: String) {
-    for {
-      session <- map.get(session).toSuccess(???)
-      data    <- session.get(key).toSuccess(???)
-    }
-  }
+  // def get(session: Uuid, key: String) {
+  //   for {
+  //     session <- map.get(session).toSuccess(???)
+  //     data    <- session.get(key).toSuccess(???)
+  //   }
+  // }
+
 }

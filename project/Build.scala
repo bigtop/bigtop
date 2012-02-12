@@ -63,9 +63,9 @@ object BigtopBuild extends Build {
   ).settings(
     Project.defaultSettings ++
     blueeyesSettings ++
-    Seq(libraryDependencies += twitterUtil) ++
     Seq(
-      version := bigtopVersion
+      version := bigtopVersion,
+      libraryDependencies += twitterUtil
     ) : _*
   ).dependsOn(core)
 

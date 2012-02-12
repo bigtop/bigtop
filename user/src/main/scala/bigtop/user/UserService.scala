@@ -32,13 +32,13 @@ trait UserService[U <: User]
      with BijectionsChunkJson
      with BijectionsChunkFutureJson
      with UserTypes[U]
-     with ProblemWriters
-{ self: UserActionsFactory[U] =>
+     with ProblemWriters {
+  self: UserActionsFactory[U] =>
 
   import FutureImplicits._
   import JsonFormatters._
 
-  implicit def defaultTimeout = Timeout(3.seconds)
+  implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
     req.parameters.get('user).toSuccess[Problem[String]](Request.NoUser).fv
