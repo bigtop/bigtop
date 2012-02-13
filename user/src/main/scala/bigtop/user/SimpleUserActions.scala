@@ -14,8 +14,9 @@ import bigtop.problem.{Problem, InternalError}
 import bigtop.problem.Problems._
 import net.lag.configgy.ConfigMap
 
-case class SimpleUserConfig(config: ConfigMap, mongo: Mongo) {
-  val database   = mongo.database(config("database"))
+case class SimpleUserConfig(val config: ConfigMap, val mongo: Mongo) {
+  println("SimpleUserConfig " + config + " " + config("database"))
+  lazy val database = mongo.database(config("database"))
 }
 
 class SimpleUserActions(config: SimpleUserConfig) extends UserActions[SimpleUser] {
@@ -28,8 +29,7 @@ class SimpleUserActions(config: SimpleUserConfig) extends UserActions[SimpleUser
 
 class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
     with SimpleUserInternalReader
-    with SimpleUserInternalWriter
-{
+    with SimpleUserInternalWriter {
   import FutureImplicits._
 
   implicit def queryTimeout = Timeout(3.seconds)
