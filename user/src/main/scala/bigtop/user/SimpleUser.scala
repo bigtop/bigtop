@@ -4,6 +4,7 @@ package user
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import bigtop.json._
+import bigtop.util.BCrypt
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.Validation
@@ -17,13 +18,13 @@ object Password {
     new Password(hash)
 
   def fromPassword(password: String) =
-    new Password("hash" + password)
+    new Password(BCrypt.hash(password))
 }
 
 case class SimpleUser(val username: String, val password: Password) extends User {
 
   def isPasswordOk(passwd: String) =
-    false
+    BCrypt.compare(passwd, password.hash)
 
 }
 
