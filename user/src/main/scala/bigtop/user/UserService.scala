@@ -33,6 +33,7 @@ trait UserService[U <: User]
      with BijectionsChunkFutureJson
      with UserTypes[U]
      with ProblemWriters {
+
   self: UserActionsFactory[U] =>
 
   import FutureImplicits._
@@ -59,6 +60,9 @@ trait UserService[U <: User]
     )
   }
 
+  /** The user actions being used by this service instance. Useful for testing. */
+  val userActions: Promise[UserActions[U]] = Promise()
+
   val userService =
     service("user", "1.0.0") {
       requestLogging(defaultTimeout) {
@@ -69,6 +73,7 @@ trait UserService[U <: User]
           request { config: Config =>
             import JsonImplicits._
             val actions = create(config)
+            userActions.success(actions)
 
             path("/user") {
               path("/v1") {

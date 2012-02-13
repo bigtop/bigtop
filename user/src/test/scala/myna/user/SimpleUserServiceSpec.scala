@@ -35,6 +35,28 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     }
   """
 
+  lazy val mongoConfig = rootConfig.configMap("services.user.v1.mongo")
+  lazy val mongoFacade = mongo(mongoConfig)
+  lazy val database = mongoFacade.database("user")
+
+  def initialise() {
+    database(remove.from("users"))
+  }
+
+  def initialized[T](f: => T) = {
+    initialise
+    f
+  }
+
+  def beOk: Matcher[HttpResponse[JValue]] =
+    beLike {
+      case HttpResponse(status, _, _, _) =>
+        if(status == HttpStatus(OK))
+          ok
+        else
+          ko
+    }
+
   def beBadRequest(expected: Problem[String]): Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, content, _) =>
@@ -50,21 +72,38 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
 
   "/user/v1/new" should {
 
-    "return new user give username and password" in {
+    "return new user given username and password" in initialized {
       val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
       val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
       val response = getValue(f)
 
-      response.status mustEqual HttpStatus(OK)
+      response must beOk
       response.content must beSome(("typename" -> "simpleuser") ~ ("username" -> "noel"))
     }
 
     "return error given bad input" in {
+      //initialise
       val body: JValue = ("froobarname" -> "noel") ~ ("password" -> "secret")
       val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
       val response = getValue(f)
 
       response must beBadRequest(Request.NoUser)
+    }
+
+    "refuse to allow an existing user to be created" in {
+      //initialise
+      val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
+
+      // Create the user
+      userActions map {
+        actions =>
+          actions.create(body)
+      }
+
+      val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
+      val response = getValue(f)
+
+      response must beBadRequest(Request.UserExists)
     }
 
   }

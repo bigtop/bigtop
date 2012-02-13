@@ -34,7 +34,8 @@ trait UserActions[U <: User] extends UserTypes[U] {
   def create(data: JValue): UserValidation =
     for {
       unsavedUser <- formatter.read(data).fv
-      savedUser   <- store.add(unsavedUser)
+      savedUser   <- store.get(unsavedUser.username).invert.mapFailure(_ => Request.UserExists : Problem[String]).flatMap(_ => store.add(unsavedUser))
+
     } yield savedUser
 
   def read(username: String): UserValidation =

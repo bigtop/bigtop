@@ -41,6 +41,14 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
   def byValidation: WithValidationFlatMap[F, S] =
     WithValidationFlatMap(this)
 
+  /** And the success shall be failures and the failures shall be successes. This is how you do logical negation */
+  def invert: FutureValidation[S, F] =
+    FutureValidation(
+      inner map (v => v fold (
+        success = s => s.fail,
+        failure = f => f.success))
+    )
+
   def lift: FutureValidation[F, S] =
     this
 
