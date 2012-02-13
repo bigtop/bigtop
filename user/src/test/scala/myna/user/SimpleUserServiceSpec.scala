@@ -8,9 +8,8 @@ import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST.JValue
 import blueeyes.persistence.mongo.ConfigurableMongo
-import blueeyes.core.http.{HttpStatus, HttpResponse, MimeTypes}
-import blueeyes.core.http.HttpStatusCodes._
-import org.specs2.matcher.Matcher
+import blueeyes.core.http.MimeTypes._
+import bigtop.util.ResponseMatchers
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
 
@@ -18,8 +17,8 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     with SimpleUserService
     with ConfigurableMongo
 {
-  import MimeTypes._
   import ProblemWriters._
+  import ResponseMatchers._
 
   override def configuration = """
     services {
@@ -47,23 +46,6 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     initialise
     f
   }
-
-  def beOk: Matcher[HttpResponse[JValue]] =
-    beLike {
-      case HttpResponse(status, _, _, _) =>
-        if(status == HttpStatus(OK))
-          ok
-        else
-          ko
-    }
-
-  def beBadRequest(expected: Problem[String]): Matcher[HttpResponse[JValue]] =
-    beLike {
-      case HttpResponse(status, _, content, _) =>
-        val expectedResponse = expected.toResponse[JValue]
-        status  mustEqual expectedResponse.status
-        content mustEqual expectedResponse.content
-    }
 
   def getValue[A](f: Future[A]) = {
     val ans = Await.result(f, Duration("3s"))

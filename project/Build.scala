@@ -88,7 +88,8 @@ object BigtopBuild extends Build {
     Project.defaultSettings ++
     blueeyesSettings ++
     Seq(
-      version := bigtopVersion
+      version := bigtopVersion,
+      libraryDependencies += specs2
     ) : _*
   )
 
