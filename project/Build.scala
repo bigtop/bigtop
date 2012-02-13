@@ -44,7 +44,7 @@ object BigtopBuild extends Build {
   lazy val root = Project(
     id = "root",
     base = file(".")
-  ).aggregate(core, user)
+  ).aggregate(core, user, session)
 
   lazy val user = Project(
     id = "user",
@@ -67,7 +67,7 @@ object BigtopBuild extends Build {
       version := bigtopVersion,
       libraryDependencies += twitterUtil
     ) : _*
-  ).dependsOn(core)
+  ).dependsOn(core, user)
 
   lazy val redis = Project(
     id = "redis",

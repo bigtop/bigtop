@@ -28,7 +28,8 @@ trait SessionService[U <: User]
      extends BlueEyesServiceBuilder
      with HttpRequestCombinators
      with BijectionsChunkJson
-     with JsonImplicits {
+     with BijectionsChunkFutureJson
+     with JsonFormatters {
 
   def sessionActions: SessionActions[U]
 
@@ -41,31 +42,28 @@ trait SessionService[U <: User]
           request {
             path("/session/v1") {
               path("/new") {
-                // TODO: Fix type errors in this dummy request handler...
-                // then replace it with something that actually works!
-                //
-                // contentType(application/json) {
-                //   (req: HttpRequest[Future[ByteChunk]]) =>
-                //     Future(
-                //       HttpResponse[JValue](
-                //         content = Some(
-                //           ("sessionkey" -> Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").toOption.get)
-                //         )
-                //       )
-                //     )
-                // }
+                jvalue {
+                  (req: HttpRequest[Future[JValue]]) =>
+                    Future(
+                      HttpResponse[JValue](
+                        content = Some(
+                          ("sessionkey" -> Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").toOption.get.toJson)
+                        )
+                      )
+                    )
+                }
               } ~
-              path("/get") {
-
+              path("/get") { req: HttpRequest[ByteChunk] =>
+                Future(HttpResponse[ByteChunk]())
               } ~
-              path("/set") {
-
+              path("/set") { req: HttpRequest[ByteChunk] =>
+                Future(HttpResponse[ByteChunk]())
               } ~
-              path("/delete") {
-
+              path("/delete") { req: HttpRequest[ByteChunk] =>
+                Future(HttpResponse[ByteChunk]())
               } ~
-              path ("/valid") {
-
+              path ("/valid") { req: HttpRequest[ByteChunk] =>
+                Future(HttpResponse[ByteChunk]())
               }
             }
           }

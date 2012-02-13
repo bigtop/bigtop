@@ -18,6 +18,13 @@ trait JsonFormatters {
     def write(in: JValue) = in
   }
 
+  case class JsonWritable[A](in: A) {
+    def toJson(implicit w: JsonWriter[A]): JValue =
+      w.write(in)
+  }
+
+  implicit def writableToJsonW[A](in: A): JsonWritable[A] =
+    JsonWritable[A](in)
 }
 
 object JsonFormatters extends JsonFormatters
