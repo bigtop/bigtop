@@ -20,7 +20,7 @@ object Uuid {
 
   def parse(name: String): Validation[String, Uuid] =
     name match {
-      case UuidRegex(name) => Uuid(name).success[String]
+      case UuidRegex() => Uuid(name).success[String]
       case _               => (name+" is not a valid UUID").fail[Uuid]
     }
 

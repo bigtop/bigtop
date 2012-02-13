@@ -2,7 +2,7 @@ package bigtop
 package util
 
 import org.specs2.matcher.{Matcher, StandardMatchResults, MustMatchers}
-import scalaz.{Success, Validation}
+import scalaz.{Success, Failure, Validation}
 
 
 trait ValidationMatchers extends MustMatchers with StandardMatchResults {
@@ -16,6 +16,11 @@ trait ValidationMatchers extends MustMatchers with StandardMatchResults {
   def beSuccess(): Matcher[Validation[_,_]] =
     beLike {
       case Success(_) => ok
+    }
+
+  def beFailure(): Matcher[Validation[_,_]] =
+    beLike {
+      case Failure(_) => ok
     }
 
 }

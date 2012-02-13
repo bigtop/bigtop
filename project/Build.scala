@@ -89,7 +89,7 @@ object BigtopBuild extends Build {
     blueeyesSettings ++
     Seq(
       version := bigtopVersion,
-      libraryDependencies += specs2
+      libraryDependencies ++= Seq(specs2, jbCrypt)
     ) : _*
   )
 
