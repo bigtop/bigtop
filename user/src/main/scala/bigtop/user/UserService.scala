@@ -70,8 +70,8 @@ trait UserService[U <: User]
             import JsonImplicits._
             val actions = create(config)
 
-            path("/v1") {
-              path("/user") {
+            path("/user") {
+              path("/v1") {
                 path("/new") {
                   jvalue {
                     respond(

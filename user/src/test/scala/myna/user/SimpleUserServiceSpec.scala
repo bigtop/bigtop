@@ -36,18 +36,23 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
   """
 
   def beBadRequest(expected: Problem[String]): Matcher[HttpResponse[JValue]] =
-    beEqualTo(expected.toResponse[JValue])
+    beLike {
+      case HttpResponse(status, _, content, _) =>
+        val expectedResponse = expected.toResponse[JValue]
+        status  mustEqual expectedResponse.status
+        content mustEqual expectedResponse.content
+    }
 
   def getValue[A](f: Future[A]) = {
     val ans = Await.result(f, Duration("3s"))
     ans
   }
 
-  "/v1/user/new" should {
+  "/user/v1/new" should {
 
     "return new user give username and password" in {
       val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
-      val f = service.contentType[JValue](application/json).post("/v1/user/new")(body)
+      val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
       val response = getValue(f)
 
       response.status mustEqual HttpStatus(OK)
@@ -56,7 +61,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
 
     "return error given bad input" in {
       val body: JValue = ("froobarname" -> "noel") ~ ("password" -> "secret")
-      val f = service.contentType[JValue](application/json).post("/v1/user/new")(body)
+      val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
       val response = getValue(f)
 
       response must beBadRequest(Request.NoUser)
