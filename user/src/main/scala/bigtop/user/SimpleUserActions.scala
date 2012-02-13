@@ -15,8 +15,7 @@ import bigtop.problem.Problems._
 import net.lag.configgy.ConfigMap
 
 case class SimpleUserConfig(val config: ConfigMap, val mongo: Mongo) {
-  println("SimpleUserConfig " + config + " " + config("database"))
-  lazy val database = mongo.database(config("database"))
+  lazy val database = mongo.database(config("services.user.v1.mongo.database"))
 }
 
 class SimpleUserActions(config: SimpleUserConfig) extends UserActions[SimpleUser] {

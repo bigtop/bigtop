@@ -37,8 +37,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
     }
   """
 
-  lazy val mongoConfig = rootConfig configMap "services" configMap "user" configMap "v1" configMap "mongo"
-  println("mongoConfig: " + mongoConfig)
+  lazy val mongoConfig = rootConfig.configMap("services.user.v1.mongo")
   lazy val mongoFacade = mongo(mongoConfig)
   lazy val database = mongoFacade.database("user")
 
@@ -52,7 +51,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
     Await.result(f.inner, Duration("3s"))
 
   "SimpleUserActions.create" should {
-    "return new user give username and password" in {
+    "return new user given username and password" in {
       await(userActions.create(("username" -> "noel") ~ ("password" -> "secret"))) match {
         case Success(user)     => user.username mustEqual "noel"
         case Failure(response) => failure("did not expect failure: " + response)
