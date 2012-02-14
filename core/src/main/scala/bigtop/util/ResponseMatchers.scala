@@ -10,7 +10,9 @@ import org.specs2.matcher.{Matcher, StandardMatchResults, MustMatchers}
 import bigtop.problem.{Problem, ProblemWriters}
 
 
-trait ResponseMatchers extends MustMatchers with StandardMatchResults with ProblemWriters {
+trait ResponseMatchers extends MustMatchers
+  with StandardMatchResults
+  with ProblemWriters {
 
   def beOk: Matcher[HttpResponse[JValue]] =
     beLike {
@@ -21,10 +23,10 @@ trait ResponseMatchers extends MustMatchers with StandardMatchResults with Probl
           ko
     }
 
-  def beBadRequest(expected: Problem[String]): Matcher[HttpResponse[JValue]] =
+  def beBadRequest(expected: Problem): Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, content, _) =>
-        val expectedResponse = expected.toResponse[JValue]
+        val expectedResponse = expected.toResponse
         status  mustEqual expectedResponse.status
         content mustEqual expectedResponse.content
     }
