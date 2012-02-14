@@ -55,8 +55,8 @@ trait SessionService[U <: User]
           request {
             path("/api/session/v1") {
               path("/'id") {
-                jvalue {
-                  (req: HttpRequest[Future[JValue]]) =>
+                produce(application/json) {
+                  (req: HttpRequest[ByteChunk]) =>
                     val result =
                       for {
                         id <- Uuid.parse(req.parameters('id))
