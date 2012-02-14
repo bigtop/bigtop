@@ -42,20 +42,20 @@ trait UserService[U <: User]
   implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('user).toSuccess[Problem[String]](Request.NoUser).fv
+    req.parameters.get('user).toSuccess[Problem](Client.NoUser).fv
 
   /** Get content as JSON and transform to future validation */
   def getContent(request: HttpRequest[Future[JValue]]): JsonValidation =
     request.content.fold(
-      some = _.map(_.success[Problem[String]]).fv,
-      none = (Request.NoContent : Problem[String]).fail[JValue].fv
+      some = _.map(_.success[Problem]).fv,
+      none = (Client.NoContent : Problem).fail[JValue].fv
     )
 
-  def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem[String],T]])
+  def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,T]])
                 (implicit w: JsonWriter[T]):
                   HttpService[Future[JValue], Future[HttpResponse[JValue]]] = {
     (req: HttpRequest[Future[JValue]]) => f(req).fold (
-      failure = _.toResponse[JValue],
+      failure = _.toResponse,
       success = v => HttpResponse[JValue](content = Some(w.write(v)))
     )
   }
@@ -96,7 +96,7 @@ trait UserService[U <: User]
                           for {
                             name <- getUser(req)
                             json <- getContent(req)
-                            pwd  <- json./[Problem[String],String]("password", Request.NoPassword).fv
+                            pwd  <- json./[Problem,String]("password", Client.NoPassword).fv
                             user <- actions.login(name, pwd)
                           } yield actions.formatter.write(user)
                       )

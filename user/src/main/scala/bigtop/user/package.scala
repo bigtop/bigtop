@@ -11,9 +11,9 @@ package object user {
 
   trait UserTypes[U <: User] {
 
-    type JsonValidation = FutureValidation[Problem[String], JValue]
-    type UserValidation = FutureValidation[Problem[String], U]
-    type UnitValidation = FutureValidation[Problem[String], Unit]
+    type JsonValidation = FutureValidation[Problem, JValue]
+    type UserValidation = FutureValidation[Problem, U]
+    type UnitValidation = FutureValidation[Problem, Unit]
 
   }
 

@@ -10,7 +10,7 @@ package object session {
 
   trait SessionTypes[U <: User] {
 
-    type SessionValidation = FutureValidation[Problem[String], Session[U]]
+    type SessionValidation = FutureValidation[Problem, Session[U]]
 
   }
 

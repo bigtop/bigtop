@@ -15,9 +15,9 @@ import scalaz.syntax.validation._
 
 trait UserActions[U <: User] extends UserTypes[U] {
 
-  def updater:   JsonUpdater[Problem[String],U]
+  def updater:   JsonUpdater[Problem,U]
   /** Formatter for the *external* representation of the User. That is, the user as is displayed to the web browser. */
-  def formatter: JsonFormat[Problem[String], U]
+  def formatter: JsonFormat[Problem, U]
 
   def store: UserStore[U]
 
@@ -25,16 +25,16 @@ trait UserActions[U <: User] extends UserTypes[U] {
     for {
       user <- store.get(username)
       ans  <- if(user.isPasswordOk(password)) {
-                user.success[Problem[String]].fv
+                user.success[Problem].fv
               } else {
-                (Request.NoPassword : Problem[String]).fail.fv
+                (Client.NoPassword : Problem).fail.fv
               }
     } yield ans
 
   def create(data: JValue): UserValidation =
     for {
       unsavedUser <- formatter.read(data).fv
-      savedUser   <- store.get(unsavedUser.username).invert.mapFailure(_ => Request.UserExists : Problem[String]).flatMap(_ => store.add(unsavedUser))
+      savedUser   <- store.get(unsavedUser.username).invert.mapFailure(_ => Client.UserExists : Problem).flatMap(_ => store.add(unsavedUser))
 
     } yield savedUser
 

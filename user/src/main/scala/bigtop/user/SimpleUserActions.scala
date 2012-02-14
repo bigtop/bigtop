@@ -10,7 +10,7 @@ import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
-import bigtop.problem.{Problem, InternalError}
+import bigtop.problem._
 import bigtop.problem.Problems._
 import net.lag.configgy.ConfigMap
 
@@ -41,7 +41,7 @@ class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
                       .from(collection)
                       .where("username" === username))
 
-    user map{ u => u.toSuccess(Request.NoUser).flatMap(read _) }
+    user map{ u => u.toSuccess(Client.NoUser).flatMap(read _) }
   }
 
   def add(user: SimpleUser): UserValidation = {
@@ -62,12 +62,12 @@ class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
   }
 
 
-  private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem[String],S] = {
-    val ans = Promise[Validation[Problem[String],S]]
-    f foreach { v => ans.success(mapper(v).success[Problem[String]]) }
+  private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem,S] = {
+    val ans = Promise[Validation[Problem,S]]
+    f foreach { v => ans.success(mapper(v).success[Problem]) }
     f recover { case e =>
       ans.success {
-        InternalError(e.getMessage).fail[S]
+        (ServerProblem + e.getMessage).fail[S]
       }
     }
 
