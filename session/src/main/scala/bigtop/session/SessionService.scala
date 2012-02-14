@@ -37,7 +37,7 @@ trait SessionService[U <: User]
 
   import Problems._
 
-  def sessionActions: SessionActions[U]
+  def sessionFactory: SessionFactory[U]
 
   implicit def defaultTimeout = Timeout(3 seconds)
 
@@ -52,7 +52,12 @@ trait SessionService[U <: User]
     service("session", "1.0.0") {
       requestLogging(defaultTimeout) {
         healthMonitor(defaultTimeout) { monitor => context =>
-          request {
+          startup {
+            sessionFactory.setup(context)
+          } ->
+          request { config: sessionFactory.Config =>
+            val actions = create(config)
+
             path("/api/session/v1") {
               path("/'id") {
                 produce(application/json) {
