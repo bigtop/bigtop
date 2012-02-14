@@ -33,21 +33,19 @@ trait SessionService[U <: User]
      with FutureImplicits
      with JsonImplicits
      with JsonFormatters
-     with ProblemWriters
-{
+     with ProblemWriters {
 
   import Problems._
 
   def sessionActions: SessionActions[U]
-  implicit def writer: JsonWriter[Session[U]] = new SessionWriter[U] {}
 
   implicit def defaultTimeout = Timeout(3 seconds)
 
   /** Get content as JSON and transform to future validation */
-  def getContent(request: HttpRequest[Future[JValue]]): FutureValidation[Problem[String], JValue] =
+  def getContent(request: HttpRequest[Future[JValue]]): FutureValidation[Problem, JValue] =
     request.content.fold(
-      some = _.map(_.success[Problem[String]]).fv,
-      none = (Request.NoContent : Problem[String]).fail[JValue].fv
+      some = _.map(_.success[Problem]).fv,
+      none = (Client.NoContent : Problem).fail[JValue].fv
     )
 
   val sessionService =
@@ -56,9 +54,6 @@ trait SessionService[U <: User]
         healthMonitor(defaultTimeout) { monitor => context =>
           request {
             path("/api/session/v1") {
-              // Read session (restore login):
-              //
-              // id -> all session data (except password of course)
               path("/'id") {
                 produce(application/json) {
                   (req: HttpRequest[ByteChunk]) =>
@@ -83,7 +78,6 @@ trait SessionService[U <: User]
               path("/set") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
               } ~
-              // Logout (destroy session):
               path("/delete") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
               } ~
@@ -98,15 +92,20 @@ trait SessionService[U <: User]
                   val result =
                     for {
                       json     <- getContent(req)
-                      username <- json./[Problem[String],String]("username", Request.NoUser).fv
-                      password <- json./[Problem[String],String]("password", Request.NoPassword).fv
-                      result   <- sessionActions.create(username, password)
-                    } yield result
+                      username <- json./[Problem,String]("username", Client.NoUser).fv
+                    } yield HttpResponse[JValue](
+                      content = Some(
+                        ("typename" -> "session") ~
+                        ("id"       -> Uuid.create.toJson) ~
+                        ("username" -> "dave@untyped.com") ~
+                        ("name"     -> "Joe Bloggs")
+                      )
+                    )
 
-                result fold (
-                  failure = e => e.toResponse,
-                  success = s => HttpResponse[JValue](content = Some(s.toJson))
-                )
+                  result fold (
+                    failure = e => e.toResponse,
+                    success = x => x
+                  )
               }
             }
           }

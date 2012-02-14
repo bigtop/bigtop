@@ -5,11 +5,11 @@ package problem
 
 object Problems {
 
-  object Request {
-    val NoContent = BadRequest("The request did not contain any content")
-    val NoUser = BadRequest("The request did not specify a user")
-    val NoPassword = BadRequest("The request did not specify a password")
-    val UserExists = BadRequest("The specified user already exists")
+  object Client {
+    val NoContent  = ClientProblem + "The request did not contain any content"
+    val NoUser     = ClientProblem + ("username" -> "The request did not specify a user")
+    val NoPassword = ClientProblem + ("password" -> "The request did not specify a password")
+    val UserExists = ClientProblem + ("username" -> "The specified user already exists")
   }
 
 }
