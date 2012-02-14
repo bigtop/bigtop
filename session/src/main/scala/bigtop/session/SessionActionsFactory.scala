@@ -7,7 +7,7 @@ import blueeyes.core.service.ServiceContext
 import bigtop.user.User
 
 
-trait SessionServiceFactory[U <: User] {
+trait SessionActionsFactory[U <: User] {
 
   type Config
 
