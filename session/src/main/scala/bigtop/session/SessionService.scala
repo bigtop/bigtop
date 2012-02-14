@@ -5,7 +5,8 @@ import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
-import bigtop.json.{JsonImplicits, JsonFormatters}
+import bigtop.json.{JsonImplicits, JsonFormatters, JsonWriter}
+import bigtop.problem._
 import bigtop.user.User
 import bigtop.util.Uuid
 import blueeyes.BlueEyesServiceBuilder
@@ -29,32 +30,52 @@ trait SessionService[U <: User]
      with HttpRequestCombinators
      with BijectionsChunkJson
      with BijectionsChunkFutureJson
-     with JsonFormatters {
+     with FutureImplicits
+     with JsonImplicits
+     with JsonFormatters
+     with ProblemWriters {
+
+  import Problems._
 
   def sessionActions: SessionActions[U]
 
   implicit def defaultTimeout = Timeout(3 seconds)
+
+  /** Get content as JSON and transform to future validation */
+  def getContent(request: HttpRequest[Future[JValue]]): FutureValidation[Problem[String], JValue] =
+    request.content.fold(
+      some = _.map(_.success[Problem[String]]).fv,
+      none = (Request.NoContent : Problem[String]).fail[JValue].fv
+    )
 
   val sessionService =
     service("session", "1.0.0") {
       requestLogging(defaultTimeout) {
         healthMonitor(defaultTimeout) { monitor => context =>
           request {
-            path("/session/v1") {
-              path("/new") {
+            path("/api/session/v1") {
+              path("/'id") {
                 jvalue {
                   (req: HttpRequest[Future[JValue]]) =>
-                    Future(
-                      HttpResponse[JValue](
+                    val result =
+                      for {
+                        id <- Uuid.parse(req.parameters('id))
+                      } yield HttpResponse[JValue](
                         content = Some(
-                          ("sessionkey" -> Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").toOption.get.toJson)
+                          ("typename" -> "session") ~
+                          ("id"       -> id.toJson) ~
+                          ("username" -> "dave") ~
+                          ("name"     -> "Joe Bloggs")
                         )
                       )
-                    )
+
+                    Future {
+                      result fold (
+                        failure = e => bigtop.problem.BadRequest(e).toResponse,
+                        success = x => x
+                      )
+                    }
                 }
-              } ~
-              path("/get") { req: HttpRequest[ByteChunk] =>
-                Future(HttpResponse[ByteChunk]())
               } ~
               path("/set") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
@@ -64,6 +85,26 @@ trait SessionService[U <: User]
               } ~
               path ("/valid") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
+              } ~
+              jvalue {
+                (req: HttpRequest[Future[JValue]]) =>
+                  val result =
+                    for {
+                      json     <- getContent(req)
+                      username <- json./[Problem[String],String]("username", Request.NoUser).fv
+                    } yield HttpResponse[JValue](
+                      content = Some(
+                        ("typename" -> "session") ~
+                        ("id"       -> Uuid.create.toJson) ~
+                        ("username" -> username) ~
+                        ("name"     -> "Joe Bloggs")
+                      )
+                    )
+
+                  result fold (
+                    failure = e => e.toResponse,
+                    success = x => x
+                  )
               }
             }
           }
