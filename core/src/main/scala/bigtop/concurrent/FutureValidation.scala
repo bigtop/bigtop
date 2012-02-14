@@ -33,6 +33,11 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
       )
     )
 
+  def foreach[T](f: (S) => T): Unit = {
+    this.map(f)
+    ()
+  }
+
   /** Modifier to allow use of Future's flatMap: `foo.byFuture.flatMap( ... )` */
   def byFuture: WithFutureFlatMap[F, S] =
     WithFutureFlatMap(this)

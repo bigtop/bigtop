@@ -33,11 +33,13 @@ trait SessionService[U <: User]
      with FutureImplicits
      with JsonImplicits
      with JsonFormatters
-     with ProblemWriters {
+     with ProblemWriters
+{
 
   import Problems._
 
   def sessionActions: SessionActions[U]
+  implicit def writer: JsonWriter[Session[U]] = new SessionWriter[U] {}
 
   implicit def defaultTimeout = Timeout(3 seconds)
 
@@ -54,6 +56,9 @@ trait SessionService[U <: User]
         healthMonitor(defaultTimeout) { monitor => context =>
           request {
             path("/api/session/v1") {
+              // Read session (restore login):
+              //
+              // id -> all session data (except password of course)
               path("/'id") {
                 produce(application/json) {
                   (req: HttpRequest[ByteChunk]) =>
@@ -80,31 +85,33 @@ trait SessionService[U <: User]
               path("/set") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
               } ~
+              // Logout (destroy session):
               path("/delete") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
               } ~
               path ("/valid") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
               } ~
+              // Create endpoint for Backbone.sync:
+              //
+              //  - username
+              //  - password
+              // ->
+              //  - id, username, name, any session data, etc etc etc
               jvalue {
                 (req: HttpRequest[Future[JValue]]) =>
                   val result =
                     for {
                       json     <- getContent(req)
                       username <- json./[Problem[String],String]("username", Request.NoUser).fv
-                    } yield HttpResponse[JValue](
-                      content = Some(
-                        ("typename" -> "session") ~
-                        ("id"       -> Uuid.create.toJson) ~
-                        ("username" -> "dave@untyped.com") ~
-                        ("name"     -> "Joe Bloggs")
-                      )
-                    )
+                      password <- json./[Problem[String],String]("password", Request.NoPassword).fv
+                      result   <- sessionActions.create(username, password)
+                    } yield result
 
-                  result fold (
-                    failure = e => e.toResponse,
-                    success = x => x
-                  )
+                result fold (
+                  failure = e => e.toResponse,
+                  success = s => HttpResponse[JValue](content = Some(s.toJson))
+                )
               }
             }
           }
