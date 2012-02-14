@@ -38,6 +38,7 @@ trait SessionService[U <: User]
   import Problems._
 
   def sessionActions: SessionActions[U]
+  implicit def sessionWriter = new SessionWriter[U] {}
 
   implicit def defaultTimeout = Timeout(3 seconds)
 
@@ -59,7 +60,7 @@ trait SessionService[U <: User]
                   (req: HttpRequest[ByteChunk]) =>
                     val result =
                       for {
-                        id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => ClientProblem + ("id" -> ms))
+                        id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => ClientProblem + ("id" -> msg))
                       } yield HttpResponse[JValue](
                         content = Some(
                           ("typename" -> "session") ~
@@ -69,10 +70,10 @@ trait SessionService[U <: User]
                         )
                       )
 
-                  result fold (
-                    failure = e => bigtop.problem.BadRequest(e).toResponse,
-                    success = x => x
-                  )
+                    result fold (
+                      failure = e => e.toResponse,
+                      success = x => x
+                    )
                 }
               } ~
               path("/set") { req: HttpRequest[ByteChunk] =>
@@ -89,22 +90,17 @@ trait SessionService[U <: User]
               //  username x password -> session
               jvalue {
                 (req: HttpRequest[Future[JValue]]) =>
-                  val result =
+                  val session =
                     for {
                       json     <- getContent(req)
-                      username <- json./[Problem,String]("username", Client.NoUser).fv
-                    } yield HttpResponse[JValue](
-                      content = Some(
-                        ("typename" -> "session") ~
-                        ("id"       -> Uuid.create.toJson) ~
-                        ("username" -> "dave@untyped.com") ~
-                        ("name"     -> "Joe Bloggs")
-                      )
-                    )
+                      username <- json./[Problem,String]("username", Problems.Client.NoUser).fv
+                      password <- json./[Problem,String]("password", Problems.Client.NoPassword).fv
+                      result   <- sessionActions.create(username, password)
+                    } yield result
 
-                  result fold (
-                    failure = e => e.toResponse,
-                    success = x => x
+                  session fold (
+                    failure = f => f.toResponse,
+                    success = s => HttpResponse(content = Some(s.toJson))
                   )
               }
             }
