@@ -34,11 +34,10 @@ trait UserService[U <: User]
      with UserTypes[U]
      with ProblemWriters {
 
-  self: UserActionsFactory[U] =>
-
   import FutureImplicits._
   import JsonFormatters._
 
+  def userActionsFactory: UserActionsFactory[U]
   implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
@@ -68,11 +67,11 @@ trait UserService[U <: User]
       requestLogging(defaultTimeout) {
         healthMonitor(defaultTimeout) { monitor => context =>
           startup {
-            setup(context)
+            userActionsFactory.setup(context)
           } ->
           request { config: Config =>
             import JsonImplicits._
-            val actions = create(config)
+            val actions = userActionsFactory.create(config)
             userActions.success(actions)
 
             path("/user") {
