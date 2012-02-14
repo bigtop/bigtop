@@ -64,7 +64,7 @@ trait SessionService[U <: User]
                   (req: HttpRequest[ByteChunk]) =>
                     val result =
                       for {
-                        id <- Uuid.parse(req.parameters('id))
+                        id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => ClientProblem + ("id" -> ms))
                       } yield HttpResponse[JValue](
                         content = Some(
                           ("typename" -> "session") ~
@@ -74,12 +74,10 @@ trait SessionService[U <: User]
                         )
                       )
 
-                    Future {
-                      result fold (
-                        failure = e => bigtop.problem.BadRequest(e).toResponse,
-                        success = x => x
-                      )
-                    }
+                  result fold (
+                    failure = e => bigtop.problem.BadRequest(e).toResponse,
+                    success = x => x
+                  )
                 }
               } ~
               path("/set") { req: HttpRequest[ByteChunk] =>
@@ -92,12 +90,9 @@ trait SessionService[U <: User]
               path ("/valid") { req: HttpRequest[ByteChunk] =>
                 Future(HttpResponse[ByteChunk]())
               } ~
-              // Create endpoint for Backbone.sync:
+              // Create a session:
               //
-              //  - username
-              //  - password
-              // ->
-              //  - id, username, name, any session data, etc etc etc
+              //  username x password -> session
               jvalue {
                 (req: HttpRequest[Future[JValue]]) =>
                   val result =
