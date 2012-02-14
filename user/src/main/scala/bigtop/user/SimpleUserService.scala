@@ -3,25 +3,33 @@ package user
 
 import akka.dispatch.Promise
 import blueeyes.BlueEyesServer
+import blueeyes.bkka.AkkaDefaults
 import blueeyes.persistence.mongo.{ConfigurableMongo, Mongo, Database}
 import blueeyes.core.service.ServiceContext
 
-trait SimpleUserService extends UserService[SimpleUser]
-    with ConfigurableMongo
-    with UserActionsFactory[SimpleUser]
-{
+
+object SimpleUserActionsFactory extends UserActionsFactory[SimpleUser] with AkkaDefaults {
 
   type Config = SimpleUserConfig
 
   def setup(context: ServiceContext) = {
-    val mongoConfig = context.config.configMap("mongo")
-    val mongoFacade = mongo(mongoConfig)
-    val config = SimpleUserConfig(mongoConfig, mongoFacade)
+    val config = SimpleUserConfig(context.config)
     Promise.successful(config)
   }
 
-  def create(config: SimpleUserConfig) =
-    new SimpleUserActions(config)
+  def create(config: SimpleUserConfig) = {
+    val userActions = new SimpleUserActions(config)
+
+    userActions
+  }
+
+}
+
+trait SimpleUserService extends UserService[SimpleUser] {
+
+  type Config = SimpleUserConfig
+
+  val userActionsFactory = SimpleUserActionsFactory
 
   implicit def writer = new SimpleUserExternalWriter {}
 }

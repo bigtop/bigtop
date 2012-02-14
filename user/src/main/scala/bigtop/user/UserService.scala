@@ -37,7 +37,7 @@ trait UserService[U <: User]
   import FutureImplicits._
   import JsonFormatters._
 
-  def userActionsFactory: UserActionsFactory[U]
+  val userActionsFactory: UserActionsFactory[U]
   implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
@@ -69,7 +69,7 @@ trait UserService[U <: User]
           startup {
             userActionsFactory.setup(context)
           } ->
-          request { config: Config =>
+          request { config: userActionsFactory.Config =>
             import JsonImplicits._
             val actions = userActionsFactory.create(config)
             userActions.success(actions)

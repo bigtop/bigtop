@@ -37,7 +37,7 @@ trait SessionService[U <: User]
 
   import Problems._
 
-  def sessionActionsFactory: SessionActionsFactory[U]
+  val sessionActionsFactory: SessionActionsFactory[U]
   implicit def sessionWriter = new SessionWriter[U] {}
 
   implicit def defaultTimeout = Timeout(3 seconds)
@@ -108,6 +108,9 @@ trait SessionService[U <: User]
                   )
               }
             }
+          } ->
+          shutdown { config =>
+            Promise.successful(())
           }
         }
       }
