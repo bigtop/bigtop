@@ -96,7 +96,7 @@ trait SessionService[U <: User]
                       content = Some(
                         ("typename" -> "session") ~
                         ("id"       -> Uuid.create.toJson) ~
-                        ("username" -> username) ~
+                        ("username" -> "dave@untyped.com") ~
                         ("name"     -> "Joe Bloggs")
                       )
                     )
