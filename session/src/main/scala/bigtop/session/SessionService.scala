@@ -1,6 +1,7 @@
 package bigtop
 package session
 
+
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
@@ -25,6 +26,7 @@ import net.lag.logging.Logger
 import scalaz.{NonEmptyList, Scalaz, Validation, Success, Failure}
 import Scalaz._
 
+
 trait SessionService[U <: User]
      extends BlueEyesServiceBuilder
      with HttpRequestCombinators
@@ -38,15 +40,16 @@ trait SessionService[U <: User]
   import Problems._
 
   val sessionActionsFactory: SessionActionsFactory[U]
+
   implicit def sessionWriter = new SessionWriter[U] {}
 
-  implicit def defaultTimeout = Timeout(3 seconds)
+  implicit def defaultTimeout: Timeout
 
-  /** Get content as JSON and transform to future validation */
-  def getContent(request: HttpRequest[Future[JValue]]): FutureValidation[Problem, JValue] =
+  /** Get content and transform to future validation */
+  private def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
     request.content.fold(
       some = _.map(_.success[Problem]).fv,
-      none = (Client.NoContent : Problem).fail[JValue].fv
+      none = (Client.NoContent : Problem).fail[T].fv
     )
 
   val sessionService =

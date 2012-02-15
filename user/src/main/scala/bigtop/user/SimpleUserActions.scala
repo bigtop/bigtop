@@ -1,28 +1,33 @@
 package bigtop
 package user
 
+
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
-import blueeyes.persistence.mongo._
-import blueeyes.json.JsonAST._
-import scalaz.{NonEmptyList, Validation, ValidationNEL}
-import scalaz.std.option.optionSyntax._
-import scalaz.syntax.validation._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
 import bigtop.problem._
 import bigtop.problem.Problems._
+import blueeyes.persistence.mongo._
+import blueeyes.json.JsonAST._
 import net.lag.configgy.ConfigMap
+import net.lag.logging.Logger
+import scalaz.{NonEmptyList, Validation, ValidationNEL}
+import scalaz.std.option.optionSyntax._
+import scalaz.syntax.validation._
 
-case class SimpleUserConfig(val config: ConfigMap)
-     extends ConfigurableMongo
-{
+case class SimpleUserActionsConfig(val config: ConfigMap) extends ConfigurableMongo {
+  private val log = Logger.get
+
+  log.debug("user config %s", config)
+
   lazy val mongoConfig = config.configMap("mongo")
   lazy val mongoFacade = mongo(mongoConfig)
-  lazy val database = mongoFacade.database(config("database"))
+  lazy val database = mongoFacade.database(config("mongo.database"))
+
 }
 
-class SimpleUserActions(config: SimpleUserConfig) extends UserActions[SimpleUser] {
+class SimpleUserActions(config: SimpleUserActionsConfig) extends UserActions[SimpleUser] {
 
   def updater = new SimpleUserExternalFormat {}
   def formatter = updater
@@ -30,7 +35,7 @@ class SimpleUserActions(config: SimpleUserConfig) extends UserActions[SimpleUser
 
 }
 
-class SimpleUserStore(config: SimpleUserConfig) extends UserStore[SimpleUser]
+class SimpleUserStore(config: SimpleUserActionsConfig) extends UserStore[SimpleUser]
     with SimpleUserInternalReader
     with SimpleUserInternalWriter {
   import FutureImplicits._

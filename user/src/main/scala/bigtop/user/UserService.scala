@@ -1,6 +1,7 @@
 package bigtop
 package user
 
+
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
@@ -38,16 +39,17 @@ trait UserService[U <: User]
   import JsonFormatters._
 
   val userActionsFactory: UserActionsFactory[U]
+
   implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
     req.parameters.get('user).toSuccess[Problem](Client.NoUser).fv
 
   /** Get content as JSON and transform to future validation */
-  def getContent(request: HttpRequest[Future[JValue]]): JsonValidation =
+  private def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
     request.content.fold(
       some = _.map(_.success[Problem]).fv,
-      none = (Client.NoContent : Problem).fail[JValue].fv
+      none = (Client.NoContent : Problem).fail[T].fv
     )
 
   def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,T]])
