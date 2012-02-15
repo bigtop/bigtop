@@ -1,5 +1,5 @@
 package bigtop
-package session
+package user
 
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._

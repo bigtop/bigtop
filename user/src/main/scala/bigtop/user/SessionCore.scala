@@ -1,5 +1,5 @@
 package bigtop
-package session
+package user
 
 import bigtop.json.{JsonWriter, JsonFormatters}
 import bigtop.user.{UserActions, User}

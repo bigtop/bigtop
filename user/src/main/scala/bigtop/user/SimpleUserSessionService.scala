@@ -1,5 +1,5 @@
 // package bigtop
-// package session
+// package user
 //
 //
 // import akka.dispatch.{Future, Promise}

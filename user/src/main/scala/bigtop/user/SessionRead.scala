@@ -1,5 +1,5 @@
 package bigtop
-package session
+package user
 
 import akka.dispatch.{Future, Promise}
 import bigtop.json.{JsonWriter, JsonFormatters}
@@ -14,18 +14,9 @@ import net.lag.configgy.ConfigMap
 import net.lag.logging.Logger
 import scala.collection.mutable.HashMap
 
-trait SessionCreate[U <: User] extends SessionCore[U] {
+trait SessionRead[U <: User] extends SessionCore[U] {
 
-  def userActions: UserActions[U]
-
-  def createSession(username: String, password: String): SessionValidation =
-    for {
-      user <- userActions.loginUser(username, password)
-    } yield {
-      val id = Uuid.create()
-      val session = Session(id, user, new HashMap[String, JValue]())(userActions.userFormatter : JsonWriter[U])
-      sessionStore.add(id, session)
-      session
-    }
+  def readSession(id: Uuid): SessionValidation =
+    sessionStore.get(id)
 
 }

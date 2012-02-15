@@ -1,5 +1,5 @@
 package bigtop
-package session
+package user
 
 import com.twitter.util.{LruMap,SynchronizedLruMap}
 import bigtop.user.User

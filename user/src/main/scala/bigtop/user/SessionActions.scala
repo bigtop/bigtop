@@ -1,5 +1,5 @@
 package bigtop
-package session
+package user
 
 import bigtop.user.User
 
