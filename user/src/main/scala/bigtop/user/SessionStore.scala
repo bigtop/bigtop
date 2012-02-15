@@ -1,14 +1,15 @@
 package bigtop
 package user
 
-import bigtop.user.User
 import bigtop.util.Uuid
 
-trait SessionStore[U <: User] extends SessionTypes[U] {
+trait SessionStore[U <: User] extends UserTypes[U] {
 
-  def get(id: Uuid): SessionValidation
+  def create(id: Uuid, session: Session[U]): SessionValidation
 
-  def add(id: Uuid, session: Session[U]): SessionValidation
+  def read(id: Uuid): SessionValidation
+
+  def update(id: Uuid, session: Session[U]): SessionValidation
 
   def delete(id: Uuid): UnitValidation
 

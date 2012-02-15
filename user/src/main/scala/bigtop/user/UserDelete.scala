@@ -11,9 +11,11 @@ import blueeyes.json.JsonDSL._
 import scalaz.Validation
 import scalaz.syntax.validation._
 
-trait UserDelete[U <: User] extends UserCore[U] {
+trait UserDelete[U <: User] extends UserTypes[U] {
 
-  def deleteUser(username: String): UnitValidation =
-    userStore.delete(username)
+  def core: UserCore[U]
+
+  def delete(username: String): UnitValidation =
+    core.store.delete(username)
 
 }

@@ -13,10 +13,9 @@ import scalaz.syntax.validation._
 
 trait UserCore[U <: User] extends UserTypes[U] {
 
-  def userUpdater:   JsonUpdater[Problem,U]
-  /** Formatter for the *external* representation of the User. That is, the user as is displayed to the web browser. */
-  def userFormatter: JsonFormat[Problem, U]
+  /** Formatter and updater for the *external* representation of the User. That is, the user as is displayed to the web browser. */
+  def serializer: JsonFormat[Problem, U] with JsonUpdater[Problem, U]
 
-  def userStore: UserStore[U]
+  def store: UserStore[U]
 
 }

@@ -2,12 +2,11 @@ package bigtop
 package user
 
 import bigtop.json.{JsonWriter, JsonFormatters}
-import bigtop.user.{UserActions, User}
 import blueeyes.core.http.HttpRequest
 import net.lag.logging.Logger
 
-trait SessionCore[U <: User] extends SessionTypes[U] with JsonFormatters {
+trait SessionCore[U <: User] extends UserTypes[U] with JsonFormatters {
 
-  val sessionStore: SessionStore[U]
+  def store: SessionStore[U]
 
 }

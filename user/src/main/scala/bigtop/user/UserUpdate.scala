@@ -11,13 +11,15 @@ import blueeyes.json.JsonDSL._
 import scalaz.Validation
 import scalaz.syntax.validation._
 
-trait UserUpdate[U <: User] extends UserCore[U] {
+trait UserUpdate[U <: User] extends UserTypes[U] {
 
-  def updateUser(username: String, data: JValue): UnitValidation =
+  def core: UserCore[U]
+
+  def update(username: String, data: JValue): UnitValidation =
     for {
-      oldUser <- userStore.get(username)
-      newUser <- userUpdater.update(oldUser, data).fv
-      savedUser <- userStore.add(newUser)
+      oldUser <- core.store.read(username)
+      newUser <- core.serializer.update(oldUser, data).fv
+      savedUser <- core.store.update(newUser)
     } yield ()
 
 }

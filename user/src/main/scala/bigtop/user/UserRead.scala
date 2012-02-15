@@ -11,11 +11,13 @@ import blueeyes.json.JsonDSL._
 import scalaz.Validation
 import scalaz.syntax.validation._
 
-trait UserRead[U <: User] extends UserCore[U] {
+trait UserRead[U <: User] extends UserTypes[U] {
 
-  def readUser(username: String): UserValidation =
+  def core: UserCore[U]
+
+  def read(username: String): UserValidation =
     for {
-      user <- userStore.get(username)
+      user <- core.store.read(username)
     } yield user
 
 }

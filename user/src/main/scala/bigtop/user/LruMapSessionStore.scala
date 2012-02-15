@@ -2,7 +2,6 @@ package bigtop
 package user
 
 import com.twitter.util.{LruMap,SynchronizedLruMap}
-import bigtop.user.User
 import bigtop.util.Uuid
 import bigtop.problem._
 import bigtop.concurrent._
@@ -13,11 +12,16 @@ class LruMapSessionStore[U <: User] extends SessionStore[U] with FutureImplicits
 
   val map = new SynchronizedLruMap[Uuid, Session[U]](16384)
 
-  def get(id: Uuid): SessionValidation = {
+  def create(id: Uuid, session: Session[U]): SessionValidation = {
+    map.put(id, session)
+    session.success.fv
+  }
+
+  def read(id: Uuid): SessionValidation = {
     map.get(id).toSuccess(Problems.Client.noSession).fv
   }
 
-  def add(id: Uuid, session: Session[U]): SessionValidation = {
+  def update(id: Uuid, session: Session[U]): SessionValidation = {
     map.put(id, session)
     session.success.fv
   }
@@ -26,6 +30,5 @@ class LruMapSessionStore[U <: User] extends SessionStore[U] with FutureImplicits
     map.remove(id)
     ().success.fv
   }
-
 
 }

@@ -3,7 +3,6 @@ package user
 
 import akka.dispatch.{Future, Promise}
 import bigtop.json.{JsonWriter, JsonFormatters}
-import bigtop.user.{UserActions, User}
 import bigtop.util.Uuid
 import blueeyes.core.service.ServiceContext
 import blueeyes.persistence.mongo._
@@ -18,6 +17,10 @@ class LruMapSessionActions[U <: User](val config: ConfigMap, val userActions: Us
 
   log.debug("session config %s", config)
 
-  val sessionStore = new LruMapSessionStore[U]
+  val core = new SessionCore[U] {
+
+    val store = new LruMapSessionStore[U]
+
+  }
 
 }

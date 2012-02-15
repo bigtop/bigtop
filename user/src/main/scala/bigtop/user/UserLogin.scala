@@ -11,11 +11,13 @@ import blueeyes.json.JsonDSL._
 import scalaz.Validation
 import scalaz.syntax.validation._
 
-trait UserLogin[U <: User] extends UserCore[U] {
+trait UserLogin[U <: User] extends UserTypes[U] {
 
-  def loginUser(username: String, password: String): UserValidation =
+  def core: UserCore[U]
+
+  def login(username: String, password: String): UserValidation =
     for {
-      user <- userStore.get(username)
+      user <- core.store.read(username)
       ans  <- if(user.isPasswordOk(password)) {
                 user.success[Problem].fv
               } else {

@@ -10,9 +10,12 @@ import net.lag.configgy.ConfigMap
 
 trait SimpleUserService extends UserService[SimpleUser] {
 
-  implicit def writer = new SimpleUserExternalWriter {}
+  def createActions(config: ConfigMap) = {
+    val sessionWriter = new SessionWriter[SimpleUser] {}
+    val userActions = new SimpleUserActions(config)
+    val sessionActions = new LruMapSessionActions(config, userActions)
 
-  def createUserActions(config: ConfigMap) =
-    new SimpleUserActions(config)
+    (sessionActions, sessionWriter, userActions)
+  }
 
 }
