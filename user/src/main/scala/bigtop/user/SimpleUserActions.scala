@@ -16,7 +16,7 @@ import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
-case class SimpleUserActionsConfig(val config: ConfigMap) extends ConfigurableMongo {
+class SimpleUserActions(val config: ConfigMap) extends UserActions[SimpleUser] with ConfigurableMongo {
   private val log = Logger.get
 
   log.debug("user config %s", config)
@@ -25,17 +25,13 @@ case class SimpleUserActionsConfig(val config: ConfigMap) extends ConfigurableMo
   lazy val mongoFacade = mongo(mongoConfig)
   lazy val database = mongoFacade.database(config("mongo.database"))
 
-}
-
-class SimpleUserActions(config: SimpleUserActionsConfig) extends UserActions[SimpleUser] {
-
-  def updater = new SimpleUserExternalFormat {}
-  def formatter = updater
-  def store = new SimpleUserStore(config)
+  def userUpdater = new SimpleUserExternalFormat {}
+  def userFormatter = userUpdater
+  def userStore = new SimpleUserStore(this)
 
 }
 
-class SimpleUserStore(config: SimpleUserActionsConfig) extends UserStore[SimpleUser]
+class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser]
     with SimpleUserInternalReader
     with SimpleUserInternalWriter {
   import FutureImplicits._

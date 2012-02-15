@@ -11,11 +11,12 @@ import blueeyes.core.http.{HttpRequest, HttpResponse, HttpStatus}
 import blueeyes.core.http.HttpStatusCodes._
 import blueeyes.core.http.combinators.HttpRequestCombinators
 import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson, BijectionsChunkFutureJson}
-import blueeyes.core.service.{ServerHealthMonitorService, HttpServiceHandler,  ServiceContext, HttpService}
+import blueeyes.core.service.{AsyncHttpService, ServerHealthMonitorService, HttpServiceHandler,  ServiceContext, HttpService}
 import blueeyes.json.JsonAST.{JNothing, JValue}
 import blueeyes.json.JsonParser._
 import blueeyes.json.Validation._
 import java.net.URLDecoder._
+import net.lag.configgy.ConfigMap
 import net.lag.logging.Logger
 import scalaz.{NonEmptyList, Scalaz, Validation, Success, Failure}
 import scalaz.syntax.validation._
@@ -38,8 +39,6 @@ trait UserService[U <: User]
   import FutureImplicits._
   import JsonFormatters._
 
-  val userActionsFactory: UserActionsFactory[U]
-
   implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
@@ -61,77 +60,75 @@ trait UserService[U <: User]
     )
   }
 
-  /** The user actions being used by this service instance. Useful for testing. */
-  val userActions: Promise[UserActions[U]] = Promise()
+  def createUserActions(config: ConfigMap): UserActions[U]
 
   val userService =
     service("user", "1.0.0") {
       requestLogging(defaultTimeout) {
         healthMonitor(defaultTimeout) { monitor => context =>
           startup {
-            userActionsFactory.setup(context)
+            Promise.successful(createUserActions(context.config))
           } ->
-          request { config: userActionsFactory.Config =>
-            import JsonImplicits._
-            val actions = userActionsFactory.create(config)
-            userActions.success(actions)
-
-            path("/user") {
-              path("/v1") {
-                path("/new") {
-                  jvalue {
-                    respond(
-                      req =>
-                        for {
-                          data <- getContent(req)
-                          user <- actions.create(data)
-                        } yield actions.formatter.write(user)
-                    )
-                  }
-                } ~
-                path("/(?<user>[^/]*)") {
-                  path("/login") {
-                    jvalue {
-                      respond(
-                        req =>
-                          for {
-                            name <- getUser(req)
-                            json <- getContent(req)
-                            pwd  <- json./[Problem,String]("password", Client.NoPassword).fv
-                            user <- actions.login(name, pwd)
-                          } yield actions.formatter.write(user)
-                      )
-                    }
-                  } ~
-                  path("/update") {
-                    jvalue {
-                      respond(
-                        req =>
-                          for {
-                            name <- getUser(req)
-                            data <- getContent(req)
-                            _    <- actions.update(name, data)
-                          } yield JNothing: JValue
-                      )
-                    }
-                  } ~
-                  path("/delete") {
-                    jvalue {
-                      respond(
-                        req =>
-                          for {
-                            name <- getUser(req)
-                            _    <- actions.delete(name)
-                          } yield JNothing: JValue
-                      )
-                    }
-                  }
-                }
-              }
-            }
+          request { userActions =>
+            userServiceRequestHandler(userActions)
           } ->
           shutdown { config =>
             Promise.successful(())
+          }
+        }
+      }
+    }
+
+  def userServiceRequestHandler(userActions: UserActions[U]): AsyncHttpService[ByteChunk] =
+    path("/user") {
+      path("/v1") {
+        path("/new") {
+          jvalue {
+            respond(
+              req =>
+                for {
+                  data <- getContent(req)
+                  user <- userActions.createUser(data)
+                } yield userActions.userFormatter.write(user)
+            )
+          }
+        } ~
+        path("/(?<user>[^/]*)") {
+          // path("/login") {
+          //   jvalue {
+          //     respond(
+          //       req =>
+          //         for {
+          //           name <- getUser(req)
+          //           json <- getContent(req)
+          //           pwd  <- json./[Problem,String]("password", Client.NoPassword).fv
+          //           user <- userActions.loginUser(name, pwd)
+          //         } yield userActions.userFormatter.write(user)
+          //     )
+          //   }
+          // } ~
+          path("/update") {
+            jvalue {
+              respond(
+                req =>
+                  for {
+                    name <- getUser(req)
+                    data <- getContent(req)
+                    _    <- userActions.updateUser(name, data)
+                  } yield JNothing: JValue
+              )
+            }
+          } ~
+          path("/delete") {
+            jvalue {
+              respond(
+                req =>
+                  for {
+                    name <- getUser(req)
+                    _    <- userActions.deleteUser(name)
+                  } yield JNothing: JValue
+              )
+            }
           }
         }
       }
