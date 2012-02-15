@@ -1,7 +1,6 @@
 package bigtop
 package user
 
-
 import akka.dispatch.Promise
 import blueeyes.BlueEyesServer
 import blueeyes.bkka.AkkaDefaults

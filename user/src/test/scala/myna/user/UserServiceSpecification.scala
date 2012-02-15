@@ -1,7 +1,6 @@
 package bigtop
 package user
 
-
 import akka.util.Timeout
 import bigtop.util.{ResponseMatchers, ValidationMatchers}
 import bigtop.concurrent.FutureImplicits

@@ -1,10 +1,8 @@
 package bigtop
 
-
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import blueeyes.json.JsonAST._
-
 
 package object user {
   type Error = (String, String)

@@ -1,10 +1,8 @@
 package bigtop
 package user
 
-
 import org.specs2.mutable.Specification
 import bigtop.util.BCrypt
-
 
 class SimpleUserSpec extends Specification {
 

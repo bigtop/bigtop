@@ -1,7 +1,6 @@
 package bigtop
 package session
 
-
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
@@ -26,7 +25,6 @@ import net.lag.configgy.ConfigMap
 import net.lag.logging.Logger
 import scalaz.{NonEmptyList, Scalaz, Validation, Success, Failure}
 import Scalaz._
-
 
 trait SessionService[U <: User]
      extends BlueEyesServiceBuilder
@@ -58,7 +56,7 @@ trait SessionService[U <: User]
       requestLogging(defaultTimeout) {
         healthMonitor(defaultTimeout) { monitor => context =>
           startup {
-            Promise.successful(new SessionActions(context.config, createUserActions(context.config)))
+            Promise.successful(new LruMapSessionActions(context.config, createUserActions(context.config)))
           } ->
           request { sessionActions: SessionActions[U] =>
             sessionServiceRequestHandler(sessionActions)
@@ -112,7 +110,7 @@ trait SessionService[U <: User]
               json     <- getContent(req)
               username <- json./[Problem,String]("username", Problems.Client.NoUser).fv
               password <- json./[Problem,String]("password", Problems.Client.NoPassword).fv
-              result   <- sessionActions.create(username, password)
+              result   <- sessionActions.createSession(username, password)
             } yield result
 
           session fold (

@@ -1,7 +1,6 @@
 package bigtop
 package user
 
-
 import bigtop.concurrent._
 import bigtop.concurrent.FutureImplicits._
 import bigtop.json._
@@ -11,7 +10,6 @@ import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.Validation
 import scalaz.syntax.validation._
-
 
 trait UserCore[U <: User] extends UserTypes[U] {
 

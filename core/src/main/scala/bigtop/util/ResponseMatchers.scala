@@ -1,14 +1,12 @@
 package bigtop
 package util
 
-
 import blueeyes.json.JsonAST.JValue
 import blueeyes.core.http.{HttpStatus, HttpResponse, MimeTypes}
 import blueeyes.core.http.HttpStatusCodes._
 import org.specs2.Specification
 import org.specs2.matcher.{Matcher, StandardMatchResults, MustMatchers}
 import bigtop.problem.{Problem, ProblemWriters}
-
 
 trait ResponseMatchers extends MustMatchers
   with StandardMatchResults

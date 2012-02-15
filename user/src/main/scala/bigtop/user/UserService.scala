@@ -1,7 +1,6 @@
 package bigtop
 package user
 
-
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
@@ -26,7 +25,6 @@ import bigtop.json._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
-
 
 trait UserService[U <: User]
      extends BlueEyesServiceBuilder

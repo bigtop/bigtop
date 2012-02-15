@@ -1,9 +1,7 @@
 package bigtop
 package util
 
-
 import org.specs2.mutable.Specification
-
 
 class BCryptSpec extends Specification {
 

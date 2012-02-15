@@ -1,7 +1,6 @@
 package bigtop
 package user
 
-
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
@@ -58,14 +57,12 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser]
     mapOrHandleError(result, (_: Unit) => user)
   }
 
-
   def delete(username: String): UnitValidation = {
     val result: Future[Unit] =
       config.database(remove.from(collection).where("username" === username))
 
     mapOrHandleError(result, (_: Unit) => ())
   }
-
 
   private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem,S] = {
     val ans = Promise[Validation[Problem,S]]

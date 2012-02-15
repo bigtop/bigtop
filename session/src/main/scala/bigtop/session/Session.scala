@@ -1,14 +1,12 @@
 package bigtop
 package session
 
-
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import bigtop.json.JsonWriter
 import bigtop.json.JsonFormatters
 import bigtop.util.Uuid
 import scala.collection.mutable.Map
-
 
 case class Session[U](val id: Uuid,
                       val user: U,

@@ -1,10 +1,8 @@
 package bigtop
 package util
 
-
 import org.specs2.mutable.Specification
 import bigtop.util.ValidationMatchers._
-
 
 class UuidSpec extends Specification {
 

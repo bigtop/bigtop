@@ -4,7 +4,6 @@ package util
 import org.specs2.matcher.{Matcher, StandardMatchResults, MustMatchers}
 import scalaz.{Success, Failure, Validation}
 
-
 trait ValidationMatchers extends MustMatchers with StandardMatchResults {
 
   /** Use with whenDelivered */
