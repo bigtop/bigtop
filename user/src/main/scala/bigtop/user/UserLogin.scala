@@ -19,7 +19,7 @@ trait UserLogin[U <: User] extends UserCore[U] {
       ans  <- if(user.isPasswordOk(password)) {
                 user.success[Problem].fv
               } else {
-                (Client.NoPassword : Problem).fail.fv
+                Client.missingArgument("password").fail.fv
               }
     } yield ans
 

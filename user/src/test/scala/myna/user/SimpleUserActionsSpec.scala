@@ -61,14 +61,14 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
     "return error given no username" in {
       await(userActions.create(("password" -> "secret"))) match {
         case Success(user)    => failure("did not expect success: " + user)
-        case Failure(problem) => problem mustEqual Client.NoUser
+        case Failure(problem) => problem mustEqual Client.missingArgument("username")
       }
     }
 
     "return error given no password" in {
       await(userActions.create(("username" -> "noel"))) match {
         case Success(user)    => failure("did not expect success: " + user)
-        case Failure(problem) => problem mustEqual Client.NoPassword
+        case Failure(problem) => problem mustEqual Client.missingArgument("password")
       }
     }
   }

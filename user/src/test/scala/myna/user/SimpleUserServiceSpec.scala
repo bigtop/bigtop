@@ -69,7 +69,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
       val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
       val response = getValue(f)
 
-      response must beBadRequest(Client.NoUser)
+      response must beBadRequest(Client.missingArgument("username"))
     }
 
     "refuse to allow an existing user to be created" in {
@@ -85,7 +85,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
       val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
       val response = getValue(f)
 
-      response must beBadRequest(Client.UserExists)
+      response must beBadRequest(Client.exists("user"))
     }
 
   }

@@ -18,11 +18,11 @@ case class Problem(
   def ++(that: Problem): Problem =
     Problem(this.problemType + that.problemType, this.messages ++ that.messages)
 
-  def +(value: String): Problem =
-    this + Message(value)
+  def +(messageType: String): Problem =
+    this + Message(messageType)
 
-  def +(key: String, value: String): Problem =
-    this + Message(key, value)
+  def +(messageType: String, args: (String, String) *): Problem =
+    this + Message(messageType, args)
 
   def +(msg: Problem.Message): Problem =
     this.copy(messages =this.messages ++ Seq(msg))
@@ -57,12 +57,8 @@ object Problem extends ProblemImplicits {
 
   val wildcardKey = "*"
 
-  case class Message(val key: String, val value: String)
+  case class Message(val messageType: String, val args: Seq[(String, String)] = Seq())
 
-  object Message {
-    def apply(value: String): Message =
-      Message(wildcardKey, value)
-  }
 }
 
 object ServerProblem extends Problem(Problem.ProblemType.Server)
@@ -71,11 +67,11 @@ object ClientProblem extends Problem(Problem.ProblemType.Client)
 trait ProblemImplicits {
   import Problem._
 
-  implicit def stringToMessage(value: String) =
-    Message(wildcardKey, value)
+  // implicit def stringToMessage(messageType: String) =
+  //   Message(messageType, Seq())
 
-  implicit def stringPairToMessage(pair: (String, String)) =
-    Message(pair._1, pair._2)
+  implicit def messageToProblem(msg: Message) =
+    ClientProblem + msg
 
   implicit def ProblemTypeSemigroup =
     new Semigroup[ProblemType] {

@@ -45,7 +45,7 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser]
                       .from(collection)
                       .where("username" === username))
 
-    user map{ u => u.toSuccess(Client.NoUser).flatMap(read _) }
+    user map { u => u.toSuccess(Client.notFound("user")).flatMap(read _) }
   }
 
   def add(user: SimpleUser): UserValidation = {

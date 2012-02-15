@@ -16,7 +16,7 @@ trait UserCreate[U <: User] extends UserCore[U] {
   def createUser(data: JValue): UserValidation =
     for {
       unsavedUser <- userFormatter.read(data).fv
-      savedUser   <- userStore.get(unsavedUser.username).invert.mapFailure(_ => Client.UserExists : Problem).flatMap(_ => userStore.add(unsavedUser))
+      savedUser   <- userStore.get(unsavedUser.username).invert.mapFailure(_ => Client.exists("user")).flatMap(_ => userStore.add(unsavedUser))
     } yield savedUser
 
 }

@@ -10,7 +10,11 @@ trait ProblemWriters {
   def problemToJValue(problem: Problem) =
     ("typename" -> "problem") ~
     ("subtype"  -> problem.problemType.name) ~
-    problem.messages.map(msg => (msg.key -> msg.value)).foldLeft(JObject.empty)(_ ~ _)
+    ("messages" -> problem.messages.map(messageToJValue _))
+
+  def messageToJValue(message: Problem.Message) =
+    ("type" -> message.messageType) ~
+    message.args.foldLeft(JObject.empty)(_ ~ _)
 
   implicit object StringProblemJsonWriter extends JsonWriter[Problem] {
     def write(in: Problem): JValue =

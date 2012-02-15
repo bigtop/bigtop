@@ -40,13 +40,13 @@ trait UserService[U <: User]
   implicit def defaultTimeout = Timeout(3 seconds)
 
   def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('user).toSuccess[Problem](Client.NoUser).fv
+    req.parameters.get('user).toSuccess[Problem](Client.notFound("user")).fv
 
   /** Get content as JSON and transform to future validation */
   private def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
     request.content.fold(
       some = _.map(_.success[Problem]).fv,
-      none = (Client.NoContent : Problem).fail[T].fv
+      none = (Client.emptyRequest).fail[T].fv
     )
 
   def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,T]])
@@ -99,7 +99,7 @@ trait UserService[U <: User]
           //         for {
           //           name <- getUser(req)
           //           json <- getContent(req)
-          //           pwd  <- json./[Problem,String]("password", Client.NoPassword).fv
+          //           pwd  <- json./[Problem,String]("password", Client.missingArgument("password")).fv
           //           user <- userActions.loginUser(name, pwd)
           //         } yield userActions.userFormatter.write(user)
           //     )

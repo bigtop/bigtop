@@ -17,6 +17,6 @@ import scala.collection.mutable.HashMap
 trait SessionRead[U <: User] extends SessionCore[U] {
 
   def readSession(id: Uuid): SessionValidation =
-    sessionStore.get(id, session)
+    sessionStore.get(id)
 
 }

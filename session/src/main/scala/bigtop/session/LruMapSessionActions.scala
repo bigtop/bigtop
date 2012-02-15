@@ -18,10 +18,6 @@ class LruMapSessionActions[U <: User](val config: ConfigMap, val userActions: Us
 
   log.debug("session config %s", config)
 
-  lazy val mongoConfig = config.configMap("mongo")
-  lazy val mongoFacade = mongo(mongoConfig)
-  lazy val database = mongoFacade.database(config("mongo.database"))
-
   val sessionStore = new LruMapSessionStore[U]
 
 }

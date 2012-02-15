@@ -46,7 +46,7 @@ trait SessionService[U <: User]
   private def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
     request.content.fold(
       some = _.map(_.success[Problem]).fv,
-      none = (Client.NoContent : Problem).fail[T].fv
+      none = Client.emptyRequest.fail[T].fv
     )
 
   def createUserActions(config: ConfigMap): UserActions[U]
@@ -75,7 +75,7 @@ trait SessionService[U <: User]
           (req: HttpRequest[ByteChunk]) =>
             val result =
               for {
-                id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => ClientProblem + ("id" -> msg))
+                id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => Problems.Client.missingArgument("id"))
               } yield HttpResponse[JValue](
                 content = Some(
                   ("typename" -> "session") ~
@@ -108,8 +108,8 @@ trait SessionService[U <: User]
           val session =
             for {
               json     <- getContent(req)
-              username <- json./[Problem,String]("username", Problems.Client.NoUser).fv
-              password <- json./[Problem,String]("password", Problems.Client.NoPassword).fv
+              username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
+              password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
               result   <- sessionActions.createSession(username, password)
             } yield result
 
