@@ -1,8 +1,25 @@
 package bigtop
 package util
 
-import blueeyes.core.service.{HttpService, HttpServiceHandler, HttpRequestHandlerCombinators}
+import akka.dispatch.{Future, Promise}
+import blueeyes.bkka.AkkaDefaults
+import blueeyes.core.http._
+import blueeyes.core.http.HttpStatusCodes._
+import blueeyes.core.service.{CustomHttpService, HttpService, HttpRequestHandlerCombinators}
+import blueeyes.core.data.{Bijection, ByteChunk}
 import net.lag.logging.Logger
+
+
+case class LoggingService[A,B](name: String, kind: String, log: Logger, h: HttpService[A,B])
+     extends CustomHttpService[A,B]
+{
+  val metadata = None
+
+  val service = (req: HttpRequest[A]) => {
+    log.info(name + " servicing " + kind)
+    h.service(req)
+  }
+}
 
 /**
  * Implement a service that responds to Backbone Sync's URL expectations:
@@ -18,40 +35,43 @@ import net.lag.logging.Logger
  *
  * The id above is parsed as the parameter "id". I.e. look for request.parameters.get('id)
  */
-object SyncService extends HttpRequestHandlerCombinators {
+object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
 
-  def apply[T,S](name: String,
+  type FR[B] = Future[HttpResponse[B]]
+  type HS[A,B] = HttpService[A, FR[B]]
+
+  def apply[A,B](name: String,
                  prefix: String,
-                 creator: HttpServiceHandler[T,S],
-                 reader : HttpServiceHandler[T,S],
-                 updater: HttpServiceHandler[T,S],
-                 deleter: HttpServiceHandler[T,S])(implicit log: Logger) : HttpService[T,S] = {
+                 create : HS[A,B],
+                 read   : HS[A,B],
+                 update : HS[A,B],
+                 delete : HS[A,B])(implicit log: Logger) : HS[A,B] = {
 
-    def logAndProcess(kind: String, in: HttpServiceHandler[T,S]): HttpServiceHandler[T,S] = {
-      req => {
-        log.info(name + " servicing " + kind)
-        in(req)
-      }
-    }
+    def logAndProcess(kind: String, in: HS[A,B]): HS[A,B] =
+      LoggingService(name, kind, log, in)
 
     path(prefix) {
-      path('id) {
+      path("/'id") {
         get {
-          logAndProcess("read", reader)
-          } ~
-        put {
-          logAndProcess("update", updater)
+          logAndProcess("read", read)
         } ~
-        delete {
-          logAndProcess("delete", deleter)
+        put {
+          logAndProcess("update", update)
+        } ~
+        this.delete {
+          logAndProcess("delete", delete)
         }
       } ~
       get {
-        logAndProcess("read", reader)
+        logAndProcess("read", read)
       } ~
       post {
-        logAndProcess("create", creator)
-      }
+        logAndProcess("create", create)
+      } ~
+      logAndProcess("not found", service { (req: HttpRequest[A]) => {
+        log.info(name + " received request which didn't match any handler " + req)
+        Promise successful HttpResponse[B](status = HttpStatus(NotFound))
+      } })
     }
 
   }

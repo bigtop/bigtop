@@ -11,7 +11,8 @@ import blueeyes.json.JsonDSL._
 import bigtop.json.{JsonImplicits, JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
 import bigtop.problem.{Problem, Problems, ProblemWriters}
-import bigtop.util.Uuid
+import bigtop.util.{SyncService, Uuid}
+import net.lag.logging.Logger
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
 import scalaz.std.option.optionSyntax._
@@ -26,7 +27,6 @@ object UserServiceHandler extends BijectionsChunkJson
     with ProblemWriters
     with JsonFormatters
 {
-
   def getUser(req: HttpRequest[Future[JValue]]) =
     req.parameters.get('user).toSuccess[Problem](Problems.Client.missingArgument("username")).fv
 
@@ -46,7 +46,9 @@ object UserServiceHandler extends BijectionsChunkJson
     )
   }
 
-  def apply[U <: User](sessionActions: SessionActions[U], userActions: UserActions[U])(implicit w: SessionWriter[U]): AsyncHttpService[ByteChunk] =
+  def apply[U <: User](sessionActions: SessionActions[U], userActions: UserActions[U])(implicit w: SessionWriter[U]): AsyncHttpService[ByteChunk] = {
+    implicit val log = Logger.get
+
     path("/api") {
       path("/session/v1") {
         path("/'id") {
@@ -103,63 +105,56 @@ object UserServiceHandler extends BijectionsChunkJson
             )
         }
       } ~
-      path("/user/v1") {
-        path("/new") {
+      SyncService(
+        name = "User",
+        prefix = "/user/v1",
+        create =
           jvalue {
             respond(
-              req => {
-                println("In /user/v1/new")
+              req =>
                 for {
                   data <- getContent(req)
                   user <- userActions.create(data)
+                  } yield userActions.core.serializer.write(user)
+            )
+          },
+        read =
+          jvalue {
+            respond(
+              req =>
+                for {
+                  name <- getUser(req)
+                    json <- getContent(req)
+                    pwd  <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                    user <- userActions.login(name, pwd)
                 } yield userActions.core.serializer.write(user)
+            )
+          },
+        update =
+          jvalue {
+            respond(
+              req => {
+                for {
+                  name <- getUser(req)
+                  data <- getContent(req)
+                  _    <- userActions.update(name, data)
+                  } yield JNothing: JValue
+              }
+            )
+          },
+        delete =
+          jvalue {
+            respond(
+              req => {
+                println("In /user/v1/'id/delete")
+                for {
+                  name <- getUser(req)
+                  _    <- userActions.delete(name)
+                } yield JNothing: JValue
               }
             )
           }
-        } ~
-        path("/'id") {
-         // path("/login") {
-         //   jvalue {
-         //     respond(
-         //       req =>
-         //         for {
-         //           name <- getUser(req)
-         //           json <- getContent(req)
-         //           pwd  <- json./[Problem,String]("password", Client.NoPassword).fv
-         //           user <- userActions.loginUser(name, pwd)
-         //         } yield userActions.userFormatter.write(user)
-         //     )
-         //   }
-         // } ~
-          path("/update") {
-            jvalue {
-              respond(
-                req => {
-                  println("In /user/v1/'id/update")
-                  for {
-                    name <- getUser(req)
-                    data <- getContent(req)
-                      _    <- userActions.update(name, data)
-                  } yield JNothing: JValue
-                }
-              )
-            }
-          } ~
-          path("/delete") {
-            jvalue {
-              respond(
-                req => {
-                  println("In /user/v1/'id/delete")
-                  for {
-                    name <- getUser(req)
-                      _    <- userActions.delete(name)
-                  } yield JNothing: JValue
-                }
-              )
-            }
-          }
-        }
-      }
+      )
     }
-
+  }
 }
