@@ -68,10 +68,13 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
       post {
         logAndProcess("create", create)
       } ~
-      logAndProcess("not found", service { (req: HttpRequest[A]) => {
-        log.info(name + " received request which didn't match any handler " + req)
-        Promise successful HttpResponse[B](status = HttpStatus(NotFound))
-      } })
+      logAndProcess("not found",
+                    service {
+                      (req: HttpRequest[A]) =>
+                        log.info(name + " received request which didn't match any handler " + req)
+                        Promise successful HttpResponse[B](status = HttpStatus(NotFound))
+                    }
+                  )
     }
 
   }
