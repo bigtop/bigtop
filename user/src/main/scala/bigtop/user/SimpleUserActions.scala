@@ -60,7 +60,6 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser]
     ans.fv
   }
 
-
   def create(user: SimpleUser): UserValidation = {
     val result: Future[Unit] =
       config.database(insert(write(user)).into(collection))

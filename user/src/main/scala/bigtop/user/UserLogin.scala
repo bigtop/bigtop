@@ -17,12 +17,10 @@ trait UserLogin[U <: User] extends UserTypes[U] {
 
   def login(username: String, password: String): UserValidation =
     for {
-      user <- core.store.read(username)
+      user <- core.store.read(username).mapFailure(_ => Client.customProblem("loginIncorrect"))
       ans  <- if(user.isPasswordOk(password)) {
                 user.success[Problem].fv
-              } else {
-                Client.missingArgument("password").fail.fv
-              }
+              } else Client.customProblem("loginIncorrect").fail.fv
     } yield ans
 
 }

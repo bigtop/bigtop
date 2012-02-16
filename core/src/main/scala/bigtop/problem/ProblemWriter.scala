@@ -13,7 +13,7 @@ trait ProblemWriters {
     ("messages" -> problem.messages.map(messageToJValue _))
 
   def messageToJValue(message: Problem.Message) =
-    ("type" -> message.messageType) ~
+    ("typename" -> message.messageType) ~
     message.args.foldLeft(JObject.empty)(_ ~ _)
 
   implicit object StringProblemJsonWriter extends JsonWriter[Problem] {
