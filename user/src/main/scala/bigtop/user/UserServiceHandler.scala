@@ -46,7 +46,6 @@ object UserServiceHandler extends BijectionsChunkJson
     )
   }
 
-
   def apply[U <: User](sessionActions: SessionActions[U], userActions: UserActions[U])(implicit w: SessionWriter[U]): AsyncHttpService[ByteChunk] =
     path("/api") {
       path("/session/v1") {
@@ -111,7 +110,7 @@ object UserServiceHandler extends BijectionsChunkJson
             )
           }
         } ~
-        path("/(?<user>[^/]*)") {
+        path("/'id") {
          // path("/login") {
          //   jvalue {
          //     respond(
