@@ -5,7 +5,7 @@ import akka.dispatch.Future
 import blueeyes.core.service.{AsyncHttpService, HttpService, HttpServiceHandler, HttpRequestHandlerCombinators}
 import blueeyes.core.http.MimeTypes._
 import blueeyes.core.http.{HttpRequest, HttpResponse, HttpStatus}
-import blueeyes.core.data.{ByteChunk, BijectionsChunkJson, BijectionsChunkFutureJson}
+import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson, BijectionsChunkFutureJson}
 import blueeyes.json.JsonAST.{JNothing, JValue}
 import blueeyes.json.JsonDSL._
 import bigtop.json.{JsonImplicits, JsonWriter, JsonFormatters}
@@ -27,6 +27,12 @@ object UserServiceHandler extends BijectionsChunkJson
     with ProblemWriters
     with JsonFormatters
 {
+  def getId(req: HttpRequest[_]) =
+    for {
+      id   <- req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("id")).fv
+      uuid <- Uuid.parse(id).fv.mapFailure(msg => Problems.Client.malformedArgument(id, "Not a valid UUID")).fv
+    } yield uuid
+
   def getUser(req: HttpRequest[Future[JValue]]) =
     req.parameters.get('user).toSuccess[Problem](Problems.Client.missingArgument("username")).fv
 
@@ -37,8 +43,8 @@ object UserServiceHandler extends BijectionsChunkJson
       none = Problems.Client.emptyRequest.fail[T].fv
     )
 
-  def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,T]])
-                (implicit w: JsonWriter[T]):
+  def respond[B](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,B]])
+                (implicit w: JsonWriter[B]):
                   HttpService[Future[JValue], Future[HttpResponse[JValue]]] = {
     (req: HttpRequest[Future[JValue]]) => f(req).fold (
       failure = _.toResponse,
@@ -50,79 +56,42 @@ object UserServiceHandler extends BijectionsChunkJson
     implicit val log = Logger.get
 
     path("/api") {
-      path("/session/v1") {
-        // Create a session:
-        //
-        //  username x password -> session
-        jvalue {
-          (req: HttpRequest[Future[JValue]]) =>
-            val session =
-              for {
-                json     <- getContent(req)
-                username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
-                password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
-                result   <- sessionActions.create(username, password)
-              } yield result
-
-            session fold (
-              failure = f => f.toResponse,
-              success = s => HttpResponse(content = Some(s.toJson))
-            )
-        } ~
-        path("/'id") {
-          produce(application/json) {
-            (req: HttpRequest[ByteChunk]) =>
-              println("In /session/v1/'id")
-              val result =
+      SyncService[ByteChunk, ByteChunk] (
+        name = "Session",
+        prefix = "/session/v1",
+        create =
+          jvalue[ByteChunk] {
+            respond (
+              (req: HttpRequest[Future[JValue]]) =>
                 for {
-                  id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => Problems.Client.noSession)
-                } yield HttpResponse[JValue](
-                  content = Some(
-                    ("typename" -> "session") ~
-                    ("id"       -> id.toJson) ~
-                    ("username" -> "dave") ~
-                    ("name"     -> "Joe Bloggs")
-                  )
-                )
-
-              result fold (
-                failure = e => e.toResponse,
-                success = x => x
-              )
-          }
-        } ~
-        path("/set") { req: HttpRequest[ByteChunk] =>
-          println("In /session/v1/set")
-          Future(HttpResponse[ByteChunk]())
-        } ~
-        path("/delete") { req: HttpRequest[ByteChunk] =>
-          println("In /session/v1/delete")
-          Future(HttpResponse[ByteChunk]())
-        } ~
-        path ("/valid") { req: HttpRequest[ByteChunk] =>
-          println("In /session/v1/valid")
-          Future(HttpResponse[ByteChunk]())
-        } ~
-        // Create a session:
-        //
-        //  username x password -> session
-        jvalue {
-          (req: HttpRequest[Future[JValue]]) =>
-            println("In /session/v1")
-            val session =
-              for {
-                json     <- getContent(req)
-                username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
-                password <- json./[Problem,String]("password", Problems.Client.missingArgument("password") + ("JSON is " + json)).fv
-                result   <- sessionActions.create(username, password)
-              } yield result
-
-            session fold (
-              failure = f => f.toResponse,
-              success = s => HttpResponse(content = Some(s.toJson))
+                  json     <- getContent(req)
+                  username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
+                  password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                  result   <- sessionActions.create(username, password)
+                } yield result
             )
-        }
-      } ~
+          },
+        read =
+          /*produce(application/json)*/ jvalue {
+            respond (
+              req =>
+                for {
+                  id      <- getId(req)
+                  session <- sessionActions.read(id)
+                } yield session
+            )
+          },
+        update =
+          { req: HttpRequest[ByteChunk] =>
+            println("In /session/v1/set")
+           Future(HttpResponse[ByteChunk]())
+         },
+        delete =
+          { req: HttpRequest[ByteChunk] =>
+            println("In /session/v1/delete")
+           Future(HttpResponse[ByteChunk]())
+         }
+      ) ~
       SyncService(
         name = "User",
         prefix = "/user/v1",
@@ -133,7 +102,7 @@ object UserServiceHandler extends BijectionsChunkJson
                 for {
                   data <- getContent(req)
                   user <- userActions.create(data)
-                  } yield userActions.core.serializer.write(user)
+                } yield userActions.core.serializer.write(user)
             )
           },
         read =
@@ -142,9 +111,9 @@ object UserServiceHandler extends BijectionsChunkJson
               req =>
                 for {
                   name <- getUser(req)
-                    json <- getContent(req)
-                    pwd  <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
-                    user <- userActions.login(name, pwd)
+                  json <- getContent(req)
+                  pwd  <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                  user <- userActions.login(name, pwd)
                 } yield userActions.core.serializer.write(user)
             )
           },
@@ -156,7 +125,7 @@ object UserServiceHandler extends BijectionsChunkJson
                   name <- getUser(req)
                   data <- getContent(req)
                   _    <- userActions.update(name, data)
-                  } yield JNothing: JValue
+                } yield JNothing: JValue
               }
             )
           },

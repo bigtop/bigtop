@@ -46,8 +46,8 @@ trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
 
   def read(data: JValue) =
     for {
-      username <- data./[Problem,String]("username", Client.missingArgument("username!!"))
-      password <- data./[Problem,String]("password", Client.missingArgument("password!!"))
+      username <- data./[Problem,String]("username", Client.missingArgument("username"))
+      password <- data./[Problem,String]("password", Client.missingArgument("password"))
     } yield SimpleUser(username, Password.fromPassword(password))
 }
 
@@ -56,8 +56,8 @@ trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
 
   def read(data: JValue) =
     for {
-      username <- data./[Problem,String]("username", Client.missingArgument("username!!!"))
-      password <- data./[Problem,String]("password", Client.missingArgument("password!!!"))
+      username <- data./[Problem,String]("username", Client.missingArgument("username"))
+      password <- data./[Problem,String]("password", Client.missingArgument("password"))
     } yield SimpleUser(username, Password.fromHash(password))
 }
 
