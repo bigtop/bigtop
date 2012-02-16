@@ -52,11 +52,11 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     ans
   }
 
-  "/user/v1/new" should {
+  "/api/user/v1/new" should {
 
     "return new user given username and password" in initialized {
       val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
-      val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
+      val f = service.contentType[JValue](application/json).post("/api/user/v1/new")(body)
       val response = getValue(f)
 
       response must beOk
@@ -66,7 +66,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
     "return error given bad input" in {
       //initialise
       val body: JValue = ("froobarname" -> "noel") ~ ("password" -> "secret")
-      val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
+      val f = service.contentType[JValue](application/json).post("/api/user/v1/new")(body)
       val response = getValue(f)
 
       response must beBadRequest(Client.missingArgument("username"))
@@ -82,7 +82,7 @@ class SimpleUserServiceSpec extends BlueEyesServiceSpecification
           actions.create(body)
       }
 
-      val f = service.contentType[JValue](application/json).post("/user/v1/new")(body)
+      val f = service.contentType[JValue](application/json).post("/api/user/v1/new")(body)
       val response = getValue(f)
 
       response must beBadRequest(Client.exists("user"))

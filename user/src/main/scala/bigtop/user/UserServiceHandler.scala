@@ -52,6 +52,7 @@ object UserServiceHandler extends BijectionsChunkJson
         path("/'id") {
           produce(application/json) {
             (req: HttpRequest[ByteChunk]) =>
+              println("In /session/v1/'id")
               val result =
                 for {
                   id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => Problems.Client.noSession)
@@ -71,12 +72,15 @@ object UserServiceHandler extends BijectionsChunkJson
           }
         } ~
         path("/set") { req: HttpRequest[ByteChunk] =>
+          println("In /session/v1/set")
           Future(HttpResponse[ByteChunk]())
         } ~
         path("/delete") { req: HttpRequest[ByteChunk] =>
+          println("In /session/v1/delete")
           Future(HttpResponse[ByteChunk]())
         } ~
         path ("/valid") { req: HttpRequest[ByteChunk] =>
+          println("In /session/v1/valid")
           Future(HttpResponse[ByteChunk]())
         } ~
         // Create a session:
@@ -84,11 +88,12 @@ object UserServiceHandler extends BijectionsChunkJson
         //  username x password -> session
         jvalue {
           (req: HttpRequest[Future[JValue]]) =>
+            println("In /session/v1")
             val session =
               for {
                 json     <- getContent(req)
                 username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
-                password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                password <- json./[Problem,String]("password", Problems.Client.missingArgument("password") + ("JSON is " + json)).fv
                 result   <- sessionActions.create(username, password)
               } yield result
 
@@ -102,11 +107,13 @@ object UserServiceHandler extends BijectionsChunkJson
         path("/new") {
           jvalue {
             respond(
-              req =>
+              req => {
+                println("In /user/v1/new")
                 for {
                   data <- getContent(req)
                   user <- userActions.create(data)
                 } yield userActions.core.serializer.write(user)
+              }
             )
           }
         } ~
@@ -127,23 +134,27 @@ object UserServiceHandler extends BijectionsChunkJson
           path("/update") {
             jvalue {
               respond(
-                req =>
+                req => {
+                  println("In /user/v1/'id/update")
                   for {
                     name <- getUser(req)
                     data <- getContent(req)
                       _    <- userActions.update(name, data)
                   } yield JNothing: JValue
+                }
               )
             }
           } ~
           path("/delete") {
             jvalue {
               respond(
-                req =>
+                req => {
+                  println("In /user/v1/'id/delete")
                   for {
                     name <- getUser(req)
                       _    <- userActions.delete(name)
                   } yield JNothing: JValue
+                }
               )
             }
           }

@@ -37,12 +37,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
     }
   """
 
-  lazy val mongoConfig = rootConfig.configMap("services.user.v1.mongo")
-  lazy val mongoFacade = mongo(mongoConfig)
-  lazy val database = mongoFacade.database("user")
-
-  val userConfig = SimpleUserActionsConfig(mongoConfig, mongoFacade)
-  val userActions = new SimpleUserActions(userConfig)
+  val userActions = new SimpleUserActions(rootConfig.configMap("services.user.v1"))
 
   def await[A](f: Future[A]) =
     Await.result(f, Duration("3s"))
