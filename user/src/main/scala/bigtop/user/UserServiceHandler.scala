@@ -28,13 +28,13 @@ object UserServiceHandler extends BijectionsChunkJson
 {
 
   def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('user).toSuccess[Problem](Problems.Client.NoUser).fv
+    req.parameters.get('user).toSuccess[Problem](Problems.Client.missingArgument("username")).fv
 
   /** Get content as JSON and transform to future validation */
   def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
     request.content.fold(
       some = _.map(_.success[Problem]).fv,
-      none = (Problems.Client.NoContent : Problem).fail[T].fv
+      none = Problems.Client.emptyRequest.fail[T].fv
     )
 
   def respond[T](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,T]])
@@ -55,7 +55,7 @@ object UserServiceHandler extends BijectionsChunkJson
             (req: HttpRequest[ByteChunk]) =>
               val result =
                 for {
-                  id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => Problems.Client.NoSession)
+                  id <- Uuid.parse(req.parameters('id)).fv.mapFailure(msg => Problems.Client.noSession)
                 } yield HttpResponse[JValue](
                   content = Some(
                     ("typename" -> "session") ~
@@ -88,8 +88,8 @@ object UserServiceHandler extends BijectionsChunkJson
             val session =
               for {
                 json     <- getContent(req)
-                username <- json./[Problem,String]("username", Problems.Client.NoUser).fv
-                password <- json./[Problem,String]("password", Problems.Client.NoPassword).fv
+                username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
+                password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
                 result   <- sessionActions.create(username, password)
               } yield result
 
