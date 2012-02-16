@@ -51,6 +51,24 @@ object UserServiceHandler extends BijectionsChunkJson
 
     path("/api") {
       path("/session/v1") {
+        // Create a session:
+        //
+        //  username x password -> session
+        jvalue {
+          (req: HttpRequest[Future[JValue]]) =>
+            val session =
+              for {
+                json     <- getContent(req)
+                username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
+                password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                result   <- sessionActions.create(username, password)
+              } yield result
+
+            session fold (
+              failure = f => f.toResponse,
+              success = s => HttpResponse(content = Some(s.toJson))
+            )
+        } ~
         path("/'id") {
           produce(application/json) {
             (req: HttpRequest[ByteChunk]) =>
