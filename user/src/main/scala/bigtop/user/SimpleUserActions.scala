@@ -53,7 +53,7 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser]
     f foreach { v => ans.success(mapper(v).success[Problem]) }
     f recover { case e =>
       ans.success {
-        (ServerProblem + e.getMessage).fail[S]
+        ServerProblem(e.getMessage).fail[S]
       }
     }
 
