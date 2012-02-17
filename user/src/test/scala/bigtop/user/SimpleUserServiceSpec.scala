@@ -8,7 +8,7 @@ import bigtop.util._
 import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
-// import blueeyes.core.http.MimeTypes._
+import blueeyes.core.http._
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST._
 import blueeyes.persistence.mongo.ConfigurableMongo
@@ -34,11 +34,6 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
   lazy val mongoFacade = mongo(mongoConfig)
   lazy val database = mongoFacade.database("user")
 
-  def initialized[T](f: => T) = {
-    database(remove.from("users"))
-    f
-  }
-
   def createUser(username: String, password: String): String = {
     val json: JValue =
       doPost("/api/user/v1") {
@@ -53,6 +48,15 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
     }
   }
 
+  def deleteUser(username: String): Unit = {
+    val response: HttpResponse[JValue] =
+      doDelete("/api/user/v1/%s".format(username))
+
+    if(response.status.code != HttpStatusCodes.OK.code) {
+      sys.error("Could not delete test user '%s'".format(username))
+    }
+  }
+
   def login(username: String, password: String): Uuid = {
     val json: JValue =
       doPost("/api/session/v1") {
@@ -61,6 +65,13 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
       }.content.get
 
     Uuid((json \ "id" --> classOf[JString]).value)
+  }
+
+  def initialized[T](f: => T) = {
+    database(remove.from("users"))
+    deleteUser("dave")
+    deleteUser("noel")
+    f
   }
 
   "POST /api/user/v1 (create user)" should {
@@ -108,9 +119,8 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
     "fail to lookup another user" in initialized {
       createUser("dave", "supersecret")
 
-      doGet("/api/user/v1/noel") must beOk {
-        ("typename" -> "simpleuser") ~
-        ("username" -> "noel")
+      doGet("/api/user/v1/noel") must beProblem {
+        Client.notFound("user")
       }
     }
   }
@@ -125,8 +135,11 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
       } must beOk(beLike[JValue] {
         case json =>
           (json \ "typename") mustEqual JString("session")
-          (json \ "session")  mustEqual "FOO"
-          (json \ "user")     mustEqual "BAR"
+          (json \ "session")  mustEqual JObject(Nil)
+          (json \ "user")     mustEqual {
+            ("typename" -> "simpleuser") ~
+            ("username" -> "dave")
+          }
           (json \ "password") mustEqual JNothing
       })
     }
@@ -135,7 +148,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
       createUser("dave", "supersecret")
 
       // Log in with their password:
-      doPost("/api/sessionv1") {
+      doPost("/api/session/v1") {
         ("username" -> "noel") ~
         ("password" -> "supersecret")
       } must beProblem {
@@ -180,7 +193,12 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
 
       doGet("/api/session/v1/%s".format(sessionId)) must beOk {
         ("typename" -> "session") ~
-        ("username" -> "dave")
+        ("id" -> sessionId.toString) ~
+        ("session" -> JObject.empty) ~
+        ("user" -> {
+          ("typename" -> "simpleuser") ~
+          ("username" -> "dave")
+        })
       }
     }
   }

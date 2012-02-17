@@ -6,7 +6,7 @@ import blueeyes.core.service.{AsyncHttpService, HttpService, HttpServiceHandler,
 import blueeyes.core.http.MimeTypes._
 import blueeyes.core.http.{HttpRequest, HttpResponse, HttpStatus}
 import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson, BijectionsChunkFutureJson}
-import blueeyes.json.JsonAST.{JNothing, JValue}
+import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import bigtop.json.{JsonImplicits, JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
@@ -55,90 +55,84 @@ object UserServiceHandler extends BijectionsChunkJson
   def apply[U <: User](sessionActions: SessionActions[U], userActions: UserActions[U])(implicit w: SessionWriter[U]): AsyncHttpService[ByteChunk] = {
     implicit val log = Logger.get
 
-    path("/api") {
-      SyncService[ByteChunk, ByteChunk] (
-        name = "Session",
-        prefix = "/session/v1",
-        create =
-          jvalue[ByteChunk] {
-            respond (
-              (req: HttpRequest[Future[JValue]]) =>
-                for {
-                  json     <- getContent(req)
-                  username <- json.mandatory[String]("username").fv
-                  password <- json.mandatory[String]("password").fv
-                  result   <- sessionActions.create(username, password)
-                } yield result
-            )
-          },
-        read =
-          jvalue {
-            respond (
-              req =>
-                for {
-                  id      <- getId(req)
-                  session <- sessionActions.read(id)
-                } yield session
-            )
-          },
-        update =
-          { req: HttpRequest[ByteChunk] =>
-           Future(HttpResponse[ByteChunk]())
-         },
-        delete =
-          { req: HttpRequest[ByteChunk] =>
-           Future(HttpResponse[ByteChunk]())
-         }
-      ) ~
-      SyncService(
-        name = "User",
-        prefix = "/user/v1",
-        create =
-          jvalue {
-            respond(
-              req =>
-                for {
-                  data <- getContent(req)
-                  user <- userActions.create(data)
-                } yield userActions.core.serializer.write(user)
-            )
-          },
-        read =
-          jvalue {
-            respond(
-              req =>
-                for {
-                  name <- getUser(req)
-                  json <- getContent(req)
-                  pwd  <- json.mandatory[String]("password").fv
-                  user <- userActions.login(name, pwd)
-                } yield userActions.core.serializer.write(user)
-            )
-          },
-        update =
-          jvalue {
-            respond(
-              req => {
-                for {
-                  name <- getUser(req)
-                  data <- getContent(req)
-                  _    <- userActions.update(name, data)
-                } yield JNothing: JValue
-              }
-            )
-          },
-        delete =
-          jvalue {
-            respond(
-              req => {
-                for {
-                  name <- getUser(req)
-                  _    <- userActions.delete(name)
-                } yield JNothing: JValue
-              }
-            )
+    SyncService[ByteChunk, ByteChunk] (
+      name = "Session",
+      prefix = "/api/session/v1",
+      create =
+        jvalue[ByteChunk] {
+          respond {
+            (req: HttpRequest[Future[JValue]]) =>
+              for {
+                json     <- getContent(req)
+                username <- json.mandatory[String]("username").fv
+                password <- json.mandatory[String]("password").fv
+                result   <- sessionActions.create(username, password)
+              } yield result
           }
-      )
-    }
+        },
+      read =
+        jvalue {
+          respond (
+            req =>
+              for {
+                id      <- getId(req)
+                session <- sessionActions.read(id)
+              } yield session
+          )
+        },
+      update = {
+        req: HttpRequest[ByteChunk] =>
+          Future(HttpResponse[ByteChunk]())
+      },
+      delete = {
+        req: HttpRequest[ByteChunk] =>
+          Future(HttpResponse[ByteChunk]())
+      }
+    ) ~
+    SyncService(
+      name = "User",
+      prefix = "/api/user/v1",
+      create =
+        jvalue {
+          respond {
+            req =>
+              for {
+                data <- getContent(req)
+                user <- userActions.create(data)
+              } yield userActions.core.serializer.write(user)
+          }
+        },
+      read =
+        jvalue {
+          respond {
+            req =>
+              for {
+                name <- getUser(req)
+                user <- userActions.read(name)
+              } yield userActions.core.serializer.write(user)
+          }
+        },
+      update =
+        jvalue {
+          respond {
+            req =>
+              for {
+                name <- getUser(req)
+                data <- getContent(req)
+                _    <- userActions.update(name, data)
+              } yield ("status" -> "ok"): JValue
+          }
+        },
+      delete =
+        jvalue {
+          respond {
+            req =>
+              for {
+                name <- getUser(req)
+                _    <- userActions.delete(name)
+              } yield ("status" -> "ok"): JValue
+          }
+        }
+    )
   }
 }
