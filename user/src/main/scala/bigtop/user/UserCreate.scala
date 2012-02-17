@@ -8,7 +8,7 @@ import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import scalaz.Validation
+import scalaz.{Success, Failure, Validation}
 import scalaz.syntax.validation._
 
 trait UserCreate[U <: User] extends UserTypes[U] {
@@ -18,7 +18,12 @@ trait UserCreate[U <: User] extends UserTypes[U] {
   def create(data: JValue): UserValidation =
     for {
       unsavedUser <- core.serializer.read(data).fv
-      savedUser   <- core.store.read(unsavedUser.username).invert.mapFailure(_ => Client.exists("user")).flatMap(_ => core.store.create(unsavedUser))
+      savedUser   <- core.store.read(unsavedUser.username).invert.mapFailure {
+        f => Client.exists("user")
+      } flatMap {
+        p => core.store.create(unsavedUser)
+      }
+
     } yield savedUser
 
 }

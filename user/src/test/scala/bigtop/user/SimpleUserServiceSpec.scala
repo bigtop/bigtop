@@ -10,39 +10,27 @@ import blueeyes.json.JsonAST.JValue
 import blueeyes.persistence.mongo.ConfigurableMongo
 import blueeyes.core.http.MimeTypes._
 import bigtop.util.ResponseMatchers
+import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
+import scalaz.syntax.validation._
 
 class SimpleUserServiceSpec extends UserServiceSpecification
     with SimpleUserService
     with ConfigurableMongo
+    with FutureImplicits
 {
   import ProblemWriters._
   import ResponseMatchers._
-
-  override def configuration = """
-    services {
-      user {
-        v1 {
-          mongo {
-            servers = ["localhost"]
-            database = "user"
-            collection = ["users"]
-         }
-        }
-      }
-    }
-  """
-
 
   def getValue[A](f: Future[A]) = {
     val ans = Await.result(f, Duration("3s"))
     ans
   }
 
-  "/api/user/v1/" should {
+  "/api/user/v1 (create)" should {
 
-    "return new user given username and password" in initialized {
+   "return new user given username and password" in initialized {
       val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
       val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
       val response = getValue(f)
@@ -61,7 +49,6 @@ class SimpleUserServiceSpec extends UserServiceSpecification
     }
 
     "refuse to allow an existing user to be created" in initialized {
-      //initialise
       val body: JValue = ("username" -> "dave") ~ ("password" -> "supersecret")
       val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
       val response = getValue(f)
@@ -71,7 +58,21 @@ class SimpleUserServiceSpec extends UserServiceSpecification
 
   }
 
-  "/api/session/v1/ (login)" should {
+  "/api/user/v1/id (read)" should {
+
+    "return preexisting user" in initialized {
+      val f = service.contentType(application/json).get[JValue]("/api/user/v1/dave")
+      val response = getValue(f)
+      println(response)
+      // Note: this test fails because the user service is expecting a password in the body. GET requests don't have a body, and authentication should be done via a sesison anyway. Need to think more about the semantics of this.
+      response must beOk
+
+      response.content must beSome(("typename" -> "simpleuser") ~ ("username" -> "dave"))
+    }
+
+  }
+
+  "/api/session/v1 (login)" should {
 
     "return existing user given username and password" in initialized {
       val f = service.contentType(application/json).post[JValue]("/api/session/v1") {
@@ -81,11 +82,13 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       val response = getValue(f)
 
       response must beOk
-
-/*      val json = response.content.get
+/*
+      val json = response.content.get
       json.mandatory[String]("typename", Client.missingArgument("typename")) must beSuccess("session")
       json.mandatory[JValue]("session", Client.noSession) must beSuccess(JObject(List()))
-      json.mandatory[JValue]("user", Client.missingArgument("user")) must beSuccess(("typename" -> "user"))*/
+      json.mandatory[JValue]("user", Client.missingArgument("user")) must beSuccess(("typename" -> "user"))
+      Check password is missing
+*/
     }
 
     "return error given incorrect username" in initialized {
