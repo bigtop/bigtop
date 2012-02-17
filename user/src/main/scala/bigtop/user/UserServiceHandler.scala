@@ -34,7 +34,7 @@ object UserServiceHandler extends BijectionsChunkJson
     } yield uuid
 
   def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('user).toSuccess[Problem](Problems.Client.missingArgument("username")).fv
+    req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("username")).fv
 
   /** Get content as JSON and transform to future validation */
   def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
@@ -83,12 +83,10 @@ object UserServiceHandler extends BijectionsChunkJson
           },
         update =
           { req: HttpRequest[ByteChunk] =>
-            println("In /session/v1/set")
            Future(HttpResponse[ByteChunk]())
          },
         delete =
           { req: HttpRequest[ByteChunk] =>
-            println("In /session/v1/delete")
            Future(HttpResponse[ByteChunk]())
          }
       ) ~
@@ -133,7 +131,6 @@ object UserServiceHandler extends BijectionsChunkJson
           jvalue {
             respond(
               req => {
-                println("In /user/v1/'id/delete")
                 for {
                   name <- getUser(req)
                   _    <- userActions.delete(name)

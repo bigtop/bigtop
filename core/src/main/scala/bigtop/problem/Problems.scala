@@ -44,6 +44,10 @@ object Problems extends ProblemImplicits {
     def malformedArgument(argument: String, description: String): Problem =
       ClientProblem("malformedArgument", "argument" -> argument, "description" -> description)
 
+    /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
+    def loginIncorrect: Problem =
+      ClientProblem("loginIncorrect")
+
     def customProblem(messageType: String, args: (String, String) *): Problem =
       ClientProblem(messageType, args : _*)
   }
