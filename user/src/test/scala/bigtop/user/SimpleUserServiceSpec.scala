@@ -47,7 +47,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
       val response = getValue(f)
 
-      response must beBadRequest(Client.missingArgument("username"))
+      response must beProblem(Client.missingArgument("username"))
     }
 
     "refuse to allow an existing user to be created" in initialized {
@@ -55,7 +55,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
       val response = getValue(f)
 
-      response must beBadRequest(Client.exists("user"))
+      response must beProblem(Client.exists("user"))
     }
 
   }
@@ -98,7 +98,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       }
       val response = getValue(f)
 
-      response must beBadRequest(Client.loginIncorrect)
+      response must beProblem(Client.loginIncorrect)
     }
 
     "return error given incorrect username" in initialized {
@@ -107,7 +107,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       }
       val response = getValue(f)
 
-      response must beBadRequest(Client.loginIncorrect)
+      response must beProblem(Client.loginIncorrect)
     }
 
     "return error when missing username" in initialized {
@@ -116,7 +116,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       }
       val response = getValue(f)
 
-      response must beBadRequest(Client.missingArgument("username"))
+      response must beProblem(Client.missingArgument("username"))
     }
 
     "return error when missing password" in initialized {
@@ -125,7 +125,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       }
       val response = getValue(f)
 
-      response must beBadRequest(Client.missingArgument("password"))
+      response must beProblem(Client.missingArgument("password"))
     }
 
   }
