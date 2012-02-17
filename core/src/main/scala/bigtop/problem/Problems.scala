@@ -41,7 +41,7 @@ object Problems extends ProblemImplicits {
 
     /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
     def loginIncorrect: Problem =
-      ClientProblem + Message("loginIncorrect")
+      ClientProblem("loginIncorrect")
 
     def customProblem(messageType: String, args: (String, String) *): Problem =
       ClientProblem(messageType, args : _*)

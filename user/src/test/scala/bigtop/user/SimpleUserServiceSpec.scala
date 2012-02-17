@@ -6,19 +6,21 @@ import akka.util.Duration
 import akka.util.duration._
 import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.json.JsonDSL._
-import blueeyes.json.JsonAST.JValue
+import blueeyes.json.JsonAST._
 import blueeyes.persistence.mongo.ConfigurableMongo
 import blueeyes.core.http.MimeTypes._
 import bigtop.util.ResponseMatchers
 import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
+import bigtop.json.JsonImplicits
 import scalaz.syntax.validation._
 
 class SimpleUserServiceSpec extends UserServiceSpecification
     with SimpleUserService
     with ConfigurableMongo
     with FutureImplicits
+    with JsonImplicits
 {
   import ProblemWriters._
   import ResponseMatchers._
@@ -74,7 +76,7 @@ class SimpleUserServiceSpec extends UserServiceSpecification
 
   "/api/session/v1 (login)" should {
 
-    "return existing user given username and password" in initialized {
+    "return existing user given username and password" in  {
       val f = service.contentType(application/json).post[JValue]("/api/session/v1") {
         testUser
       }
@@ -82,13 +84,12 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       val response = getValue(f)
 
       response must beOk
-/*
-      val json = response.content.get
-      json.mandatory[String]("typename", Client.missingArgument("typename")) must beSuccess("session")
-      json.mandatory[JValue]("session", Client.noSession) must beSuccess(JObject(List()))
-      json.mandatory[JValue]("user", Client.missingArgument("user")) must beSuccess(("typename" -> "user"))
-      Check password is missing
-*/
+
+      val content = response.content.getOrElse(JNothing)
+      content.mandatory[String]("typename") must beSuccess(be_==("session"))
+      content \? "session" must beSome(JObject(List()) : JValue)
+      content \? "user"    must beSome("typename" -> "user")
+      content \? "password" must beNone
     }
 
     "return error given incorrect username" in initialized {
