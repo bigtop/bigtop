@@ -39,6 +39,10 @@ object Problems {
     def malformedArgument(argument: String, description: String) =
       ClientProblem + Message("malformedArgument", Seq("argument" -> argument, "description" -> description))
 
+    /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
+    def loginIncorrect =
+      ClientProblem + Message("loginIncorrect")
+
     def customProblem(messageType: String, args: (String, String) *) =
       ClientProblem + Message(messageType, args)
   }

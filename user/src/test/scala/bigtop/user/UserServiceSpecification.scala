@@ -7,6 +7,8 @@ import bigtop.concurrent.FutureImplicits
 import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.persistence.mongo.ConfigurableMongo
 import blueeyes.concurrent.test.FutureMatchers
+import blueeyes.json.JsonAST._
+import blueeyes.json.JsonDSL._
 
 trait UserServiceSpecification extends BlueEyesServiceSpecification
     with ConfigurableMongo
@@ -36,8 +38,12 @@ trait UserServiceSpecification extends BlueEyesServiceSpecification
   lazy val mongoFacade = mongo(mongoConfig)
   lazy val database = mongoFacade.database("user")
 
+  val testUser: JObject = ("username" -> "dave") ~ ("password" -> "supersecret")
+  val testUserId = "dave"
+
   def initialize() {
     database(remove.from("users"))
+    database(insert(testUser).into("users"))
   }
 
   def initialized[T](f: => T) = {

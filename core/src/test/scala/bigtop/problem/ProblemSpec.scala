@@ -32,9 +32,9 @@ class ProblemSpec extends Specification {
 
     "work with a string pair" in {
       val problem0 = ClientProblem
-      val problem1 = problem0 + ("name", "Dave was here")
-      val problem2 = problem1 + ("name", "Noel was here")
-      problem2.messages mustEqual Seq(Message("name", "Dave was here"), Message("name", "Noel was here"))
+      val problem1 = problem0 + ("name", ("hero" -> "Dave was here"))
+      val problem2 = problem1 + ("name", ("hero" -> "Noel was here"))
+      problem2.messages mustEqual Seq(Message("name", Seq(("hero" -> "Dave was here"))), Message("name", Seq(("hero" -> "Noel was here"))))
     }
   }
 

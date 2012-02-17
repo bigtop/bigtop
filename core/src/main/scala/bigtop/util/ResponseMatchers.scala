@@ -15,10 +15,7 @@ trait ResponseMatchers extends MustMatchers
   def beOk: Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, _, _) =>
-        if(status == HttpStatus(OK))
-          ok
-        else
-          ko
+        status mustEqual HttpStatus(OK)
     }
 
   def beBadRequest(expected: Problem): Matcher[HttpResponse[JValue]] =

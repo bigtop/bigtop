@@ -60,20 +60,68 @@ class SimpleUserServiceSpec extends UserServiceSpecification
       response must beBadRequest(Client.missingArgument("username"))
     }
 
-    "refuse to allow an existing user to be created" in {
+    "refuse to allow an existing user to be created" in initialized {
       //initialise
-      val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
-
-      // Create the user
-      userActions map {
-        actions =>
-          actions.create(body)
-      }
-
+      val body: JValue = ("username" -> "dave") ~ ("password" -> "supersecret")
       val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
       val response = getValue(f)
 
       response must beBadRequest(Client.exists("user"))
+    }
+
+  }
+
+  "/api/session/v1/ (login)" should {
+
+    "return existing user given username and password" in initialized {
+      val f = service.contentType(application/json).post[JValue]("/api/session/v1") {
+        testUser
+      }
+
+      val response = getValue(f)
+
+      response must beOk
+
+/*      val json = response.content.get
+      json.mandatory[String]("typename", Client.missingArgument("typename")) must beSuccess("session")
+      json.mandatory[JValue]("session", Client.noSession) must beSuccess(JObject(List()))
+      json.mandatory[JValue]("user", Client.missingArgument("user")) must beSuccess(("typename" -> "user"))*/
+    }
+
+    "return error given incorrect username" in initialized {
+      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
+        ("username" -> "foo") ~ ("password" -> "supersecret")
+      }
+      val response = getValue(f)
+
+      response must beBadRequest(Client.loginIncorrect)
+    }
+
+    "return error given incorrect username" in initialized {
+      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
+        ("username" -> "dave") ~ ("password" -> "superwrong")
+      }
+      val response = getValue(f)
+
+      response must beBadRequest(Client.loginIncorrect)
+    }
+
+    "return error when missing username" in initialized {
+      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
+        ("password" -> "superwrong")
+      }
+      val response = getValue(f)
+
+      response must beBadRequest(Client.missingArgument("username"))
+    }
+
+    "return error when missing password" in initialized {
+      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
+        ("username" -> "dave")
+      }
+      val response = getValue(f)
+
+      response must beBadRequest(Client.missingArgument("password"))
     }
 
   }
