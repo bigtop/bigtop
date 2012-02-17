@@ -30,7 +30,7 @@ object UserServiceHandler extends BijectionsChunkJson
   def getId(req: HttpRequest[_]) =
     for {
       id   <- req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("id")).fv
-      uuid <- Uuid.parse(id).fv.mapFailure(msg => Problems.Client.malformedArgument(id, "Not a valid UUID")).fv
+      uuid <- Uuid.parse(id).toSuccess(Problems.Client.malformedArgument(id, "expected uuid, found " + id)).fv
     } yield uuid
 
   def getUser(req: HttpRequest[Future[JValue]]) =
@@ -65,8 +65,8 @@ object UserServiceHandler extends BijectionsChunkJson
               (req: HttpRequest[Future[JValue]]) =>
                 for {
                   json     <- getContent(req)
-                  username <- json./[Problem,String]("username", Problems.Client.missingArgument("username")).fv
-                  password <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                  username <- json.mandatory[String]("username").fv
+                  password <- json.mandatory[String]("password").fv
                   result   <- sessionActions.create(username, password)
                 } yield result
             )
@@ -110,7 +110,7 @@ object UserServiceHandler extends BijectionsChunkJson
                 for {
                   name <- getUser(req)
                   json <- getContent(req)
-                  pwd  <- json./[Problem,String]("password", Problems.Client.missingArgument("password")).fv
+                  pwd  <- json.mandatory[String]("password").fv
                   user <- userActions.login(name, pwd)
                 } yield userActions.core.serializer.write(user)
             )

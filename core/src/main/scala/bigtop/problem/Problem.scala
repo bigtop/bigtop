@@ -8,79 +8,82 @@ import bigtop.json.JsonWriter
 import scalaz._
 import scalaz.Scalaz._
 
-case class Problem(
-    val problemType: Problem.ProblemType,
-    val messages: Seq[Problem.Message] = Seq()
-  ) {
+sealed trait Problem {
+  val status: HttpStatusCode
+
+  def messages: Seq[Problem.Message]
 
   import Problem._
 
-  def ++(that: Problem): Problem =
-    Problem(this.problemType + that.problemType, this.messages ++ that.messages)
+  def and(that: Problem): Problem
 
-  def +(messageType: String): Problem =
-    this + Message(messageType)
+  def and(messageType: String): Problem =
+    this.and(Message(messageType))
 
-  def +(messageType: String, args: (String, String) *): Problem =
-    this + Message(messageType, args)
+  def and(messageType: String, args: (String, String) *): Problem =
+    this.and(Message(messageType, args))
 
-  def +(msg: Problem.Message): Problem =
-    this.copy(messages =this.messages ++ Seq(msg))
+  def and(msg: Problem.Message): Problem
 
   def toJson(implicit writer: JsonWriter[Problem]): JValue =
     writer.write(this)
 
   def toResponse(implicit writer: JsonWriter[Problem]): HttpResponse[JValue] =
-    HttpResponse[JValue](status = this.problemType.status, content = Some(this.toJson))
+    HttpResponse[JValue](status = this.status, content = Some(this.toJson))
 }
 
 object Problem extends ProblemImplicits {
-  trait ProblemType {
-    val name: String
-    val status: HttpStatusCode
-    def +(that: ProblemType): ProblemType
-  }
-
-  object ProblemType {
-    case object Client extends ProblemType {
-      val name = "client"
-      val status = HttpStatusCodes.BadRequest
-      def +(that: ProblemType) = that // server problems outweigh client ones
-    }
-
-    case object Server extends ProblemType {
-      val name = "server"
-      val status = HttpStatusCodes.InternalServerError
-      def +(that: ProblemType) = this // server problems outweigh client ones
-    }
-  }
-
-  val wildcardKey = "*"
-
   case class Message(val messageType: String, val args: Seq[(String, String)] = Seq())
-
 }
 
-object ServerProblem extends Problem(Problem.ProblemType.Server)
-object ClientProblem extends Problem(Problem.ProblemType.Client)
+final case class ServerProblem(val messages: Seq[Problem.Message]) extends Problem {
+  val status = HttpStatusCodes.InternalServerError
+
+  def and(that: Problem): Problem =
+    ServerProblem(this.messages ++ that.messages)
+
+  def and(msg: Problem.Message) =
+    this.copy(messages = this.messages ++ Seq(msg))
+}
+
+object ServerProblem extends ProblemImplicits {
+  import Problem.Message
+
+  def apply(msg: String, args: (String, String) *): Problem =
+    apply(Message(msg, args))
+
+  def apply(msg: Message): Problem =
+    apply(Seq(msg))
+}
+
+final case class ClientProblem(val messages: Seq[Problem.Message]) extends Problem {
+  val status = HttpStatusCodes.BadRequest
+
+  def and(that: Problem): Problem =
+    that match {
+      case ServerProblem(_) => ServerProblem(this.messages ++ that.messages)
+      case ClientProblem(_) => ClientProblem(this.messages ++ that.messages)
+    }
+
+  def and(msg: Problem.Message): Problem =
+    this.copy(messages = this.messages ++ Seq(msg))
+}
+
+object ClientProblem extends ProblemImplicits {
+  import Problem.Message
+
+  def apply(msg: String, args: (String, String) *): Problem =
+    apply(Message(msg, args))
+
+  def apply(msg: Message): ClientProblem =
+    apply(Seq(msg))
+}
 
 trait ProblemImplicits {
   import Problem._
 
-  // implicit def stringToMessage(messageType: String) =
-  //   Message(messageType, Seq())
-
-  implicit def messageToProblem(msg: Message) =
-    ClientProblem + msg
-
-  implicit def ProblemTypeSemigroup =
-    new Semigroup[ProblemType] {
-      def append(a: ProblemType, b: => ProblemType): ProblemType = a + b
-    }
-
   implicit def ProblemSemigroup =
     new Semigroup[Problem] {
-      def append(a: Problem, b: => Problem): Problem = a ++ b
+      def append(a: Problem, b: => Problem): Problem = a and b
     }
 }
-

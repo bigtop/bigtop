@@ -18,10 +18,10 @@ object Uuid {
   def create() =
     Uuid(java.util.UUID.randomUUID.toString)
 
-  def parse(name: String): Validation[String, Uuid] =
+  def parse(name: String): Option[Uuid] =
     name match {
-      case UuidRegex() => Uuid(name).success[String]
-      case _               => (name+" is not a valid UUID").fail[Uuid]
+      case UuidRegex() => Some(Uuid(name))
+      case _           => None
     }
 
 }

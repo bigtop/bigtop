@@ -9,7 +9,7 @@ trait ProblemWriters {
 
   def problemToJValue(problem: Problem) =
     ("typename" -> "problem") ~
-    ("subtype"  -> problem.problemType.name) ~
+    ("subtype"  -> problem.status.value) ~
     ("messages" -> problem.messages.map(messageToJValue _))
 
   def messageToJValue(message: Problem.Message) =
