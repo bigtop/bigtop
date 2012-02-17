@@ -72,7 +72,7 @@ object UserServiceHandler extends BijectionsChunkJson
             )
           },
         read =
-          /*produce(application/json)*/ jvalue {
+          jvalue {
             respond (
               req =>
                 for {

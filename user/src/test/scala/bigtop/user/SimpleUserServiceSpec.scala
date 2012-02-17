@@ -4,130 +4,185 @@ package user
 import akka.dispatch.{Await, Future}
 import akka.util.Duration
 import akka.util.duration._
-import blueeyes.core.service.test.BlueEyesServiceSpecification
-import blueeyes.json.JsonDSL._
-import blueeyes.json.JsonAST._
-import blueeyes.persistence.mongo.ConfigurableMongo
-import blueeyes.core.http.MimeTypes._
-import bigtop.util.ResponseMatchers
+import bigtop.util._
 import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
-import bigtop.json.JsonImplicits
-import scalaz.syntax.validation._
+// import blueeyes.core.http.MimeTypes._
+import blueeyes.json.JsonDSL._
+import blueeyes.json.JsonAST._
+import blueeyes.persistence.mongo.ConfigurableMongo
+// import scalaz.syntax.validation._
 
-class SimpleUserServiceSpec extends UserServiceSpecification
-    with SimpleUserService
-    with ConfigurableMongo
-    with FutureImplicits
-    with JsonImplicits
-{
-  import ProblemWriters._
-  import ResponseMatchers._
+class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with ConfigurableMongo {
 
-  def getValue[A](f: Future[A]) = {
-    val ans = Await.result(f, Duration("3s"))
-    ans
+  override def configuration = """
+    services {
+      user {
+        v1 {
+          mongo {
+            servers = ["localhost"]
+            database = "user"
+            collection = ["users"]
+         }
+        }
+      }
+    }
+  """
+
+  lazy val mongoConfig = rootConfig.configMap("services.user.v1")
+  lazy val mongoFacade = mongo(mongoConfig)
+  lazy val database = mongoFacade.database("user")
+
+  def initialized[T](f: => T) = {
+    database(remove.from("users"))
+    f
   }
 
-  "/api/user/v1 (create)" should {
+  def createUser(username: String, password: String): String = {
+    val json: JValue =
+      doPost("/api/user/v1") {
+        ("username" -> username) ~
+        ("password" -> password)
+      }.content.get
 
-   "return new user given username and password" in initialized {
-      val body: JValue = ("username" -> "noel") ~ ("password" -> "secret")
-      val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
-      val response = getValue(f)
+    try {
+      (json \ "username" --> classOf[JString]).value
+    } catch {
+      case _ => sys.error("Could not create test user '%s'. Response: %s".format(username, jsonString(json)))
+    }
+  }
 
-      response must beOk
-      response.content must beSome(("typename" -> "simpleuser") ~ ("username" -> "noel"))
+  def login(username: String, password: String): Uuid = {
+    val json: JValue =
+      doPost("/api/session/v1") {
+        ("username" -> username) ~
+        ("password" -> password)
+      }.content.get
+
+    Uuid((json \ "id" --> classOf[JString]).value)
+  }
+
+  "POST /api/user/v1 (create user)" should {
+    "return new user given username and password" in initialized {
+      doPost("/api/user/v1") {
+        ("username" -> "noel") ~
+        ("password" -> "secret")
+      } must beOk {
+        ("typename" -> "simpleuser") ~
+        ("username" -> "noel")
+      }
     }
 
-    "return error given bad input" in {
-      //initialise
-      val body: JValue = ("froobarname" -> "noel") ~ ("password" -> "secret")
-      val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
-      val response = getValue(f)
-
-      response must beBadRequest(Client.missingArgument("username"))
+    "return error given bad input" in initialized {
+      doPost("/api/user/v1") {
+        ("froobarname" -> "noel") ~
+        ("password" -> "secret")
+      } must beProblem {
+        Client.missingArgument("username")
+      }
     }
 
     "refuse to allow an existing user to be created" in initialized {
-      val body: JValue = ("username" -> "dave") ~ ("password" -> "supersecret")
-      val f = service.contentType[JValue](application/json).post("/api/user/v1")(body)
-      val response = getValue(f)
+      createUser("dave", "supersecret")
 
-      response must beBadRequest(Client.exists("user"))
+      doPost("/api/user/v1") {
+        ("username" -> "dave") ~
+        ("password" -> "supersecret")
+      } must beProblem {
+        Client.exists("user")
+      }
     }
-
   }
 
-  "/api/user/v1/id (read)" should {
-
+  "GET /api/user/v1/'id (read user)" should {
     "return preexisting user" in initialized {
-      val f = service.contentType(application/json).get[JValue]("/api/user/v1/dave")
-      val response = getValue(f)
-      println(response)
-      // Note: this test fails because the user service is expecting a password in the body. GET requests don't have a body, and authentication should be done via a sesison anyway. Need to think more about the semantics of this.
-      response must beOk
+      createUser("dave", "supersecret")
 
-      response.content must beSome(("typename" -> "simpleuser") ~ ("username" -> "dave"))
+      doGet("/api/user/v1/dave") must beOk {
+        ("typename" -> "simpleuser") ~
+        ("username" -> "dave")
+      }
     }
 
+    "fail to lookup another user" in initialized {
+      createUser("dave", "supersecret")
+
+      doGet("/api/user/v1/noel") must beOk {
+        ("typename" -> "simpleuser") ~
+        ("username" -> "noel")
+      }
+    }
   }
 
-  "/api/session/v1 (login)" should {
+  "POST /api/session/v1 (create session, aka login)" should {
+    "return existing user given username and password" in initialized {
+      createUser("dave", "supersecret")
 
-    "return existing user given username and password" in  {
-      val f = service.contentType(application/json).post[JValue]("/api/session/v1") {
-        testUser
-      }
-
-      val response = getValue(f)
-
-      response must beOk
-
-      val content = response.content.getOrElse(JNothing)
-      content.mandatory[String]("typename") must beSuccess(be_==("session"))
-      content \? "session" must beSome(JObject(List()) : JValue)
-      content \? "user"    must beSome("typename" -> "user")
-      content \? "password" must beNone
+      doPost("/api/session/v1") {
+        ("username" -> "dave") ~
+        ("password" -> "supersecret")
+      } must beOk(beLike[JValue] {
+        case json =>
+          (json \ "typename") mustEqual JString("session")
+          (json \ "session")  mustEqual "FOO"
+          (json \ "user")     mustEqual "BAR"
+          (json \ "password") mustEqual JNothing
+      })
     }
 
     "return error given incorrect username" in initialized {
-      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
-        ("username" -> "foo") ~ ("password" -> "supersecret")
-      }
-      val response = getValue(f)
+      createUser("dave", "supersecret")
 
-      response must beBadRequest(Client.loginIncorrect)
+      // Log in with their password:
+      doPost("/api/sessionv1") {
+        ("username" -> "noel") ~
+        ("password" -> "supersecret")
+      } must beProblem {
+        Client.loginIncorrect
+      }
     }
 
     "return error given incorrect username" in initialized {
-      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
-        ("username" -> "dave") ~ ("password" -> "superwrong")
-      }
-      val response = getValue(f)
+      createUser("dave", "supersecret")
 
-      response must beBadRequest(Client.loginIncorrect)
+      // Log in with their username:
+      doPost("/api/session/v1") {
+        ("username" -> "dave") ~
+        ("password" -> "superwrong")
+      } must beProblem {
+        Client.loginIncorrect
+      }
     }
 
     "return error when missing username" in initialized {
-      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
-        ("password" -> "superwrong")
+      doPost("/api/session/v1") {
+        ("password" -> "secret")
+      } must beProblem {
+        Client.missingArgument("username")
       }
-      val response = getValue(f)
-
-      response must beBadRequest(Client.missingArgument("username"))
     }
 
     "return error when missing password" in initialized {
-      val f = service.contentType(application/json).post[JValue]("/api/session/v1"){
+      doPost("/api/session/v1") {
+        ("username" -> "dave")
+      } must beProblem {
+        Client.missingArgument("password")
+      }
+    }
+  }
+
+  "GET /api/session/v1/'id (read session, aka re-authenticate)" should {
+    "return a preexisting session" in initialized {
+      createUser("dave", "supersecret")
+
+      val sessionId = login("dave", "supersecret")
+
+      doGet("/api/session/v1/%s".format(sessionId)) must beOk {
+        ("typename" -> "session") ~
         ("username" -> "dave")
       }
-      val response = getValue(f)
-
-      response must beBadRequest(Client.missingArgument("password"))
     }
-
   }
 
 }

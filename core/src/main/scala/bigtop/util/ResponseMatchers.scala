@@ -14,31 +14,41 @@ trait ResponseMatchers extends MustMatchers
 
   def beOk: Matcher[HttpResponse[JValue]] =
     beLike {
-      case HttpResponse(status, _, _, _) =>
-        status.code aka "The response status" mustEqual OK
+      case HttpResponse(status, _, Some(content), _) =>
+        status.code aka jsonString(content) mustEqual OK
     }
 
   def beOk(expected: JValue): Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, Some(content), _) =>
-        status.code aka "The response status" mustEqual OK
-        content aka "The response content" mustEqual expected
+        (jsonString(content) mustEqual jsonString(expected)) and
+        (status.code mustEqual OK)
     }
 
   def beOk(beExpected: Matcher[JValue]): Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, Some(content), _) =>
-        status.code aka "The response status" mustEqual OK
-        content aka "The response content" must beExpected
+        (content aka jsonString(content) must beExpected) and
+        (status.code mustEqual OK)
     }
 
   def beProblem(expected: Problem): Matcher[HttpResponse[JValue]] =
     beLike {
-      case HttpResponse(status, _, content, _) =>
-        val expectedResponse = expected.toResponse
-        status.code aka "The response status" mustEqual expectedResponse.status.code
-        content aka "The response content" mustEqual expectedResponse.content
+      case HttpResponse(status, _, Some(content), _) =>
+        (jsonString(content) mustEqual jsonString(expected.toJson)) and
+        (status.code mustEqual expected.status.code)
     }
+
+  def jsonDesc(json: JValue, prefix: String = "") =
+    (ignored: String) => prefix + jsonString(json)
+
+  def jsonString(desc: String, json: JValue): String =
+    desc + ": " + jsonString(json)
+
+  def jsonString(json: JValue): String = {
+    import blueeyes.json.Printer._
+    compact(render(json))
+  }
 
 }
 
