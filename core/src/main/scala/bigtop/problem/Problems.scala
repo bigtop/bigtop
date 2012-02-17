@@ -6,6 +6,11 @@ package problem
 object Problems extends ProblemImplicits {
   import Problem._
 
+  object Server {
+    val databaseError: Problem =
+      ServerProblem("databaseError")
+  }
+
   object Client {
     /** The client has no session. */
     val noSession: Problem =

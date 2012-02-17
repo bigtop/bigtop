@@ -8,7 +8,7 @@ import bigtop.json.JsonWriter
 import scalaz._
 import scalaz.Scalaz._
 
-sealed trait Problem {
+sealed trait Problem extends ProblemWriters {
   val status: HttpStatusCode
 
   def messages: Seq[Problem.Message]
@@ -25,10 +25,10 @@ sealed trait Problem {
 
   def and(msg: Problem.Message): Problem
 
-  def toJson(implicit writer: JsonWriter[Problem]): JValue =
-    writer.write(this)
+  def toJson: JValue =
+    problemToJValue(this)
 
-  def toResponse(implicit writer: JsonWriter[Problem]): HttpResponse[JValue] =
+  def toResponse: HttpResponse[JValue] =
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
 }
 

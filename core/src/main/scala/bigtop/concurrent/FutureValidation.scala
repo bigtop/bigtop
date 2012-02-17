@@ -22,7 +22,7 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
         )
       })
 
-  def fold[T](failure: (F) => T, success: (S) => T): Future[T] =
+  def fold[T](failure: (F) => T = identity[F] _, success: (S) => T = identity[S] _): Future[T] =
     inner map { validation => validation fold (failure = failure, success = success) }
 
   def mapFailure[G](f: F => G): FutureValidation[G, S] =
