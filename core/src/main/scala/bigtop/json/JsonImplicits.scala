@@ -38,13 +38,13 @@ trait JsonImplicits {
   implicit def buildUuid(json: JValue): Validation[Problem,Uuid] =
     json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("uuid", json))
 
-  implicit def buildInteger(json: JValue): Validation[Problem,Int] =
+  implicit def buildIntr(json: JValue): Validation[Problem,Int] =
     json -->? classOf[JInt] map (_.value.intValue) toSuccess (malformed("int", json))
 
   implicit def buildDouble(json: JValue): Validation[Problem,Double] =
     json -->? classOf[JDouble] map (_.value) toSuccess (malformed("double", json))
 
-  implicit def buildTime(json: JValue): Validation[Problem,DateTime] =
+  implicit def buildDateTime(json: JValue): Validation[Problem,DateTime] =
     json -->? classOf[JString] map (_.value) toSuccess (malformed("time", json)) flatMap (Iso8601Format.read(_)) match {
       case Failure(msg) => (malformed("time", json)).fail
       case Success(s)   => s.success
