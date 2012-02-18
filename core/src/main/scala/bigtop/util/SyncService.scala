@@ -71,11 +71,6 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
       LoggingService(name, kind, log, in)
 
     path(prefix) {
-      path("/search") {
-        post {
-          logAndProcess("search", search)
-        }
-      } ~
       path("/'id") {
         get {
           logAndProcess("read", read)
@@ -86,6 +81,9 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
         this.delete {
           logAndProcess("delete", delete)
         }
+      } ~
+      get {
+        logAndProcess("search", search)
       } ~
       post {
         logAndProcess("create", create)

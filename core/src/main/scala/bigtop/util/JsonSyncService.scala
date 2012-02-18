@@ -30,30 +30,13 @@ object JsonSyncService extends HttpRequestHandlerCombinators
   type Outer = HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]
 
   def apply(
-    name: String,
-    prefix: String,
-    create : Inner,
-    read   : Inner,
-    update : Inner,
-    delete : Inner
-  )(implicit log: Logger): Outer = JsonSyncService(
-    name   = name,
-    prefix = prefix,
-    create = create,
-    read   = read,
-    update = update,
-    delete = delete,
-    search = read
-  )(log)
-
-  def apply(
     name   : String,
     prefix : String,
-    create : Inner,
-    read   : Inner,
-    update : Inner,
-    delete : Inner,
-    search : Inner
+    create : Inner = dummyHandler("create"),
+    read   : Inner = dummyHandler("read"),
+    update : Inner = dummyHandler("update"),
+    delete : Inner = dummyHandler("delete"),
+    search : Inner = dummyHandler("search")
   )(implicit log: Logger) : Outer = SyncService(
     name   = name,
     prefix = prefix,
@@ -61,8 +44,22 @@ object JsonSyncService extends HttpRequestHandlerCombinators
     read   = jsonOut(read),
     update = jvalue(update),
     delete = jsonOut(delete),
-    search = jvalue(search)
+    search = jsonOut(search)
   )
+
+  def dummyHandler(action: String): Inner =
+    service {
+      (req: HttpRequest[Future[JValue]]) =>
+        for {
+          json <- req.content.getOrElse(Future(JNull))
+        } yield {
+          HttpResponse(content = Some(
+            ("model" -> "channel") ~
+            ("action" -> action) ~
+            ("request" -> json)
+          ))
+        }
+    }
 
   def jsonOut(inner: Inner): Outer =
     new CustomHttpService[ByteChunk,Future[HttpResponse[ByteChunk]]] {
@@ -78,8 +75,12 @@ object JsonSyncService extends HttpRequestHandlerCombinators
                 Future(Problems.Client.malformedRequest.toResponse).success[NotServed]
             }
 
-          innerRes.map { futureResponse =>
-            futureResponse.map(res => res.copy(content = res.content.map(json => JValueToChunk.apply(json))))
+          innerRes.map {
+            futureResponse =>
+              futureResponse.map {
+                res =>
+                  res.copy(content = res.content.map(json => JValueToChunk.apply(json)))
+              }
           }
         }
     }
