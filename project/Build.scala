@@ -27,6 +27,7 @@ object BigtopBuild extends Build {
   lazy val redisclient   = "net.debasishg"           %% "redisclient"     % "2.4.2"
   lazy val twitterUtil   = "com.twitter"             %% "util-collection" % "1.12.12"
   lazy val jodaTime      = "joda-time"               %  "joda-time"       % "2.0"
+  lazy val jodaConvert   = "org.joda"                %  "joda-convert"    % "1.2"
 
   val blueeyesSettings = Seq(
     resolvers := bigtopResolvers,
@@ -79,7 +80,7 @@ object BigtopBuild extends Build {
     blueeyesSettings ++
     Seq(
       version := bigtopVersion,
-      libraryDependencies ++= Seq(specs2, jbCrypt, jodaTime)
+      libraryDependencies ++= Seq(specs2, jbCrypt, jodaTime, jodaConvert)
     ) : _*
   )
 
