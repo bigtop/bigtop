@@ -1,13 +1,14 @@
 package bigtop
 package json
 
-import bigtop.util.Uuid
+import bigtop.util.{Uuid, Iso8601Format}
 import bigtop.problem._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz._
 import scalaz.syntax.validation._
 import scalaz.std.option.optionSyntax._
+import org.joda.time.DateTime
 
 /** A "wide" (i.e. pimped) JSON value */
 case class JValueW(json: JValue) {
@@ -42,6 +43,12 @@ trait JsonImplicits {
 
   implicit def buildDouble(json: JValue): Validation[Problem,Double] =
     json -->? classOf[JDouble] map (_.value) toSuccess (malformed("double", json))
+
+  implicit def buildTime(json: JValue): Validation[Problem,DateTime] =
+    json -->? classOf[JString] map (_.value) toSuccess (malformed("time", json)) flatMap (Iso8601Format.read(_)) match {
+      case Failure(msg) => (malformed("time", json)).fail
+      case Success(s)   => s.success
+    }
 
   implicit def buildArray[A](builder: JValue => A)(json: JValue): Validation[Problem,Seq[A]] =
     json -->? classOf[JArray] map (_.elements.map(builder)) toSuccess (malformed("array", json))

@@ -20,12 +20,13 @@ object BigtopBuild extends Build {
   lazy val blueeyesCore  = "com.reportgrid"          %% "blueeyes-core"   % "0.6.0-SNAPSHOT"
   lazy val blueeyesMongo = "com.reportgrid"          %% "blueeyes-mongo"  % "0.6.0-SNAPSHOT"
   lazy val blueeyesJson  = "com.reportgrid"          %% "blueeyes-json"   % "0.6.0-SNAPSHOT"
-  lazy val specs2        = "org.specs2"              %% "specs2"          % "1.8-SNAPSHOT"
+  lazy val specs2        = "org.specs2"              %% "specs2"          % "1.8.1"
   lazy val scalacheck    = "org.scala-tools.testing" %% "scalacheck"      % "1.9"
   lazy val configgy      = "net.lag"                 %  "configgy"        % "2.0.0"
   lazy val jbCrypt       = "org.mindrot"             %  "jbcrypt"         % "0.3m"
   lazy val redisclient   = "net.debasishg"           %% "redisclient"     % "2.4.2"
   lazy val twitterUtil   = "com.twitter"             %% "util-collection" % "1.12.12"
+  lazy val jodaTime      = "joda-time"               %  "joda-time"       % "2.0"
 
   val blueeyesSettings = Seq(
     resolvers := bigtopResolvers,
@@ -78,7 +79,7 @@ object BigtopBuild extends Build {
     blueeyesSettings ++
     Seq(
       version := bigtopVersion,
-      libraryDependencies ++= Seq(specs2, jbCrypt)
+      libraryDependencies ++= Seq(specs2, jbCrypt, jodaTime)
     ) : _*
   )
 
