@@ -40,17 +40,42 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
   type FR[B] = Future[HttpResponse[B]]
   type HS[A,B] = HttpService[A, FR[B]]
 
-  def apply[A,B](name: String,
-                 prefix: String,
-                 create : HS[A,B],
-                 read   : HS[A,B],
-                 update : HS[A,B],
-                 delete : HS[A,B])(implicit log: Logger) : HS[A,B] = {
+  def apply[A,B](
+    name: String,
+    prefix: String,
+    create : HS[A,B],
+    read   : HS[A,B],
+    update : HS[A,B],
+    delete : HS[A,B]
+  )(implicit log: Logger): HS[A,B] = apply(
+    name   = name,
+    prefix = prefix,
+    create = create,
+    read   = read,
+    update = update,
+    delete = delete,
+    search = read
+  )(log)
+
+  def apply[A,B](
+    name: String,
+    prefix: String,
+    create : HS[A,B],
+    read   : HS[A,B],
+    update : HS[A,B],
+    delete : HS[A,B],
+    search : HS[A,B]
+  )(implicit log: Logger) : HS[A,B] = {
 
     def logAndProcess(kind: String, in: HS[A,B]): HS[A,B] =
       LoggingService(name, kind, log, in)
 
     path(prefix) {
+      path("/search") {
+        post {
+          logAndProcess("search", search)
+        }
+      } ~
       path("/'id") {
         get {
           logAndProcess("read", read)
@@ -62,19 +87,17 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
           logAndProcess("delete", delete)
         }
       } ~
-      get {
-        logAndProcess("read", read)
-      } ~
       post {
         logAndProcess("create", create)
       } ~
-      logAndProcess("not found",
-                    service {
-                      (req: HttpRequest[A]) =>
-                        log.info(name + " received request which didn't match any handler " + req)
-                        Promise successful HttpResponse[B](status = HttpStatus(NotFound))
-                    }
-                  )
+      logAndProcess(
+        "not found",
+        service {
+          (req: HttpRequest[A]) =>
+            log.info(name + " received request which didn't match any handler " + req)
+            Promise successful HttpResponse[B](status = HttpStatus(NotFound))
+        }
+      )
     }
 
   }

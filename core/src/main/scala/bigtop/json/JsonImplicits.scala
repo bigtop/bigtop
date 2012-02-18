@@ -16,6 +16,12 @@ case class JValueW(json: JValue) {
   def mandatory[T](name: String)(implicit builder: JValue => Validation[Problem,T]): Validation[Problem,T] =
     (json \? name).toSuccess(Client.missingArgument(name)).flatMap(builder)
 
+  def optional[T](name: String)(implicit builder: JValue => Validation[Problem,T]): Validation[Problem,Option[T]] =
+    (json \? name) match {
+      case Some(json) => builder(json).map(Some(_))
+      case None       => (None : Option[T]).success[Problem]
+    }
+
   def optional[T](name: String, default: T)(implicit builder: JValue => Validation[Problem,T]): Validation[Problem,T] =
     (json \? name).map(builder).getOrElse(default.success)
 }

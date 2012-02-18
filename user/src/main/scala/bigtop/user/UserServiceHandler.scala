@@ -34,7 +34,7 @@ object UserServiceHandler extends BijectionsChunkJson
     } yield uuid
 
   def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("username")).fv
+    req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("id")).fv
 
   /** Get content as JSON and transform to future validation */
   def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =

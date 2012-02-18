@@ -36,6 +36,10 @@ object Problems extends ProblemImplicits {
     val emptyRequest: Problem =
       ClientProblem("emptyRequest")
 
+    /** The client supplied bad JSON. */
+    val malformedRequest: Problem =
+      ClientProblem("malformedRequest")
+
     /** The client supplied a request with a missing argument. */
     def missingArgument(argument: String): Problem =
       ClientProblem("missingArgument", "argument" -> argument)
