@@ -20,14 +20,15 @@ import blueeyes.persistence.mongo.ConfigurableMongo
 import scalaz._
 
 trait JsonServiceSpec extends BlueEyesServiceSpecification
-  with BijectionsChunkFutureJson
-  with BijectionsChunkJson
-  with ResponseMatchers
-  with ValidationMatchers
-  with FutureImplicits
-  with FutureMatchers
-  with JsonImplicits {
-
+    with BijectionsChunkFutureJson
+    with BijectionsChunkJson
+    with ResponseMatchers
+    with ValidationMatchers
+    with FutureImplicits
+    with FutureMatchers
+    with JsonFormatters
+    with JsonImplicits
+{
   case class FutureW[A](val f: Future[A]) {
     def await: A =
       Await.result(f, Duration("3s"))
