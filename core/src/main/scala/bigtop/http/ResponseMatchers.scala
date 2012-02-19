@@ -1,5 +1,5 @@
 package bigtop
-package util
+package http
 
 import blueeyes.json.JsonAST.JValue
 import blueeyes.core.http.{HttpStatus, HttpResponse, MimeTypes}

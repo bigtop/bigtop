@@ -1,5 +1,5 @@
 package bigtop
-package util
+package http
 
 import akka.dispatch.{Future, Promise}
 import bigtop.problem.Problems
@@ -61,7 +61,7 @@ object JsonSyncService extends HttpRequestHandlerCombinators
         }
     }
 
-  def jsonOut(inner: Inner): Outer =
+  def jsonOut(inner: Inner)(implicit log: Logger): Outer =
     new CustomHttpService[ByteChunk,Future[HttpResponse[ByteChunk]]] {
       val metadata = None
 

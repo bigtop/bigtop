@@ -8,10 +8,11 @@ import blueeyes.core.http.{HttpRequest, HttpResponse, HttpStatus}
 import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson, BijectionsChunkFutureJson}
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
+import bigtop.http.JsonSyncService
 import bigtop.json.{JsonImplicits, JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
 import bigtop.problem.{Problem, Problems, ProblemWriters}
-import bigtop.util.{SyncService, Uuid}
+import bigtop.util.Uuid
 import net.lag.logging.Logger
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
@@ -55,83 +56,63 @@ object UserServiceHandler extends BijectionsChunkJson
   def apply[U <: User](sessionActions: SessionActions[U], userActions: UserActions[U])(implicit w: SessionWriter[U]): AsyncHttpService[ByteChunk] = {
     implicit val log = Logger.get
 
-    SyncService[ByteChunk, ByteChunk] (
+    JsonSyncService(
       name = "Session",
       prefix = "/api/session/v1",
       create =
-        jvalue[ByteChunk] {
-          respond {
-            (req: HttpRequest[Future[JValue]]) =>
-              for {
-                json     <- getContent(req)
-                username <- json.mandatory[String]("username").fv
-                password <- json.mandatory[String]("password").fv
-                result   <- sessionActions.create(username, password)
-              } yield result
-          }
+        respond {
+          (req: HttpRequest[Future[JValue]]) =>
+            for {
+              json     <- getContent(req)
+              username <- json.mandatory[String]("username").fv
+              password <- json.mandatory[String]("password").fv
+              result   <- sessionActions.create(username, password)
+            } yield result
         },
       read =
-        jvalue {
-          respond (
-            req =>
-              for {
-                id      <- getId(req)
-                session <- sessionActions.read(id)
-              } yield session
-          )
-        },
-      update = {
-        req: HttpRequest[ByteChunk] =>
-          Future(HttpResponse[ByteChunk]())
-      },
-      delete = {
-        req: HttpRequest[ByteChunk] =>
-          Future(HttpResponse[ByteChunk]())
-      }
+        respond {
+          req =>
+            for {
+              id      <- getId(req)
+              session <- sessionActions.read(id)
+            } yield session
+        }
     ) ~
-    SyncService(
+    JsonSyncService(
       name = "User",
       prefix = "/api/user/v1",
       create =
-        jvalue {
-          respond {
-            req =>
-              for {
-                data <- getContent(req)
-                user <- userActions.create(data)
-              } yield userActions.core.serializer.write(user)
-          }
+        respond {
+          req =>
+            for {
+              data <- getContent(req)
+              user <- userActions.create(data)
+            } yield userActions.core.serializer.write(user)
         },
       read =
-        jvalue {
-          respond {
-            req =>
-              for {
-                name <- getUser(req)
-                user <- userActions.read(name)
-              } yield userActions.core.serializer.write(user)
-          }
+        respond {
+          req =>
+            for {
+              name <- getUser(req)
+              user <- userActions.read(name)
+            } yield userActions.core.serializer.write(user)
         },
       update =
-        jvalue {
-          respond {
-            req =>
-              for {
-                name <- getUser(req)
-                data <- getContent(req)
-                _    <- userActions.update(name, data)
-              } yield ("status" -> "ok"): JValue
-          }
+        respond {
+          req =>
+            for {
+              name <- getUser(req)
+              data <- getContent(req)
+              _    <- userActions.update(name, data)
+            } yield ("status" -> "ok"): JValue
         },
       delete =
-        jvalue {
-          respond {
-            req =>
-              for {
-                name <- getUser(req)
-                _    <- userActions.delete(name)
-              } yield ("status" -> "ok"): JValue
-          }
+        respond {
+          req =>
+            for {
+              name <- getUser(req)
+              _    <- userActions.delete(name)
+            } yield ("status" -> "ok"): JValue
         }
     )
   }

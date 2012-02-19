@@ -1,5 +1,5 @@
 package bigtop
-package util
+package http
 
 import akka.dispatch.{Await, Future}
 import akka.util.Duration
