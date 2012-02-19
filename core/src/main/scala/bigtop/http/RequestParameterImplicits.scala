@@ -45,7 +45,7 @@ trait RequestParameterImplicits {
 
   implicit def buildDateTime(str: String): Validation[Problem,DateTime] =
     Iso8601Format.read(str).bimap(
-      f = str => malformed("ISO8601 date-time (%s)".format(Iso8601Format.formatString), str),
+      f = str => malformed("ISO8601 date-time (%s)".format(Iso8601Format.millisFormatString), str),
       g = dt => dt
     )
 

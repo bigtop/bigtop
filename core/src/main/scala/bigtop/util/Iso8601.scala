@@ -10,22 +10,29 @@ import scalaz.syntax.validation._
 trait Iso8601Format extends Format[String,DateTime,String] {
 
   /** ISO8601 date/time format. */
-  val formatString = "yyyy-MM-dd'T'HH:mm:ssZ"
+  val millisFormatString = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+  val secondsFormatString = "yyyy-MM-dd'T'HH:mm:ssZ"
 
   /** ISO8601 date/time format. */
-  val format = DateTimeFormat.forPattern(formatString)
+  val millisFormat = DateTimeFormat.forPattern(millisFormatString)
+  val secondsFormat = DateTimeFormat.forPattern(secondsFormatString)
 
-  /** Quick ISO8601-compatible calendar-to-string conversion. */
+  /** Quick ISO8601-compatible timestamp-to-string conversion. */
   def write(time: DateTime): String =
-    format.print(time)
+    millisFormat.print(time)
 
-  /** Quick ISO8601-compatible string-to-calendar conversion. */
+  /** Quick ISO8601-compatible string-to-timestamp conversion. */
   def read(str: String): Validation[String,DateTime] =
     try {
-      format.parseDateTime(str).success
+      millisFormat.parseDateTime(str).success
     } catch {
       case exn: IllegalArgumentException =>
-        ("Not a valid ISO-8601 date (%s): %s".format(formatString, str)).fail
+        try {
+          secondsFormat.parseDateTime(str).success
+        } catch {
+          case exn: IllegalArgumentException =>
+            ("Not a valid ISO-8601 date (%s): %s".format(millisFormatString, str)).fail
+        }
     }
 
 }
