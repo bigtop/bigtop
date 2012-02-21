@@ -60,23 +60,9 @@ object UserServiceHandler extends BijectionsChunkJson
       name = "Session",
       prefix = "/api/session/v1",
       create =
-        respond {
-          (req: HttpRequest[Future[JValue]]) =>
-            for {
-              json     <- getContent(req)
-              username <- json.mandatory[String]("username").fv
-              password <- json.mandatory[String]("password").fv
-              result   <- sessionActions.create(username, password)
-            } yield result
-        },
+        ,
       read =
-        respond {
-          req =>
-            for {
-              id      <- getId(req)
-              session <- sessionActions.read(id)
-            } yield session
-        }
+
     ) ~
     JsonSyncService(
       name = "User",

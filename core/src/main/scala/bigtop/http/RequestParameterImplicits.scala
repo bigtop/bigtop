@@ -9,9 +9,11 @@ import scalaz.syntax.validation._
 import scalaz.std.option.optionSyntax._
 import org.joda.time.DateTime
 
-/** A "wide" (i.e. pimped) JSON value */
-case class HttpRequestW[Content](request: HttpRequest[Content]) {
+/** A "wide" (i.e. pimped) HttpRequest value */
+trait HttpRequestW[Content] {
   import Problems._
+
+  val request: HttpRequest[Content]
 
   def mandatoryParam[T](name: Symbol)(implicit builder: String => Validation[Problem,T]): Validation[Problem,T] =
     request.parameters.get(name).toSuccess(Client.missingArgument(name.name)).flatMap(builder)
@@ -29,7 +31,10 @@ case class HttpRequestW[Content](request: HttpRequest[Content]) {
 trait RequestParameterImplicits {
   import Problems._
 
-  implicit def httpRequestToHttp[T](req: HttpRequest[T]): HttpRequestW[T] = HttpRequestW(req)
+  implicit def httpRequestToHttp[T](req: HttpRequest[T]): HttpRequestW[T] =
+    new HttpRequestW {
+      val request = req
+    }
 
   implicit def buildString(str: String): Validation[Problem,String] =
     str.success[Problem]
