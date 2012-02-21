@@ -5,6 +5,7 @@ import akka.dispatch.{Await, Future}
 import akka.util.Duration
 import akka.util.duration._
 import bigtop.util._
+import bigtop.http._
 import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
