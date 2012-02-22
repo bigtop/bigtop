@@ -19,7 +19,8 @@ import scalaz.syntax.validation._
 /**
  * Implement a service that responds to Backbone Sync's URL expectations using JSON content.
  */
-object JsonSyncService extends HttpRequestHandlerCombinators
+object JsonSyncService extends JsonRequestHandlerCombinators
+    with HttpRequestHandlerCombinators
     with BijectionsChunkFutureJson
     with BijectionsChunkJson
     with BijectionsChunkString
@@ -40,11 +41,11 @@ object JsonSyncService extends HttpRequestHandlerCombinators
   )(implicit log: Logger) : Outer = SyncService(
     name   = name,
     prefix = prefix,
-    create = jvalue(create),
-    read   = jsonOut(read),
-    update = jvalue(update),
-    delete = jsonOut(delete),
-    search = jsonOut(search)
+    create = json(create),
+    read   = json(read),
+    update = json(update),
+    delete = json(delete),
+    search = json(search)
   )
 
   def dummyHandler(action: String): Inner =
@@ -61,27 +62,4 @@ object JsonSyncService extends HttpRequestHandlerCombinators
         }
     }
 
-  def jsonOut(inner: Inner)(implicit log: Logger): Outer =
-    new CustomHttpService[ByteChunk,Future[HttpResponse[ByteChunk]]] {
-      val metadata = None
-
-      val service: HttpRequest[ByteChunk] => Validation[NotServed,Future[HttpResponse[ByteChunk]]] =
-        (req: HttpRequest[ByteChunk]) => {
-          val innerRes: Validation[NotServed,Future[HttpResponse[JValue]]] =
-            try {
-              inner.service(req.copy(content = req.content.map(chunk => chunkToFutureJValue()(chunk))))
-            } catch {
-              case exn: JsonParser.ParseException =>
-                Future(Problems.Client.malformedRequest.toResponse).success[NotServed]
-            }
-
-          innerRes.map {
-            futureResponse =>
-              futureResponse.map {
-                res =>
-                  res.copy(content = res.content.map(json => JValueToChunk.apply(json)))
-              }
-          }
-        }
-    }
 }

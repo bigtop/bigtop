@@ -32,7 +32,7 @@ trait RequestParameterImplicits {
   import Problems._
 
   implicit def httpRequestToHttp[T](req: HttpRequest[T]): HttpRequestW[T] =
-    new HttpRequestW {
+    new HttpRequestW[T] {
       val request = req
     }
 
