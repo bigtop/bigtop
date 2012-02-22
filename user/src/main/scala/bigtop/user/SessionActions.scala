@@ -16,10 +16,13 @@ import scala.collection.mutable.HashMap
 trait SessionActions[U <: User] extends SessionCreate[U]
     with SessionRead[U]
 
-
-trait SessionCreate[U <: User] extends UserTypes[U] {
+trait SessionAction[U <: User] extends UserTypes[U] {
 
   def core: SessionCore[U]
+
+}
+
+trait SessionCreate[U <: User] extends SessionAction[U] {
 
   def userActions: UserActions[U]
 
@@ -35,10 +38,7 @@ trait SessionCreate[U <: User] extends UserTypes[U] {
 
 }
 
-
-trait SessionRead[U <: User] extends UserTypes[U] {
-
-  def core: SessionCore[U]
+trait SessionRead[U <: User] extends SessionAction[U] {
 
   def read(id: Uuid): SessionValidation =
     core.store.read(id)

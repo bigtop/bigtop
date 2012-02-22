@@ -53,16 +53,14 @@ object UserServiceHandler extends BijectionsChunkJson
     )
   }
 
-  def apply[U <: User](sessionActions: SessionActions[U], userActions: UserActions[U])(implicit w: SessionWriter[U]): AsyncHttpService[ByteChunk] = {
+  def apply[U <: User](sessionServices: SessionServices[U], userActions: UserActions[U]): AsyncHttpService[ByteChunk] = {
     implicit val log = Logger.get
 
     JsonSyncService(
-      name = "Session",
+      name   = "Session",
       prefix = "/api/session/v1",
-      create =
-        ,
-      read =
-
+      create = sessionServices.create,
+      read   = sessionServices.read
     ) ~
     JsonSyncService(
       name = "User",

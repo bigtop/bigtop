@@ -24,7 +24,7 @@ trait UserService[U <: User]
 
   implicit def defaultTimeout = Timeout(3 seconds)
 
-  def createActions(config: ConfigMap): (SessionActions[U], SessionWriter[U], UserActions[U])
+  def createActions(config: ConfigMap): (SessionServices[U], UserActions[U])
 
   val userService =
     service("user", "1.0.0") {
@@ -34,7 +34,7 @@ trait UserService[U <: User]
             Promise.successful(createActions(context.config))
           } ->
           request { actions =>
-            UserServiceHandler(actions._1, actions._3)(actions._2)
+            UserServiceHandler(actions._1, actions._2)
           } ->
           shutdown { config =>
             Promise.successful(())

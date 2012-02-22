@@ -28,7 +28,7 @@ trait FutureJsonHttpResponseW[A] {
 
   val response: FutureValidation[Problem,A]
 
-  def respond(implicit w: JsonWriter[A]): Future[HttpResponse[JValue]] =
+  def toResponse(implicit w: JsonWriter[A]): Future[HttpResponse[JValue]] =
     response.fold (
       failure = _.toResponse,
       success = v => HttpResponse[JValue](content = Some(w.write(v)))
@@ -40,7 +40,7 @@ trait FutureJsonHttpResponseSeqW[A] {
 
   val response: FutureValidation[Problem,Seq[A]]
 
-  def respondSeq(implicit w: JsonWriter[A]): Future[HttpResponse[JValue]] = {
+  def toResponseSeq(implicit w: JsonWriter[A]): Future[HttpResponse[JValue]] = {
     response.fold (
       failure = prob => prob.toResponse,
       success = seq  => HttpResponse[JValue](content = Some(JArray(seq.map(w.write _).toList)))
