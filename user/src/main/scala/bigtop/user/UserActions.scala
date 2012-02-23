@@ -1,6 +1,10 @@
 package bigtop
 package user
 
+import blueeyes.json.JsonAST.JValue
+import bigtop.concurrent.FutureImplicits
+import bigtop.problem.Problems._
+
 trait UserActions[U <: User] extends UserLogin[U]
     with UserCreate[U]
     with UserRead[U]
@@ -8,7 +12,7 @@ trait UserActions[U <: User] extends UserLogin[U]
     with UserDelete[U]
 
 
-trait UserAction[U <: User] extends UserTypes[U] {
+trait UserAction[U <: User] extends UserTypes[U] with FutureImplicits {
 
   def core: UserCore[U]
 

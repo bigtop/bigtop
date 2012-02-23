@@ -28,32 +28,8 @@ object UserServiceHandler extends BijectionsChunkJson
     with ProblemWriters
     with JsonFormatters
 {
-  def getId(req: HttpRequest[_]) =
-    for {
-      id   <- req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("id")).fv
-      uuid <- Uuid.parse(id).toSuccess(Problems.Client.malformedArgument(id, "expected uuid, found " + id)).fv
-    } yield uuid
 
-  def getUser(req: HttpRequest[Future[JValue]]) =
-    req.parameters.get('id).toSuccess[Problem](Problems.Client.missingArgument("id")).fv
-
-  /** Get content as JSON and transform to future validation */
-  def getContent[T](request: HttpRequest[Future[T]]): FutureValidation[Problem, T] =
-    request.content.fold(
-      some = _.map(_.success[Problem]).fv,
-      none = Problems.Client.emptyRequest.fail[T].fv
-    )
-
-  def respond[B](f: HttpServiceHandler[Future[JValue], FutureValidation[Problem,B]])
-                (implicit w: JsonWriter[B]):
-                  HttpService[Future[JValue], Future[HttpResponse[JValue]]] = {
-    (req: HttpRequest[Future[JValue]]) => f(req).fold (
-      failure = _.toResponse,
-      success = v => HttpResponse[JValue](content = Some(w.write(v)))
-    )
-  }
-
-  def apply[U <: User](sessionServices: SessionServices[U], userActions: UserActions[U]): AsyncHttpService[ByteChunk] = {
+  def apply[U <: User](sessionServices: SessionServices[U], userServices: UserServices[U]): AsyncHttpService[ByteChunk] = {
     implicit val log = Logger.get
 
     JsonSyncService(
@@ -65,39 +41,10 @@ object UserServiceHandler extends BijectionsChunkJson
     JsonSyncService(
       name = "User",
       prefix = "/api/user/v1",
-      create =
-        respond {
-          req =>
-            for {
-              data <- getContent(req)
-              user <- userActions.create(data)
-            } yield userActions.core.serializer.write(user)
-        },
-      read =
-        respond {
-          req =>
-            for {
-              name <- getUser(req)
-              user <- userActions.read(name)
-            } yield userActions.core.serializer.write(user)
-        },
-      update =
-        respond {
-          req =>
-            for {
-              name <- getUser(req)
-              data <- getContent(req)
-              _    <- userActions.update(name, data)
-            } yield ("status" -> "ok"): JValue
-        },
-      delete =
-        respond {
-          req =>
-            for {
-              name <- getUser(req)
-              _    <- userActions.delete(name)
-            } yield ("status" -> "ok"): JValue
-        }
+      create = userServices.create,
+      read   = userServices.read,
+      update = userServices.update,
+      delete = userServices.delete
     )
   }
 }

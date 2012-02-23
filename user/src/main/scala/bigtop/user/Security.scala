@@ -2,9 +2,10 @@ package bigtop
 package user
 
 import blueeyes.core.http.HttpRequest
-import bigtop.problem.Problem
+import bigtop.problem._
 import bigtop.concurrent._
 import scalaz.Validation
+import scalaz.syntax.validation._
 
 trait Authenticator[U <: User] {
 
@@ -15,12 +16,23 @@ trait Authenticator[U <: User] {
 
 trait Authorizer[U <: User] extends Authenticator[U] with FutureImplicits {
 
-  def authorize[A,B](request: HttpRequest[A], condition: Option[U] => FutureValidation[Problem,Option[U]])(f: Option[U] => FutureValidation[Problem, B]) = {
+  def authorize[A,B](request: HttpRequest[A], condition: SecurityCheck[A,U])(f: Option[U] => FutureValidation[Problem, B]) = {
     for {
       user1    <- authenticate(request)
-      user2    <- condition(user1).fv
+      user2    <- condition(request, user1).fv
       response <- f(user2)
     } yield response
   }
+
+}
+
+object SecurityCheck extends FutureImplicits {
+
+  def simpleCheck[A,U <: User](f: Option[U] => Boolean, operation: String): SecurityCheck[A,U] =
+    (req: HttpRequest[A], user: Option[U]) =>
+      if(f(user))
+        user.success.fv
+      else
+        Problems.Client.notAuthorized(user.map(_.username).getOrElse("unknown"), operation).fail.fv
 
 }

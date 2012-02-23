@@ -15,6 +15,10 @@ trait JsonFormatters {
     def write(in: String) = JString(in)
   }
 
+  implicit val BooleanJsonWriter: JsonWriter[Boolean] = new JsonWriter[Boolean] {
+    def write(in: Boolean) = JBool(in)
+  }
+
   implicit val DateTimeJsonWriter: JsonWriter[DateTime] = new JsonWriter[DateTime] {
     def write(in: DateTime) = JString(Iso8601Format.write(in))
   }

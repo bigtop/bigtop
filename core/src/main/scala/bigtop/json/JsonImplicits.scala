@@ -35,6 +35,9 @@ trait JsonImplicits {
   implicit def buildString(json: JValue): Validation[Problem,String] =
     json -->? classOf[JString] map (_.value) toSuccess (malformed("string", json))
 
+  implicit def buildBoolean(json: JValue): Validation[Problem,Boolean] =
+    json -->? classOf[JBool] map (_.value) toSuccess (malformed("boolean", json))
+
   implicit def buildUuid(json: JValue): Validation[Problem,Uuid] =
     json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("uuid", json))
 

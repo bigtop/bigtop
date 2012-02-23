@@ -4,7 +4,7 @@ package user
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import bigtop.json._
-import bigtop.util.BCrypt
+import bigtop.util._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz.Validation
@@ -21,24 +21,27 @@ object Password {
     new Password(BCrypt.hash(password))
 }
 
-case class SimpleUser(val username: String, val password: Password) extends User {
+case class SimpleUser(val id: Uuid, val username: String, val password: Password, admin: Boolean) extends User {
 
   def isPasswordOk(passwd: String) =
     BCrypt.compare(passwd, password.hash)
 
 }
 
-trait SimpleUserExternalWriter extends JsonWriter[SimpleUser] {
+trait SimpleUserExternalWriter extends JsonWriter[SimpleUser] with JsonFormatters {
   def write(user: SimpleUser) =
     ("typename" -> "simpleuser") ~
+    ("id"       -> user.id.toJson) ~
     ("username" -> user.username)
 }
 
-trait SimpleUserInternalWriter extends JsonWriter[SimpleUser] {
+trait SimpleUserInternalWriter extends JsonWriter[SimpleUser] with JsonFormatters {
   def write(user: SimpleUser) =
     ("typename" -> "simpleuser") ~
+    ("id"       -> user.id.toJson) ~
     ("username" -> user.username) ~
-    ("password" -> user.password.hash)
+    ("password" -> user.password.hash) ~
+    ("admin"    -> user.admin)
 }
 
 trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
@@ -48,7 +51,8 @@ trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
     for {
       username <- data.mandatory[String]("username")
       password <- data.mandatory[String]("password")
-    } yield SimpleUser(username, Password.fromPassword(password))
+      admin    <- data.mandatory[Boolean]("admin")
+    } yield SimpleUser(Uuid.create, username, Password.fromPassword(password), admin)
 }
 
 trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
@@ -56,9 +60,11 @@ trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
 
   def read(data: JValue) =
     for {
+      id       <- data.mandatory[Uuid]("id")
       username <- data.mandatory[String]("username")
       password <- data.mandatory[String]("password")
-    } yield SimpleUser(username, Password.fromHash(password))
+      admin    <- data.mandatory[Boolean]("admin")
+    } yield SimpleUser(id, username, Password.fromHash(password), admin)
 }
 
 trait SimpleUserExternalFormat extends JsonFormat[Problem,SimpleUser]
