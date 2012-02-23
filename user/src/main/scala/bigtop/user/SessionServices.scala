@@ -9,6 +9,10 @@ import bigtop.concurrent.FutureImplicits
 import bigtop.http.{JsonServiceImplicits, JsonRequestHandlerCombinators}
 import bigtop.json.JsonImplicits
 import bigtop.util.Uuid
+import bigtop.concurrent.FutureValidation
+import bigtop.problem.Problem
+import bigtop.problem.Problems._
+import scalaz.syntax.validation._
 
 trait SessionServices[U <: User] extends SessionCreateService[U]
     with SessionReadService[U] {
@@ -16,6 +20,18 @@ trait SessionServices[U <: User] extends SessionCreateService[U]
   def action: SessionActions[U]
 
 }
+
+
+trait SessionService[U <: User] extends HttpRequestHandlerCombinators
+    with JsonServiceImplicits
+    with FutureImplicits
+    with JsonImplicits
+{
+
+  def authorizer: Authorizer[U]
+
+}
+
 
 trait SessionCreateService[U <: User] extends HttpRequestHandlerCombinators
     with JsonServiceImplicits
@@ -38,21 +54,32 @@ trait SessionCreateService[U <: User] extends HttpRequestHandlerCombinators
 
 }
 
-trait SessionReadService[U <: User] extends HttpRequestHandlerCombinators
-    with JsonServiceImplicits
-    with FutureImplicits
-    with JsonImplicits
+
+trait SessionReadService[U <: User] extends SessionService[U]
 {
 
   def action: SessionRead[U]
 
+  def sameUser(req: HttpRequest[Future[JValue]])(user: Option[U]): FutureValidation[Problem, Option[U]] =
+    for {
+      id      <- req.mandatoryParam[Uuid]('id).fv
+      session <- action.read(id)
+      user    <- if(user.map(_ == session.user).getOrElse(false))
+                   user.success[Problem].fv
+                 else
+                   Client.notAuthorized(user.map(_.username).getOrElse("unknown"),
+                                        "session.read").fail.fv
+    } yield user
+
   val read =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        (for {
-          id      <- req.mandatoryParam[Uuid]('id).fv
-          session <- action.read(id)
-        } yield session).toResponse(action.core.externalFormat)
+        authorizer.authorize(req, sameUser(req)) { user =>
+          for {
+            id      <- req.mandatoryParam[Uuid]('id).fv
+            session <- action.read(id)
+          } yield session
+        }.toResponse(action.core.externalFormat)
     }
 
 }
