@@ -38,7 +38,8 @@ object SessionCookie {
   val name = "session"
 
   def get[A](request: HttpRequest[A]): Option[HttpCookie] = {
-    val cookies = request.headers.header[Cookie].flatMap(_.cookies.headOption)
+    val cookies: List[HttpCookie] =
+      request.headers.header[Cookie].map(_.cookies).getOrElse(Nil)
     cookies.filter(_.name == name).headOption
   }
 
