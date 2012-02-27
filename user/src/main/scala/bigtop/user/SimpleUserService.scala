@@ -9,7 +9,7 @@ import blueeyes.core.service.ServiceContext
 import blueeyes.json.JsonAST.JValue
 import net.lag.configgy.ConfigMap
 
-trait SimpleUserService extends UserService[SimpleUser] {
+object SimpleUserService {
 
   def services(config: ConfigMap) = {
 
@@ -22,7 +22,7 @@ trait SimpleUserService extends UserService[SimpleUser] {
     val userServices  = SimpleUserUserServices(authorizer, userActions)
     val sessionServices = new SimpleUserSessionServices(authorizer, sessionCreate, sessionRead)
 
-    (sessionServices, userServices)
+    (sessionServices.service ~ userServices.service, authorizer, userActions)
   }
 
 }
@@ -63,7 +63,9 @@ case class SimpleUserUserServices(val authorizer: Authorizer[SimpleUser],
 
 case class SimpleUserSessionServices(val auth: Authorizer[SimpleUser],
                                      val creator: SessionCreate[SimpleUser],
-                                     val reader:  SessionRead[SimpleUser]) {
+                                     val reader:  SessionRead[SimpleUser])
+    extends SessionServices[SimpleUser]
+{
 
   val createService = new SessionCreateService[SimpleUser] {
     val action = creator

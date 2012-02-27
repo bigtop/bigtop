@@ -7,13 +7,14 @@ import blueeyes.core.service.HttpRequestHandlerCombinators
 import blueeyes.json.JsonAST.JValue
 import blueeyes.json.JsonDSL._
 import bigtop.concurrent.FutureImplicits
-import bigtop.http.{JsonServiceImplicits, JsonRequestHandlerCombinators}
+import bigtop.http._
 import bigtop.json._
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import scalaz.syntax.validation._
+import net.lag.logging.Logger
 
 trait UserServices[U <: User] extends UserCreateService[U]
     with UserReadService[U]
@@ -22,6 +23,16 @@ trait UserServices[U <: User] extends UserCreateService[U]
 {
 
   def action: UserActions[U]
+
+  def service =
+    JsonSyncService(
+      "user",
+      "/api/user/v1",
+      create,
+      read,
+      update,
+      delete
+    )(Logger.apply)
 
 }
 

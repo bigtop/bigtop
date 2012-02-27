@@ -6,19 +6,28 @@ import blueeyes.core.http._
 import blueeyes.core.service._
 import blueeyes.json.JsonAST.JValue
 import bigtop.concurrent.FutureImplicits
-import bigtop.http.{JsonServiceImplicits, JsonRequestHandlerCombinators}
+import bigtop.http._
 import bigtop.json.JsonImplicits
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import scalaz.syntax.validation._
+import net.lag.logging.Logger
 
 trait SessionServices[U <: User] {
 
   val create: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
 
   val read: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
+
+  def service =
+    JsonSyncService(
+      "session",
+      "/api/session/v1",
+      create,
+      read
+    )(Logger.apply)
 
 }
 
