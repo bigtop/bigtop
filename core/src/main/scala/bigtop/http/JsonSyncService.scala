@@ -33,11 +33,11 @@ object JsonSyncService extends JsonRequestHandlerCombinators
   def apply(
     name   : String,
     prefix : String,
-    create : Inner = dummyHandler("create"),
-    read   : Inner = dummyHandler("read"),
-    update : Inner = dummyHandler("update"),
-    delete : Inner = dummyHandler("delete"),
-    search : Inner = dummyHandler("search")
+    create : Inner = dummyHandler,
+    read   : Inner = dummyHandler,
+    update : Inner = dummyHandler,
+    delete : Inner = dummyHandler,
+    search : Inner = dummyHandler
   )(implicit log: Logger) : Outer = SyncService(
     name   = name,
     prefix = prefix,
@@ -48,17 +48,20 @@ object JsonSyncService extends JsonRequestHandlerCombinators
     search = json(search)
   )
 
-  def dummyHandler(action: String): Inner =
+  val dummyHandler: Inner =
     service {
       (req: HttpRequest[Future[JValue]]) =>
         for {
           json <- req.content.getOrElse(Future(JNull))
         } yield {
-          HttpResponse(content = Some(
-            ("model" -> "channel") ~
-            ("action" -> action) ~
-            ("request" -> json)
-          ))
+          HttpResponse(
+            status = HttpStatusCodes.NotFound,
+            content = Some(
+              ("method"  -> req.method.toString) ~
+              ("uri"     -> req.uri.toString) ~
+              ("request" -> json)
+            )
+          )
         }
     }
 
