@@ -3,6 +3,7 @@ package json
 
 import bigtop.util._
 import blueeyes.json.JsonAST._
+import java.net.URL
 import org.joda.time._
 
 trait JsonFormatters {
@@ -21,6 +22,10 @@ trait JsonFormatters {
 
   implicit val DateTimeJsonWriter: JsonWriter[DateTime] = new JsonWriter[DateTime] {
     def write(in: DateTime) = JString(Iso8601Format.write(in))
+  }
+
+  implicit val URLJsonWriter: JsonWriter[URL] = new JsonWriter[URL] {
+    def write(in: URL) = JString(in.toString)
   }
 
   implicit val JValueJsonWriter: JsonWriter[JValue] = new JsonWriter[JValue] {
