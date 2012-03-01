@@ -27,7 +27,6 @@ trait JsonServiceSpec extends BlueEyesServiceSpecification
     with FutureImplicits
     with FutureMatchers
     with JsonFormatters
-    with JsonImplicits
 {
   case class FutureW[A](val f: Future[A]) {
     def await: A =

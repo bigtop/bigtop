@@ -9,7 +9,7 @@ import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson, Bijections
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import bigtop.http.JsonSyncService
-import bigtop.json.{JsonImplicits, JsonWriter, JsonFormatters}
+import bigtop.json.{JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
 import bigtop.problem.{Problem, Problems, ProblemWriters}
 import bigtop.util.Uuid
@@ -23,7 +23,6 @@ import scalaz.std.option._
 object UserServiceHandler extends BijectionsChunkJson
     with BijectionsChunkFutureJson
     with FutureImplicits
-    with JsonImplicits
     with HttpRequestHandlerCombinators
     with ProblemWriters
     with JsonFormatters

@@ -60,7 +60,7 @@ trait SimpleUserInternalWriter extends JsonWriter[SimpleUser] with JsonFormatter
 }
 
 trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
-  import JsonImplicits._
+  import JsonFormatters._
 
   def read(data: JValue) =
     for {
@@ -73,7 +73,7 @@ trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
 }
 
 trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
-  import JsonImplicits._
+  import JsonFormatters._
 
   def read(data: JValue) =
     for {

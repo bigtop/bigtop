@@ -40,7 +40,6 @@ trait UserServices[U <: User] extends UserCreateService[U]
 trait UserService[U <: User] extends HttpRequestHandlerCombinators
     with JsonServiceImplicits
     with FutureImplicits
-    with JsonImplicits
     with JsonFormatters
 {
 
