@@ -7,7 +7,7 @@ import blueeyes.core.service._
 import blueeyes.json.JsonAST.JValue
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
-import bigtop.json.JsonImplicits
+import bigtop.json.JsonFormatters
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
@@ -35,7 +35,7 @@ trait SessionServices[U <: User] {
 trait SessionService[U <: User] extends HttpRequestHandlerCombinators
     with JsonServiceImplicits
     with FutureImplicits
-    with JsonImplicits
+    with JsonFormatters
 
 
 trait SessionCreateService[U <: User] extends SessionService[U] {
