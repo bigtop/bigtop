@@ -4,6 +4,7 @@ package json
 import bigtop.util._
 import bigtop.problem._
 import blueeyes.json.JsonAST._
+import java.net.URL
 import org.joda.time._
 import scalaz.{Failure,Success,Validation}
 import scalaz.syntax.validation._
@@ -72,6 +73,10 @@ trait JsonFormatters {
     def write(in: Double) = JDouble(in)
     def read(json: JValue) =
       json -->? classOf[JDouble] map (_.value) toSuccess (malformed("double", json))
+  }
+
+  implicit val URLJsonWriter: JsonWriter[URL] = new JsonWriter[URL] {
+    def write(in: URL) = JString(in.toString)
   }
 
   implicit val JValueJsonFormat: JsonFormat[Problem,JValue] = new JsonFormat[Problem,JValue] {
