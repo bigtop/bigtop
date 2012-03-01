@@ -21,27 +21,42 @@ object Password {
     new Password(BCrypt.hash(password))
 }
 
-case class SimpleUser(val id: Uuid, val username: String, val password: Password, admin: Boolean) extends User {
+case class SimpleUser(
+  val id: Uuid,
+  val username: String,
+  val password: Password,
+  val forenames: String,
+  val surname: String,
+  admin: Boolean
+) extends User {
+  lazy val forename =
+    forenames.split("[ \t]+").toList.headOption.getOrElse("")
+
+  def name =
+    forename + " " + surname
 
   def isPasswordOk(passwd: String) =
     BCrypt.compare(passwd, password.hash)
-
 }
 
 trait SimpleUserExternalWriter extends JsonWriter[SimpleUser] with JsonFormatters {
   def write(user: SimpleUser) =
-    ("typename" -> "simpleuser") ~
-    ("id"       -> user.id.toJson) ~
-    ("username" -> user.username)
+    ("typename"  -> "simpleuser") ~
+    ("id"        -> user.id.toJson) ~
+    ("username"  -> user.username) ~
+    ("forenames" -> user.forenames) ~
+    ("surname"   -> user.surname)
 }
 
 trait SimpleUserInternalWriter extends JsonWriter[SimpleUser] with JsonFormatters {
   def write(user: SimpleUser) =
-    ("typename" -> "simpleuser") ~
-    ("id"       -> user.id.toJson) ~
-    ("username" -> user.username) ~
-    ("password" -> user.password.hash) ~
-    ("admin"    -> user.admin)
+    ("typename " -> "simpleuser") ~
+    ("id"        -> user.id.toJson) ~
+    ("username"  -> user.username) ~
+    ("forenames" -> user.forenames) ~
+    ("surname"   -> user.surname) ~
+    ("password"  -> user.password.hash) ~
+    ("admin"     -> user.admin)
 }
 
 trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
@@ -49,10 +64,12 @@ trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
 
   def read(data: JValue) =
     for {
-      username <- data.mandatory[String]("username")
-      password <- data.mandatory[String]("password")
-      admin    <- data.mandatory[Boolean]("admin")
-    } yield SimpleUser(Uuid.create, username, Password.fromPassword(password), admin)
+      username  <- data.mandatory[String]("username")
+      password  <- data.mandatory[String]("password")
+      forenames <- data.mandatory[String]("forenames")
+      surname   <- data.mandatory[String]("surname")
+      admin     <- data.mandatory[Boolean]("admin")
+    } yield SimpleUser(Uuid.create, username, Password.fromPassword(password), forenames, surname, admin)
 }
 
 trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
@@ -60,11 +77,13 @@ trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
 
   def read(data: JValue) =
     for {
-      id       <- data.mandatory[Uuid]("id")
-      username <- data.mandatory[String]("username")
-      password <- data.mandatory[String]("password")
-      admin    <- data.mandatory[Boolean]("admin")
-    } yield SimpleUser(id, username, Password.fromHash(password), admin)
+      id        <- data.mandatory[Uuid]("id")
+      username  <- data.mandatory[String]("username")
+      password  <- data.mandatory[String]("password")
+      forenames <- data.mandatory[String]("forenames")
+      surname   <- data.mandatory[String]("surname")
+      admin     <- data.mandatory[Boolean]("admin")
+    } yield SimpleUser(id, username, Password.fromHash(password), forenames, surname, admin)
 }
 
 trait SimpleUserExternalFormat extends JsonFormat[Problem,SimpleUser]
