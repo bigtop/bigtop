@@ -111,7 +111,7 @@ trait JsonFormatters {
         json -->? classOf[JArray] toSuccess (malformed("array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem,A]})#l, A])
     }
 
-  private def malformed(`type`: String, json: JValue) = {
+  def malformed(`type`: String, json: JValue) = {
     import blueeyes.json.Printer._
     Client.malformedArgument("data", "expected %s, found %s".format(`type`, compact(render(json))))
   }
