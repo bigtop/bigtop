@@ -7,6 +7,7 @@ import akka.util.duration._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
 import bigtop.problem._
 import bigtop.problem.Problems._
+import bigtop.util.Uuid
 import blueeyes.persistence.mongo.{ConfigurableMongo, MongoImplicits, MongoUpdateObject}
 import blueeyes.json.JsonAST._
 import net.lag.configgy.ConfigMap
@@ -67,31 +68,33 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser]
     mapOrHandleError(result, (_: Unit) => user)
   }
 
-  def read(username: String): UserValidation = {
+  def read(id: Uuid): UserValidation = {
     val user: Future[Option[JObject]] =
-      config.database(selectOne()
-                      .from(collection)
-                      .where("username" === username))
+      config.database(selectOne().from(collection).where("id" === id.toJson))
 
     user map { u => u.toSuccess(Client.notFound("user")).flatMap(read _) }
   }
-
 
   def update(user: SimpleUser): UserValidation = {
     val result: Future[Unit] =
       config.database(MongoImplicits.update(collection)
                       .set(new MongoUpdateObject(write(user)))
                       .where("username" === user.username))
-
     mapOrHandleError(result, (_: Unit) => user)
   }
 
-
-  def delete(username: String): UnitValidation = {
+  def delete(id: Uuid): UnitValidation = {
     val result: Future[Unit] =
-      config.database(remove.from(collection).where("username" === username))
+      config.database(remove.from(collection).where("id" === id.toJson))
 
     mapOrHandleError(result, (_: Unit) => ())
+  }
+
+  def searchByUsername(username: String): UserValidation = {
+    val user: Future[Option[JObject]] =
+      config.database(selectOne().from(collection).where("username" === username))
+
+    user map { u => u.toSuccess(Client.notFound("user")).flatMap(read _) }
   }
 
 }

@@ -81,8 +81,8 @@ trait UserReadService[U <: User] extends UserService[U] {
         authorizer.authorize(req, canRead) {
           user =>
             for {
-              name <- req.mandatoryParam[String]('id).fv
-              user <- action.read(name)
+              id   <- req.mandatoryParam[Uuid]('id).fv
+              user <- action.read(id)
             } yield user
         }.toResponse(action.core.serializer)
     }
@@ -102,9 +102,9 @@ trait UserUpdateService[U <: User] extends UserService[U] {
         authorizer.authorize(req, canUpdate) {
           user =>
             for {
-              name <- req.mandatoryParam[String]('id).fv
+              id   <- req.mandatoryParam[Uuid]('id).fv
               data <- req.json
-              _    <- action.update(name, data)
+              _    <- action.update(id, data)
             } yield ("status" -> "ok"): JValue
         }.toResponse
     }
@@ -124,8 +124,8 @@ trait UserDeleteService[U <: User] extends UserService[U] {
         authorizer.authorize(req, canDelete) {
           user =>
             for {
-              name <- req.mandatoryParam[String]('id).fv
-              _    <- action.delete(name)
+              id <- req.mandatoryParam[Uuid]('id).fv
+              _  <- action.delete(id)
             } yield ("status" -> "ok"): JValue
         }.toResponse
     }

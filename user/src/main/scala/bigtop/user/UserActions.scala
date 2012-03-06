@@ -4,6 +4,7 @@ package user
 import blueeyes.json.JsonAST.JValue
 import bigtop.concurrent.FutureImplicits
 import bigtop.problem.Problems._
+import bigtop.util.Uuid
 
 trait UserActions[U <: User] extends UserLogin[U]
     with UserCreate[U]
@@ -24,7 +25,7 @@ trait UserCreate[U <: User] extends UserAction[U] {
   def create(data: JValue): UserValidation =
     for {
       unsavedUser <- core.serializer.read(data).fv
-      savedUser   <- core.store.read(unsavedUser.username).invert.mapFailure {
+      savedUser   <- core.store.read(unsavedUser.id).invert.mapFailure {
         f => Client.exists("user")
       } flatMap {
         p => core.store.create(unsavedUser)
@@ -37,20 +38,18 @@ trait UserCreate[U <: User] extends UserAction[U] {
 
 trait UserRead[U <: User] extends UserAction[U] {
 
-  def read(username: String): UserValidation =
-    for {
-      user <- core.store.read(username)
-    } yield user
+  def read(id: Uuid): UserValidation =
+    core.store.read(id)
 
 }
 
 
 trait UserUpdate[U <: User] extends UserAction[U] {
 
-  def update(username: String, data: JValue): UnitValidation =
+  def update(id: Uuid, data: JValue): UnitValidation =
     for {
-      oldUser <- core.store.read(username)
-      newUser <- core.serializer.update(oldUser, data).fv
+      oldUser   <- core.store.read(id)
+      newUser   <- core.serializer.update(oldUser, data).fv
       savedUser <- core.store.update(newUser)
     } yield ()
 
@@ -59,7 +58,7 @@ trait UserUpdate[U <: User] extends UserAction[U] {
 
 trait UserDelete[U <: User] extends UserAction[U] {
 
-  def delete(username: String): UnitValidation =
-    core.store.delete(username)
+  def delete(id: Uuid): UnitValidation =
+    core.store.delete(id)
 
 }

@@ -16,7 +16,7 @@ trait HttpRequestW[Content] {
   val request: HttpRequest[Content]
 
   def mandatoryParam[T](name: Symbol)(implicit builder: String => Validation[Problem,T]): Validation[Problem,T] =
-    request.parameters.get(name).toSuccess(Client.missingArgument(name.name)).flatMap(builder)
+    request.parameters.get(name).toSuccess(Client.missing(name.name)).flatMap(builder)
 
   def optionalParam[T](name: Symbol)(implicit builder: String => Validation[Problem,T]): Validation[Problem,Option[T]] =
     request.parameters.get(name) match {
@@ -55,7 +55,7 @@ trait RequestParameterImplicits {
     )
 
   private def malformed(`type`: String, str: String) =
-    Client.malformedArgument("data", "expected %s, found '%s'".format(`type`, str))
+    Client.malformed("data", "expected %s, found '%s'".format(`type`, str))
 
   private def parseInt(str: String) =
     try {

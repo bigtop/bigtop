@@ -41,12 +41,12 @@ object Problems extends ProblemImplicits {
       ClientProblem("malformedRequest")
 
     /** The client supplied a request with a missing argument. */
-    def missingArgument(argument: String): Problem =
-      ClientProblem("missingArgument", "argument" -> argument)
+    def missing(field: String): Problem =
+      ClientProblem("missing", "field" -> field)
 
     /** The client supplied a request with a malformed argument. */
-    def malformedArgument(argument: String, description: String): Problem =
-      ClientProblem("malformedArgument", "argument" -> argument, "description" -> description)
+    def malformed(field: String, description: String): Problem =
+      ClientProblem("malformed", "field" -> field, "description" -> description)
 
     /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
     def loginUsernameIncorrect: Problem =

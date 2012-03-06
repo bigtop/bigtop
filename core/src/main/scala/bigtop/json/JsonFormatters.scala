@@ -17,7 +17,7 @@ case class JValueW(json: JValue) {
   import Problems._
 
   def mandatory[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
-    (json \? name).toSuccess(Client.missingArgument(name)).flatMap(reader.read _)
+    (json \? name).toSuccess(Client.missing(name)).flatMap(reader.read _)
 
   def optional[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,Option[T]] =
     (json \? name) match {
@@ -93,16 +93,11 @@ trait JsonFormatters {
         malformed("unit", json).fail
   }
 
-  implicit val SeqUuidJsonFormat: JsonFormat[Problem,Seq[Uuid]] =
-    buildSeqFormat(UuidJsonFormat)
-  implicit val SeqStringJsonFormat: JsonFormat[Problem,Seq[String]] =
-    buildSeqFormat(StringJsonFormat)
-  implicit val SeqBooleanJsonFormat: JsonFormat[Problem,Seq[Boolean]] =
-    buildSeqFormat(BooleanJsonFormat)
-  implicit val SeqIntJsonFormat: JsonFormat[Problem,Seq[Int]] =
-    buildSeqFormat(IntJsonFormat)
-  implicit val SeqDoubleJsonFormat: JsonFormat[Problem,Seq[Double]] =
-    buildSeqFormat(DoubleJsonFormat)
+  implicit val SeqUuidJsonFormat: JsonFormat[Problem,Seq[Uuid]] = buildSeqFormat(UuidJsonFormat)
+  implicit val SeqStringJsonFormat: JsonFormat[Problem,Seq[String]] = buildSeqFormat(StringJsonFormat)
+  implicit val SeqBooleanJsonFormat: JsonFormat[Problem,Seq[Boolean]] = buildSeqFormat(BooleanJsonFormat)
+  implicit val SeqIntJsonFormat: JsonFormat[Problem,Seq[Int]] = buildSeqFormat(IntJsonFormat)
+  implicit val SeqDoubleJsonFormat: JsonFormat[Problem,Seq[Double]] = buildSeqFormat(DoubleJsonFormat)
 
   implicit def buildSeqFormat[A](format: JsonFormat[Problem,A]): JsonFormat[Problem,Seq[A]] =
     new JsonFormat[Problem,Seq[A]] {
@@ -113,9 +108,8 @@ trait JsonFormatters {
 
   def malformed(`type`: String, json: JValue) = {
     import blueeyes.json.Printer._
-    Client.malformedArgument("data", "expected %s, found %s".format(`type`, compact(render(json))))
+    Client.malformed("data", "expected %s, found %s".format(`type`, compact(render(json))))
   }
-
 
   case class JsonWritable[A](in: A) {
     def toJson(implicit w: JsonWriter[A]): JValue =
@@ -124,7 +118,6 @@ trait JsonFormatters {
 
   implicit def writableToJsonWritable[A](in: A): JsonWritable[A] =
     JsonWritable[A](in)
-
 
   implicit def jsonToJValuenW(in: JValue): JValueW = JValueW(in)
 }

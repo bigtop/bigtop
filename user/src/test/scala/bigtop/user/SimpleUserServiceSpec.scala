@@ -91,7 +91,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
         ("froobarname" -> "noel") ~
         ("password" -> "secret")
       } must beProblem {
-        Client.missingArgument("username")
+        Client.missing("username")
       }
     }
 
@@ -173,7 +173,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
       doPost("/api/session/v1") {
         ("password" -> "secret")
       } must beProblem {
-        Client.missingArgument("username")
+        Client.missing("username")
       }
     }
 
@@ -181,7 +181,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with SimpleUserService with 
       doPost("/api/session/v1") {
         ("username" -> "dave")
       } must beProblem {
-        Client.missingArgument("password")
+        Client.missing("password")
       }
     }
   }

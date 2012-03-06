@@ -23,7 +23,7 @@ trait SessionCookieAuthorizer[U <: User] extends Authorizer[U]
       cookie =>
         for {
           uuid <- Uuid.parse(cookie.cookieValue).toSuccess(
-            Client.malformedArgument("session",
+            Client.malformed("session",
                                      "Session cookie did not contain a valid UUID")
           ).fv
           session <- action.read(uuid)
