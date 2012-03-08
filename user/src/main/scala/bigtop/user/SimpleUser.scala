@@ -13,7 +13,6 @@ import scalaz.syntax.validation._
 case class Password private(val hash: String)
 
 object Password {
-
   def fromHash(hash: String) =
     new Password(hash)
 
@@ -27,7 +26,7 @@ case class SimpleUser(
   val password: Password,
   val forenames: String,
   val surname: String,
-  admin: Boolean
+  val admin: Boolean
 ) extends User {
   lazy val forename =
     forenames.split("[ \t]+").toList.headOption.getOrElse("")
@@ -39,67 +38,54 @@ case class SimpleUser(
     BCrypt.compare(passwd, password.hash)
 }
 
-trait SimpleUserExternalWriter extends JsonWriter[SimpleUser] with JsonFormatters {
-  def write(user: SimpleUser) =
-    ("typename"  -> "simpleuser") ~
-    ("id"        -> user.id.toJson) ~
-    ("username"  -> user.username) ~
-    ("forenames" -> user.forenames) ~
-    ("surname"   -> user.surname)
-}
-
-trait SimpleUserInternalWriter extends JsonWriter[SimpleUser] with JsonFormatters {
-  def write(user: SimpleUser) =
-    ("typename " -> "simpleuser") ~
-    ("id"        -> user.id.toJson) ~
-    ("username"  -> user.username) ~
-    ("forenames" -> user.forenames) ~
-    ("surname"   -> user.surname) ~
-    ("password"  -> user.password.hash) ~
-    ("admin"     -> user.admin)
-}
-
-trait SimpleUserExternalReader extends JsonReader[Problem,SimpleUser] {
+object SimpleUser {
   import JsonFormatters._
 
-  def read(data: JValue) =
-    for {
-      username  <- data.mandatory[String]("username")
-      password  <- data.mandatory[String]("password")
-      forenames <- data.mandatory[String]("forenames")
-      surname   <- data.mandatory[String]("surname")
-      admin     <- data.mandatory[Boolean]("admin")
-    } yield SimpleUser(Uuid.create, username, Password.fromPassword(password), forenames, surname, admin)
+  object internalFormat extends JsonFormat[Problem, SimpleUser] with JsonFormatters {
+    def read(data: JValue) =
+      for {
+        id        <- data.mandatory[Uuid]("id")
+        username  <- data.mandatory[String]("username")
+        password  <- data.mandatory[String]("password")
+        forenames <- data.mandatory[String]("forenames")
+        surname   <- data.mandatory[String]("surname")
+        admin     <- data.mandatory[Boolean]("admin")
+      } yield SimpleUser(id, username, Password.fromHash(password), forenames, surname, admin)
+
+    def write(user: SimpleUser) =
+      ("typename " -> "simpleuser") ~
+      ("id"        -> user.id.toJson) ~
+      ("username"  -> user.username) ~
+      ("forenames" -> user.forenames) ~
+      ("surname"   -> user.surname) ~
+      ("password"  -> user.password.hash) ~
+      ("admin"     -> user.admin)
+  }
+
+  object externalFormat extends JsonUpdater[Problem, SimpleUser] with JsonFormatters {
+    def read(data: JValue) =
+      for {
+        username  <- data.mandatory[String]("username")
+        password  <- data.mandatory[String]("password")
+        forenames <- data.mandatory[String]("forenames")
+        surname   <- data.mandatory[String]("surname")
+        admin     <- data.mandatory[Boolean]("admin")
+      } yield SimpleUser(Uuid.create, username, Password.fromPassword(password), forenames, surname, admin)
+
+    def write(user: SimpleUser) =
+      ("typename"  -> "simpleuser") ~
+      ("id"        -> user.id.toJson) ~
+      ("username"  -> user.username) ~
+      ("forenames" -> user.forenames) ~
+      ("surname"   -> user.surname)
+
+    def update(user: SimpleUser, data: JValue) =
+      for {
+        username  <- data.optional[String]("username").map(_.getOrElse(user.username))
+        password  <- data.optional[String]("password").map(_.map(Password.fromPassword _).getOrElse(user.password))
+        forenames <- data.optional[String]("forenames").map(_.getOrElse(user.forenames))
+        surname   <- data.optional[String]("surname").map(_.getOrElse(user.surname))
+        admin     <- data.optional[Boolean]("admin").map(_.getOrElse(user.admin))
+      } yield SimpleUser(user.id, username, password, forenames, surname, admin)
+  }
 }
-
-trait SimpleUserInternalReader extends JsonReader[Problem,SimpleUser] {
-  import JsonFormatters._
-
-  def read(data: JValue) =
-    for {
-      id        <- data.mandatory[Uuid]("id")
-      username  <- data.mandatory[String]("username")
-      password  <- data.mandatory[String]("password")
-      forenames <- data.mandatory[String]("forenames")
-      surname   <- data.mandatory[String]("surname")
-      admin     <- data.mandatory[Boolean]("admin")
-    } yield SimpleUser(id, username, Password.fromHash(password), forenames, surname, admin)
-}
-
-trait SimpleUserExternalFormat extends JsonFormat[Problem,SimpleUser]
-     with JsonUpdater[Problem,SimpleUser]
-     with SimpleUserExternalWriter
-     with SimpleUserExternalReader
-{
-  def update(user: SimpleUser, data: JValue) =
-    // Not implemented. Just a hack to get it to compile.
-    Client.notImplemented("SimpleUserExternalFormat.update").fail
-}
-
-trait SimpleUserExternalImplicits {
-
-  implicit val format = new SimpleUserExternalFormat {}
-
-}
-
-object SimpleUserExternalImplicits extends SimpleUserExternalImplicits

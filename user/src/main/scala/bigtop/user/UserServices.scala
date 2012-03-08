@@ -63,7 +63,7 @@ trait UserCreateService[U <: User] extends UserService[U] {
               json <- req.json
               user <- action.create(json)
             } yield user
-        }.toResponse(action.core.serializer)
+        }.toResponse(action.externalFormat)
     }
 
 }
@@ -84,7 +84,7 @@ trait UserReadService[U <: User] extends UserService[U] {
               id   <- req.mandatoryParam[Uuid]('id).fv
               user <- action.read(id)
             } yield user
-        }.toResponse(action.core.serializer)
+        }.toResponse(action.externalFormat)
     }
 
 }

@@ -31,7 +31,7 @@ trait SessionCreate[U <: User] extends SessionAction[U] {
       user <- userActions.login(username, password)
     } yield {
       val id = Uuid.create()
-      val session = Session(id, user, new HashMap[String, JValue]())(userActions.core.serializer)
+      val session = Session(id, user, new HashMap[String, JValue]())(userActions.externalFormat)
       core.store.create(id, session)
       session
     }
