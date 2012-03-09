@@ -7,22 +7,24 @@ import blueeyes.bkka.AkkaDefaults
 import blueeyes.persistence.mongo.{ConfigurableMongo, Mongo, Database}
 import blueeyes.core.service.ServiceContext
 import blueeyes.json.JsonAST.JValue
+import bigtop.util.Uuid
 import net.lag.configgy.ConfigMap
 
 object SimpleUserService {
 
   def services(config: ConfigMap) = {
 
-    val sessionCore   = new LruMapSessionCore
-    val sessionRead   = SimpleUserSessionRead(sessionCore)
-    val authorizer    = SimpleUserAuthorizer(sessionRead)
-    val userActions   = new SimpleUserActions(config)
-    val sessionCreate = SimpleUserSessionCreate(sessionCore, userActions)
+    val sessionCore     = new LruMapSessionCore
+    val sessionRead     = SimpleUserSessionRead(sessionCore)
+    val authorizer      = SimpleUserAuthorizer(sessionRead)
 
-    val userServices  = SimpleUserUserServices(authorizer, userActions)
-    val sessionServices = new SimpleUserSessionServices(authorizer, sessionCreate, sessionRead)
+    val userActions     = new SimpleUserActions(config)
+    val sessionActions  = SimpleUserSessionActions(sessionCore, userActions, sessionRead)
 
-    (sessionServices.service ~ userServices.service, authorizer, userActions)
+    val userServices    = SimpleUserUserServices(authorizer, userActions)
+    val sessionServices = new SimpleUserSessionServices(authorizer, sessionActions)
+
+    (sessionServices.service ~ userServices.service, authorizer, userActions, sessionActions)
   }
 
 }
@@ -37,14 +39,18 @@ class LruMapSessionCore extends SessionCore[SimpleUser] {
 }
 
 case class SimpleUserSessionRead(val core: SessionCore[SimpleUser])
-    extends SessionRead[SimpleUser]
+  extends SessionRead[SimpleUser]
 
 case class SimpleUserAuthorizer(val action: SimpleUserSessionRead)
-    extends SessionCookieAuthorizer[SimpleUser]
+  extends SessionCookieAuthorizer[SimpleUser]
 
-case class SimpleUserSessionCreate(val core: SessionCore[SimpleUser],
-                                   val userActions: UserActions[SimpleUser])
-    extends SessionCreate[SimpleUser]
+case class SimpleUserSessionActions(val core: SessionCore[SimpleUser],
+                                    val userActions: UserActions[SimpleUser],
+                                    val sessionRead: SessionRead[SimpleUser])
+  extends SessionActions[SimpleUser]
+{
+  override def read(id: Uuid) = sessionRead.read(id)
+}
 
 
 case class SimpleUserUserServices(val authorizer: Authorizer[SimpleUser],
@@ -60,22 +66,8 @@ case class SimpleUserUserServices(val authorizer: Authorizer[SimpleUser],
   val canDelete = isAdmin("user.delete")
 }
 
-
-case class SimpleUserSessionServices(val auth: Authorizer[SimpleUser],
-                                     val creator: SessionCreate[SimpleUser],
-                                     val reader:  SessionRead[SimpleUser])
-    extends SessionServices[SimpleUser]
-{
-
-  val createService = new SessionCreateService[SimpleUser] {
-    val action = creator
-  }
-
-  val readService = new SessionReadService[SimpleUser] {
-    val authorizer = auth
-    val action = reader
-  }
-
-  val create = createService.create
-  val read   = readService.read
-}
+case class SimpleUserSessionServices(val authorizer: Authorizer[SimpleUser],
+                                     val action: SessionActions[SimpleUser])
+  extends SessionServices[SimpleUser]
+  with SessionCreateService[SimpleUser]
+  with SessionReadService[SimpleUser]

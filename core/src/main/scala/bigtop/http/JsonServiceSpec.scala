@@ -2,32 +2,40 @@ package bigtop
 package http
 
 import akka.dispatch.{Await, Future}
-import akka.util.Duration
 import akka.util.duration._
+import akka.util.Duration
 import akka.util.Timeout
 import bigtop.concurrent._
 import bigtop.json._
 import bigtop.util._
 import bigtop.problem._
+import blueeyes.bkka.AkkaDefaults
 import blueeyes.concurrent.test._
 import blueeyes.core.data._
 import blueeyes.core.http._
 import blueeyes.core.http.MimeTypes._
-import blueeyes.core.service.test.BlueEyesServiceSpecification
+import blueeyes.core.service._
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST._
 import blueeyes.persistence.mongo.ConfigurableMongo
+import net.lag.configgy.Config
+import org.specs2.mutable.Specification
+import org.specs2.specification.{Fragment, Fragments, Step}
 import scalaz._
 
-trait JsonServiceSpec extends BlueEyesServiceSpecification
-    with BijectionsChunkFutureJson
-    with BijectionsChunkJson
-    with ResponseMatchers
-    with ValidationMatchers
-    with FutureImplicits
-    with FutureMatchers
-    with JsonFormatters
+trait JsonServiceSpec extends Specification
+  with AkkaDefaults
+  with BijectionsChunkFutureJson
+  with BijectionsChunkJson
+  with ResponseMatchers
+  with ValidationMatchers
+  with FutureImplicits
+  with FutureMatchers
+  with JsonFormatters
 {
+  implicit val queryDuration = Duration("3s")
+  implicit val queryTimeout = Timeout(queryDuration)
+
   case class FutureW[A](val f: Future[A]) {
     def await: A =
       Await.result(f, Duration("3s"))
@@ -50,15 +58,35 @@ trait JsonServiceSpec extends BlueEyesServiceSpecification
   // def convertResponse(in: HttpResponse[ByteChunk])(implicit timeout: Timeout): HttpResponse[JValue] =
   //   in.copy(content = in.content.map(chunk => chunkToFutureJValue(timeout)(chunk).await))
 
-  def doGet(url: String): HttpResponse[JValue] =
-    service.contentType[JValue](application/json).get[JValue](url).await
 
-  def doPost(url: String)(body: JValue): HttpResponse[JValue] =
-    service.contentType[JValue](application/json).post(url)(body).await
+  private val specBefore = Step {
+    sys.props.getOrElseUpdate (ConfigurableHttpClient.HttpClientSwitch, "true")
+    sys.props.getOrElseUpdate (ConfigurableMongo.MongoSwitch, "true")
+  }
 
-  def doPut(url: String)(body: JValue): HttpResponse[JValue] =
-    service.contentType[JValue](application/json).put(url)(body).await
+  private val specAfter = Step {
+    // Only crazy people mix tests in with production code.
+  }
 
-  def doDelete(url: String): HttpResponse[JValue] =
-    service.contentType[JValue](application/json).delete[JValue](url).await
+  override def map(fs: =>Fragments) = specBefore ^ fs ^ specAfter
+
+
+  def configure(configuration: String) =
+    Config.fromString(configuration)
+
+  def client(service: HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]) = new DummyClient(service)
+
+  def service: HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]
+
+  def doGet(url: String, httpClient: HttpClient[ByteChunk] = client(service)): HttpResponse[JValue] =
+    httpClient.contentType[JValue](application/json).get[JValue](url).await
+
+  def doPost(url: String, httpClient: HttpClient[ByteChunk] = client(service))(body: JValue): HttpResponse[JValue] =
+    httpClient.contentType[JValue](application/json).post(url)(body).await
+
+  def doPut(url: String, httpClient: HttpClient[ByteChunk] = client(service))(body: JValue): HttpResponse[JValue] =
+    httpClient.contentType[JValue](application/json).put(url)(body).await
+
+  def doDelete(url: String, httpClient: HttpClient[ByteChunk] = client(service)): HttpResponse[JValue] =
+    httpClient.contentType[JValue](application/json).delete[JValue](url).await
 }

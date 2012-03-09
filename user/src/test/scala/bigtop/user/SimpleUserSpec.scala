@@ -2,7 +2,7 @@ package bigtop
 package user
 
 import org.specs2.mutable.Specification
-import bigtop.util.BCrypt
+import bigtop.util._
 
 class SimpleUserSpec extends Specification {
 
@@ -22,11 +22,11 @@ class SimpleUserSpec extends Specification {
   "SimpleUser.isPasswordOk" should {
 
     "return true when the password is correct" in {
-      SimpleUser("noel", topSecret).isPasswordOk("topsecret")
+      SimpleUser(Uuid.create, "noel", topSecret, "Noel", "Welsh", true).isPasswordOk("topsecret")
     }
 
     "return false when the password is incorrect" in {
-      !SimpleUser("noel", topSecret).isPasswordOk("far00bar")
+      !SimpleUser(Uuid.create, "noel", topSecret, "Noel", "Welsh", false).isPasswordOk("far00bar")
     }
   }
 

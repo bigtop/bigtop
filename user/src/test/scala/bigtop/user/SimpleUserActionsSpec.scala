@@ -47,7 +47,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
 
   "SimpleUserActions.create" should {
     "return new user given username and password" in {
-      await(userActions.create(("username" -> "noel") ~ ("password" -> "secret"))) match {
+      await(userActions.create(("username" -> "noel") ~ ("password" -> "secret") ~ ("forenames" -> "Noel") ~ ("surname" -> "Welsh") ~ ("admin" -> false))) match {
         case Success(user)     => user.username mustEqual "noel"
         case Failure(response) => failure("did not expect failure: " + response)
       }

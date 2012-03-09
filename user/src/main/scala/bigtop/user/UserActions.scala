@@ -31,15 +31,19 @@ trait UserLogin[U <: User] extends UserAction[U] {
 }
 
 trait UserCreate[U <: User] extends UserAction[U] {
-  def create(data: JValue): UserValidation =
+  def create(data: JValue): UserValidation = {
+    def doesntExist(user: User) =
+      (for {
+        _ <- store.read(user.id).invert
+        _ <- store.searchByUsername(user.username).invert
+      } yield ()).mapFailure(f => Problems.Client.exists("user"))
+
     for {
       unsavedUser <- externalFormat.read(data).fv
-      savedUser   <- store.read(unsavedUser.id).invert.mapFailure {
-        f => Problems.Client.exists("user")
-      } flatMap {
-        p => store.create(unsavedUser)
-      }
+      _           <- doesntExist(unsavedUser)
+      savedUser   <- store.create(unsavedUser)
     } yield savedUser
+  }
 }
 
 trait UserRead[U <: User] extends UserAction[U] {
