@@ -55,6 +55,10 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     userActions.store.delete(user.id)
   }
 
+  def deleteAllUsers = {
+    userActions.database(remove.from(userActions.store.collection))
+  }
+
   var noel = SimpleUser(Uuid.create,
                         "noel",
                         Password.fromPassword("password"),
@@ -76,23 +80,22 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
 
 
   def initialized[T](f: => T) = {
-    createUser(noel)
+    deleteAllUsers.await
     deleteUser(dave)
-    deleteUser(test)
-    // deleteUser("dave")
-    // deleteUser("noel")
+    createUser(noel)
+    createUser(test)
     f
   }
 
   "POST /api/user/v1 (create user)" should {
     "return new user given username and password" in initialized {
       doPost("/api/user/v1", authorized("noel", "password")) {
-        test.toJson(SimpleUser.internalFormat)
+        dave.toJson(SimpleUser.internalFormat)
       } must beOk(beLike[JValue] {
         case json =>
           (json \ "id") match {
             case JString(id) =>
-              json mustEqual test.copy(id = Uuid(id)).toJson(SimpleUser.externalFormat)
+              json mustEqual dave.copy(id = Uuid(id)).toJson(SimpleUser.externalFormat)
             case _ => failure("Id not found in JSON "+json)
           }
       })
@@ -126,48 +129,43 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     }
 
     "fail to lookup another user" in initialized {
-      doGet("/api/user/v1/"+dave.id.toString, authorized("noel", "password")) must beProblem {
-        Client.notFound("user")
+      doGet("/api/user/v1/"+dave.id.toString, authorized("test", "topsecret")) must beProblem {
+        Client.notAuthorized("test", "user.read")
       }
     }
   }
 
   "POST /api/session/v1 (create session, aka login)" should {
     "return existing user given username and password" in initialized {
-      createUser(dave)
 
       doPost("/api/session/v1") {
-        ("username" -> "dave") ~
-        ("password" -> "password")
+        ("username" -> "test") ~
+        ("password" -> "topsecret")
       } must beOk(beLike[JValue] {
         case json =>
           (json \ "typename") mustEqual JString("session")
           (json \ "session")  mustEqual JObject(Nil)
           (json \ "user")     mustEqual {
-            dave.toJson(SimpleUser.externalFormat)
+            test.toJson(SimpleUser.externalFormat)
           }
           (json \ "password") mustEqual JNothing
       })
     }
 
     "return error given incorrect username" in initialized {
-      createUser(dave)
-
       // Log in with their password:
       doPost("/api/session/v1") {
-        ("username" -> "noel") ~
-        ("password" -> "supersecret")
+        ("username" -> "mctest") ~
+        ("password" -> "topsecret")
       } must beProblem {
         Client.loginUsernameIncorrect
       }
     }
 
     "return error given incorrect username" in initialized {
-      createUser(dave)
-
       // Log in with their username:
       doPost("/api/session/v1") {
-        ("username" -> "dave") ~
+        ("username" -> "test") ~
         ("password" -> "superwrong")
       } must beProblem {
         Client.loginPasswordIncorrect
@@ -184,7 +182,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
 
     "return error when missing password" in initialized {
       doPost("/api/session/v1") {
-        ("username" -> "dave")
+        ("username" -> "test")
       } must beProblem {
         Client.missing("password")
       }
@@ -193,16 +191,14 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
 
   "GET /api/session/v1/'id (read session, aka re-authenticate)" should {
     "return a preexisting session" in initialized {
-      createUser(dave)
-
-      val sessionId = login("dave", "password")
+      val sessionId = login("test", "topsecret")
 
       doGet("/api/session/v1/%s".format(sessionId), auth(client(service), sessionId)) must beOk {
         ("typename" -> "session") ~
         ("id" -> sessionId.toString) ~
         ("session" -> JObject.empty) ~
         ("user" -> {
-          dave.toJson(SimpleUser.externalFormat)
+          test.toJson(SimpleUser.externalFormat)
         })
       }
     }

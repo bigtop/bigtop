@@ -4,7 +4,7 @@ package user
 import bigtop.problem.Problem
 import bigtop.json.{JsonFormat, JsonWriter, JsonFormatters}
 import blueeyes.core.http.HttpRequest
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logger
 
 trait SessionCore[U <: User] extends UserTypes[U] with JsonFormatters {
 

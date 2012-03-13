@@ -11,21 +11,20 @@ import bigtop.problem.Problems._
 import bigtop.util.Uuid
 import blueeyes.persistence.mongo.{ConfigurableMongo, MongoImplicits, MongoUpdateObject}
 import blueeyes.json.JsonAST._
-import net.lag.configgy.ConfigMap
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
+import org.streum.configrity.Configuration
 import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
-class SimpleUserActions(val config: ConfigMap) extends UserActions[SimpleUser] with ConfigurableMongo {
+class SimpleUserActions(val config: Configuration) extends UserActions[SimpleUser] with ConfigurableMongo with Logging {
   val self = this
-  private val log = Logger.get
 
-  log.debug("user config %s", config)
+  logger.debug("user config %s".format(config))
 
-  lazy val mongoConfig = config.configMap("mongo")
+  lazy val mongoConfig = config.detach("mongo")
   lazy val mongoFacade = mongo(mongoConfig)
-  lazy val database = mongoFacade.database(config("mongo.database"))
+  lazy val database = mongoFacade.database(config[String]("mongo.database"))
 
   val externalFormat = SimpleUser.externalFormat
   lazy val store = new SimpleUserStore(self)

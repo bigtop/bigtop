@@ -13,7 +13,7 @@ import bigtop.json.{JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
 import bigtop.problem.{Problem, Problems, ProblemWriters}
 import bigtop.util.Uuid
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
 import scalaz.std.option.optionSyntax._
@@ -26,10 +26,11 @@ object UserServiceHandler extends BijectionsChunkJson
     with HttpRequestHandlerCombinators
     with ProblemWriters
     with JsonFormatters
+    with Logging
 {
 
   def apply[U <: User](sessionServices: SessionServices[U], userServices: UserServices[U]): AsyncHttpService[ByteChunk] = {
-    implicit val log = Logger.get
+    implicit val log = logger
 
     JsonSyncService(
       name   = "Session",

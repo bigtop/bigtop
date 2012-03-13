@@ -12,7 +12,7 @@ import blueeyes.core.data._
 import blueeyes.json.JsonParser
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logger
 import scalaz._
 import scalaz.syntax.validation._
 

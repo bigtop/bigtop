@@ -8,11 +8,11 @@ import blueeyes.persistence.mongo.{ConfigurableMongo, Mongo, Database}
 import blueeyes.core.service.ServiceContext
 import blueeyes.json.JsonAST.JValue
 import bigtop.util.Uuid
-import net.lag.configgy.ConfigMap
+import org.streum.configrity.Configuration
 
 object SimpleUserService {
 
-  def services(config: ConfigMap) = {
+  def services(config: Configuration) = {
 
     val sessionCore     = new LruMapSessionCore
     val sessionRead     = SimpleUserSessionRead(sessionCore)

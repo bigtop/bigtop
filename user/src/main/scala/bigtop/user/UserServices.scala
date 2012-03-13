@@ -14,12 +14,13 @@ import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import scalaz.syntax.validation._
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
 trait UserServices[U <: User] extends UserCreateService[U]
     with UserReadService[U]
     with UserUpdateService[U]
     with UserDeleteService[U]
+    with Logging
 {
 
   def action: UserActions[U]
@@ -32,7 +33,7 @@ trait UserServices[U <: User] extends UserCreateService[U]
       read,
       update,
       delete
-    )(Logger.apply)
+    )(logger)
 
 }
 

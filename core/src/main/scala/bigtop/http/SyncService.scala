@@ -7,7 +7,7 @@ import blueeyes.core.http._
 import blueeyes.core.http.HttpStatusCodes._
 import blueeyes.core.service.{CustomHttpService, HttpService, HttpRequestHandlerCombinators}
 import blueeyes.core.data.{Bijection, ByteChunk}
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logger
 
 
 case class LoggingService[A,B](name: String, kind: String, log: Logger, h: HttpService[A,B])

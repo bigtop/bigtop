@@ -1,9 +1,9 @@
 package bigtop
 package user
 
-import net.lag.configgy.ConfigMap
+import org.streum.configrity.Configuration
 
-class LruMapSessionServices[U <: User](val config:  ConfigMap,
+class LruMapSessionServices[U <: User](val config:  Configuration,
                                        val reader:  SessionReadService[U],
                                        val creator: SessionCreateService[U],
                                        val userActions: UserActions[U]) extends SessionServices[U] {

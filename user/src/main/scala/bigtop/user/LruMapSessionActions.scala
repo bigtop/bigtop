@@ -2,13 +2,12 @@ package bigtop
 package user
 
 import akka.dispatch.{Future, Promise}
-import net.lag.configgy.ConfigMap
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
+import org.streum.configrity.Configuration
 
-class LruMapSessionActions[U <: User](val config: ConfigMap, val userActions: UserActions[U]) extends SessionActions[U] {
-  private val log = Logger.get
+class LruMapSessionActions[U <: User](val config: Configuration, val userActions: UserActions[U]) extends SessionActions[U] with Logging {
 
-  log.debug("session config %s", config)
+  logger.debug("session config %s".format(config))
 
   val core = new SessionCore[U] {
 

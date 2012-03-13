@@ -18,7 +18,7 @@ import blueeyes.core.service._
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST._
 import blueeyes.persistence.mongo.ConfigurableMongo
-import net.lag.configgy.Config
+import org.streum.configrity.Configuration
 import org.specs2.mutable.Specification
 import org.specs2.specification.{Fragment, Fragments, Step}
 import scalaz._
@@ -72,7 +72,7 @@ trait JsonServiceSpec extends Specification
 
 
   def configure(configuration: String) =
-    Config.fromString(configuration)
+    Configuration.parse(configuration)
 
   def client(service: HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]) = new DummyClient(service)
 

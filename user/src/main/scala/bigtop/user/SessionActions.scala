@@ -9,8 +9,6 @@ import blueeyes.persistence.mongo._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import com.twitter.util.{LruMap,SynchronizedLruMap}
-import net.lag.configgy.ConfigMap
-import net.lag.logging.Logger
 import scala.collection.mutable.HashMap
 
 trait SessionActions[U <: User] extends SessionCreate[U]

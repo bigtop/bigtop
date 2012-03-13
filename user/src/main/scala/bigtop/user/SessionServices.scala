@@ -13,9 +13,9 @@ import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import scalaz.syntax.validation._
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
-trait SessionServices[U <: User] {
+trait SessionServices[U <: User] extends Logging {
 
   val create: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
 
@@ -27,7 +27,7 @@ trait SessionServices[U <: User] {
       "/api/session/v1",
       create,
       read
-    )(Logger.apply)
+    )(logger)
 
 }
 
