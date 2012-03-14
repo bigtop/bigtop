@@ -36,14 +36,3 @@ trait Authorizer[U <: User] extends Authenticator[U] with FutureImplicits {
   }
 
 }
-
-object SecurityCheck extends FutureImplicits {
-
-  def simpleCheck[A,U <: User](f: Option[U] => Boolean, operation: String): SecurityCheck[A,U] =
-    (req: HttpRequest[A], user: Option[U]) =>
-      if(f(user))
-        user.success.fv
-      else
-        Problems.Client.notAuthorized(user.map(_.username).getOrElse("unknown"), operation).fail.fv
-
-}

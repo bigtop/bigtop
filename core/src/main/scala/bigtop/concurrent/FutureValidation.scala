@@ -1,7 +1,8 @@
 package bigtop
 package concurrent
 
-import akka.dispatch.{Future, Promise}
+import akka.dispatch.{Await, Future, Promise}
+import akka.util.Duration
 import blueeyes.bkka.AkkaDefaults
 import scalaz.Validation
 import scalaz.syntax.validation._
@@ -38,6 +39,14 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
     ()
   }
 
+  def or[G](f: F => FutureValidation[G, S]) =
+    inner flatMap {
+      (v: Validation[F, S]) => v.fold(
+        success = s => Promise.successful(s.success[G]),
+        failure = f(_).inner
+      )
+    } fv
+
   /** Modifier to allow use of Future's flatMap: `foo.byFuture.flatMap( ... )` */
   def byFuture: WithFutureFlatMap[F, S] =
     WithFutureFlatMap(this)
@@ -53,6 +62,10 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
         success = s => s.fail,
         failure = f => f.success))
     )
+
+  /** Only use for testing */
+  def await =
+      Await.result(inner, Duration("3s"))
 
   def lift: FutureValidation[F, S] =
     this
