@@ -10,7 +10,8 @@ object BigtopBuild extends Build {
     "Sonatype"    at "http://oss.sonatype.org/content/repositories/releases",
     "Scala Tools" at "http://scala-tools.org/repo-snapshots",
     "JBoss"       at "http://repository.jboss.org/nexus/content/groups/public",
-    "Akka"        at "http://akka.io/repository",
+    //"Akka"        at "http://akka.io/repository",
+    "Typesafe"    at "http://repo.typesafe.com/typesafe/releases",
     "ReportGrid"  at "http://nexus.reportgrid.com/content/repositories/public-snapshots",
     "Untyped"     at "http://repo.untyped.com/",
     "Twitter"     at "http://maven.twttr.com"
