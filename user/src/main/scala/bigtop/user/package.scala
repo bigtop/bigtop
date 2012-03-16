@@ -2,12 +2,12 @@ package bigtop
 
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
-import blueeyes.core.http.HttpRequest
 import blueeyes.json.JsonAST._
+import blueeyes.core.http.HttpRequest
 
 package object user {
 
-  type SecurityCheck[A, U <: User] = (HttpRequest[A], Option[U]) => FutureValidation[Problem,Option[U]]
+  type SecurityPredicate[A, U <: User] = (HttpRequest[A], Option[U]) => FutureValidation[Problem,Option[U]]
 
   trait UserTypes[U <: User] {
 
