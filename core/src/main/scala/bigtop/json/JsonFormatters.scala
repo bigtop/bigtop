@@ -84,15 +84,6 @@ trait JsonFormatters {
     def read(json: JValue) = json.success[Problem]
   }
 
-  implicit val UnitJsonFormat: JsonFormat[Problem,Unit] = new JsonFormat[Problem,Unit] {
-    def write(in: Unit) = JNothing
-    def read(json: JValue) =
-      if(json == JNothing)
-        ().success
-      else
-        malformed("unit", json).fail
-  }
-
   implicit val SeqUuidJsonFormat: JsonFormat[Problem,Seq[Uuid]] = buildSeqFormat(UuidJsonFormat)
   implicit val SeqStringJsonFormat: JsonFormat[Problem,Seq[String]] = buildSeqFormat(StringJsonFormat)
   implicit val SeqBooleanJsonFormat: JsonFormat[Problem,Seq[Boolean]] = buildSeqFormat(BooleanJsonFormat)
