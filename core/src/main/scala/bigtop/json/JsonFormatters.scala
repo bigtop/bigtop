@@ -36,6 +36,8 @@ case class JValueW(json: JValue) {
 trait JsonFormatters {
   import Problems._
 
+  // Atomic Values ---------------------
+
   implicit val UuidJsonFormat: JsonFormat[Problem,Uuid] = new JsonFormat[Problem,Uuid] {
     def write(in: Uuid) = JString(in.toString)
     def read(json: JValue) =
@@ -84,14 +86,7 @@ trait JsonFormatters {
     def read(json: JValue) = json.success[Problem]
   }
 
-  implicit val UnitJsonFormat: JsonFormat[Problem,Unit] = new JsonFormat[Problem,Unit] {
-    def write(in: Unit) = JNothing
-    def read(json: JValue) =
-      if(json == JNothing)
-        ().success
-      else
-        malformed("unit", json).fail
-  }
+  // Seq Values ------------------------
 
   implicit val SeqUuidJsonFormat: JsonFormat[Problem,Seq[Uuid]] = buildSeqFormat(UuidJsonFormat)
   implicit val SeqStringJsonFormat: JsonFormat[Problem,Seq[String]] = buildSeqFormat(StringJsonFormat)
@@ -105,6 +100,32 @@ trait JsonFormatters {
       def read(json: JValue) =
         json -->? classOf[JArray] toSuccess (malformed("array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem,A]})#l, A])
     }
+
+  // Map -------------------------------
+
+  implicit def MapFormat[A,B](implicit keyFormat: Format[Problem, A, String], valFormat: JsonFormat[Problem, B]): JsonFormat[Problem, Map[A,B]] =
+    new JsonFormat[Problem, Map[A,B]] {
+      def write(in: Map[A,B]) =
+        JObject(in.toIterable.foldLeft(Nil: List[JField]){
+          (accum, pair) => JField(keyFormat.write(pair._1), valFormat.write(pair._2)) :: accum
+        })
+
+      def read(json: JValue) =
+        json -->? classOf[JObject] toSuccess (malformed("object", json)) flatMap (
+          obj =>
+            for {
+            fields <- obj.fields.foldLeft(Nil: List[Validation[Problem,(A,B)]]){
+                (accum, field) =>
+                  (for {
+                    key   <- keyFormat.read(field.name)
+                    value <- valFormat.read(field.value)
+                   } yield (key -> value)) :: accum
+              }.sequence[({type l[C] = Validation[Problem,C]})#l, (A,B)]
+            } yield Map[A,B]() ++ fields)
+    }
+
+
+  // Other -----------------------------
 
   def malformed(`type`: String, json: JValue) = {
     import blueeyes.json.Printer._
