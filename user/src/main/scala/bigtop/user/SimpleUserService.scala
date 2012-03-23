@@ -19,19 +19,21 @@ object SimpleUserService {
   val canRead   = isAdmin("user.read")
   val canUpdate = isAdmin("user.update")
   val canDelete = isAdmin("user.delete")
+  val canSwitch = isAdmin("session.switchUser")
 
   def services(config: Configuration) = {
 
-    val userActions     = SimpleUserActionsBuilder(config)
+    val userActions       = SimpleUserActionsBuilder(config)
 
-    val sessionCore     = new LruMapSessionCore
-    val sessionCreate   = SessionCreate[SimpleUser](userActions, sessionCore)
-    val sessionRead     = SessionRead[SimpleUser](sessionCore)
-    val authorizer      = SessionCookieAuthorizer[SimpleUser](sessionRead)
-    val sessionActions  = SessionActionsBuilder[SimpleUser](sessionCore.externalFormat, sessionCreate, sessionRead)
+    val sessionCore       = new LruMapSessionCore
+    val sessionCreate     = SessionCreate[SimpleUser](userActions, sessionCore)
+    val sessionRead       = SessionRead[SimpleUser](sessionCore)
+    val sessionSwitchUser = SessionSwitchUser[SimpleUser](userActions, sessionRead, sessionCore)
+    val authorizer        = SessionCookieAuthorizer[SimpleUser](sessionRead)
+    val sessionActions    = SessionActionsBuilder[SimpleUser](sessionCore.externalFormat, sessionCreate, sessionRead, sessionSwitchUser)
 
-    val userServices    = UserServicesBuilder(userActions, canCreate, canRead, canUpdate, canDelete, authorizer)
-    val sessionServices = SessionServicesBuilder(sessionActions, authorizer)
+    val userServices      = UserServicesBuilder(userActions, canCreate, canRead, canUpdate, canDelete, authorizer)
+    val sessionServices   = SessionServicesBuilder(sessionActions, canSwitch, authorizer)
 
     (sessionServices.service ~ userServices.service, authorizer, userActions, sessionActions)
   }

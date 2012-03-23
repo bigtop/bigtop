@@ -17,16 +17,22 @@ case class SessionCookieAuthorizer[U <: User](val action: SessionRead[U]) extend
 {
 
   def authenticate[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+    for {
+      sess <- session(request)
+    } yield sess.map(_.effectiveUser)
+  }
+
+  def session[A](request: HttpRequest[A]): FutureValidation[Problem,Option[Session[U]]] = {
     SessionCookie.get(request) map {
       cookie =>
         for {
           uuid <- Uuid.parse(cookie.cookieValue).toSuccess(
             Client.malformed("session",
-                                     "Session cookie did not contain a valid UUID")
+                             "Session cookie did not contain a valid UUID")
           ).fv
           session <- action.read(uuid)
-        } yield (Some(session.effectiveUser) : Option[U])
-    } getOrElse (None : Option[U]).success[Problem].fv
+        } yield (Some(session) : Option[Session[U]])
+    } getOrElse (None : Option[Session[U]]).success[Problem].fv
   }
 
 }

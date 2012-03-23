@@ -21,6 +21,8 @@ trait SessionActions[U <: User] extends UserTypes[U] {
 
   def read(id: Uuid): SessionValidation
 
+  def switchUser(id: Uuid, effectiveUser: Uuid): SessionValidation
+
 }
 
 // Implementaiton
@@ -28,7 +30,8 @@ trait SessionActions[U <: User] extends UserTypes[U] {
 case class SessionActionsBuilder[U <: User](
   val externalFormat: JsonWriter[Session[U]],
   val sessionCreate: SessionCreate[U],
-  val sessionRead: SessionRead[U]
+  val sessionRead: SessionRead[U],
+  val sessionSwitchUser: SessionSwitchUser[U]
 ) extends SessionActions[U] with UserTypes[U] {
 
   def create(username: String, password: String): SessionValidation =
@@ -36,6 +39,9 @@ case class SessionActionsBuilder[U <: User](
 
   def read(id: Uuid): SessionValidation =
     sessionRead.read(id)
+
+  def switchUser(id: Uuid, effectiveUser: Uuid): SessionValidation =
+    sessionSwitchUser.switchUser(id, effectiveUser)
 
 }
 
@@ -66,5 +72,22 @@ case class SessionRead[U <: User](val core: SessionCore[U]) extends SessionActio
 
   def read(id: Uuid): SessionValidation =
     core.store.read(id)
+
+}
+
+
+case class SessionSwitchUser[U <: User](
+  val userActions: UserActions[U],
+  val sessionRead: SessionRead[U],
+  val core: SessionCore[U]
+) extends SessionAction[U] {
+
+  def switchUser(id: Uuid, effectiveUser: Uuid) = {
+    for {
+      session <- sessionRead.read(id)
+      user    <- userActions.read(effectiveUser)
+      session <- core.store.update(id, session.copy(effectiveUser = user))
+    } yield session
+  }
 
 }
