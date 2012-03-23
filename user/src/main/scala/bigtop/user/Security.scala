@@ -27,12 +27,11 @@ trait Authenticator[U <: User] {
 
 trait Authorizer[U <: User] extends Authenticator[U] with FutureImplicits {
 
-  def authorize[A,B](request: HttpRequest[A], condition: SecurityCheck[A,U])(f: Option[U] => FutureValidation[Problem, B]) = {
+  def authorize[A,B](request: HttpRequest[A], condition: SecurityCheck[A,U]) = {
     for {
       user1    <- authenticate(request)
       user2    <- condition(request, user1).fv
-      response <- f(user2)
-    } yield response
+    } yield user2
   }
 
 }

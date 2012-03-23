@@ -15,6 +15,8 @@ import bigtop.problem.Problems._
 import scalaz.syntax.validation._
 import com.weiglewilczek.slf4s.Logging
 
+// Interface
+
 trait SessionServices[U <: User] extends Logging {
 
   val create: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
@@ -31,6 +33,17 @@ trait SessionServices[U <: User] extends Logging {
 
 }
 
+// Implementation
+
+case class SessionServicesBuilder[U <: User](val actions: SessionActions[U], val auth: Authorizer[U]) extends SessionServices[U] {
+
+  val sessionCreate = SessionCreateService(actions)
+  val sessionRead   = SessionReadService(actions, auth)
+
+  val create = sessionCreate.create
+  val read   = sessionRead.read
+
+}
 
 trait SessionService[U <: User] extends HttpRequestHandlerCombinators
     with JsonServiceImplicits
@@ -38,9 +51,7 @@ trait SessionService[U <: User] extends HttpRequestHandlerCombinators
     with JsonFormatters
 
 
-trait SessionCreateService[U <: User] extends SessionService[U] {
-
-  def action: SessionCreate[U]
+case class SessionCreateService[U <: User](val actions: SessionActions[U]) extends SessionService[U] {
 
   val create =
     service {
@@ -49,18 +60,14 @@ trait SessionCreateService[U <: User] extends SessionService[U] {
           json     <- req.json
           username <- json.mandatory[String]("username").fv
           password <- json.mandatory[String]("password").fv
-          result   <- action.create(username, password)
-        } yield result).toResponse(action.core.externalFormat)
+          result   <- actions.create(username, password)
+        } yield result).toResponse(actions.externalFormat)
     }
 
 }
 
 
-trait SessionReadService[U <: User] extends SessionService[U] {
-
-  def action: SessionRead[U]
-
-  def authorizer: Authorizer[U]
+case class SessionReadService[U <: User](val actions: SessionActions[U], val auth: Authorizer[U]) extends SessionService[U] {
 
   /** Only the user that created this session can read */
   val canRead: SecurityCheck[Future[JValue],U] =
@@ -68,7 +75,7 @@ trait SessionReadService[U <: User] extends SessionService[U] {
       (req: HttpRequest[Future[JValue]], user: Option[U]) =>
         for {
           id      <- req.mandatoryParam[Uuid]('id).fv
-          session <- action.read(id)
+          session <- actions.read(id)
           user    <- if(user.map(_ == session.user).getOrElse(false))
                        user.success[Problem].fv
                      else
@@ -80,12 +87,11 @@ trait SessionReadService[U <: User] extends SessionService[U] {
   val read =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        authorizer.authorize(req, canRead) { user =>
-          for {
-            id      <- req.mandatoryParam[Uuid]('id).fv
-            session <- action.read(id)
-          } yield session
-        }.toResponse(action.core.externalFormat)
+        (for {
+          user    <- auth.authorize(req, canRead)
+          id      <- req.mandatoryParam[Uuid]('id).fv
+          session <- actions.read(id)
+        } yield session).toResponse(actions.externalFormat)
     }
 
 }

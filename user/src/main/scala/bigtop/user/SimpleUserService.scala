@@ -12,17 +12,26 @@ import org.streum.configrity.Configuration
 
 object SimpleUserService {
 
+  def isAdmin(operation: String): SecurityCheck[Future[JValue],SimpleUser] =
+    SecurityCheck.simpleCheck(user => user.map(_.admin).getOrElse(false), operation)
+
+  val canCreate = isAdmin("user.create")
+  val canRead   = isAdmin("user.read")
+  val canUpdate = isAdmin("user.update")
+  val canDelete = isAdmin("user.delete")
+
   def services(config: Configuration) = {
 
+    val userActions     = SimpleUserActionsBuilder(config)
+
     val sessionCore     = new LruMapSessionCore
-    val sessionRead     = SimpleUserSessionRead(sessionCore)
+    val sessionCreate   = SessionCreate[SimpleUser](userActions, sessionCore)
+    val sessionRead     = SessionRead[SimpleUser](sessionCore)
     val authorizer      = SimpleUserAuthorizer(sessionRead)
+    val sessionActions  = SessionActionsBuilder[SimpleUser](sessionCore.externalFormat, sessionCreate, sessionRead)
 
-    val userActions     = new SimpleUserActions(config)
-    val sessionActions  = SimpleUserSessionActions(sessionCore, userActions, sessionRead)
-
-    val userServices    = SimpleUserUserServices(authorizer, userActions)
-    val sessionServices = new SimpleUserSessionServices(authorizer, sessionActions)
+    val userServices    = UserServicesBuilder(userActions, canCreate, canRead, canUpdate, canDelete, authorizer)
+    val sessionServices = SessionServicesBuilder(sessionActions, authorizer)
 
     (sessionServices.service ~ userServices.service, authorizer, userActions, sessionActions)
   }
@@ -38,36 +47,5 @@ class LruMapSessionCore extends SessionCore[SimpleUser] {
 
 }
 
-case class SimpleUserSessionRead(val core: SessionCore[SimpleUser])
-  extends SessionRead[SimpleUser]
-
-case class SimpleUserAuthorizer(val action: SimpleUserSessionRead)
+case class SimpleUserAuthorizer(val action: SessionRead[SimpleUser])
   extends SessionCookieAuthorizer[SimpleUser]
-
-case class SimpleUserSessionActions(val core: SessionCore[SimpleUser],
-                                    val userActions: UserActions[SimpleUser],
-                                    val sessionRead: SessionRead[SimpleUser])
-  extends SessionActions[SimpleUser]
-{
-  override def read(id: Uuid) = sessionRead.read(id)
-}
-
-
-case class SimpleUserUserServices(val authorizer: Authorizer[SimpleUser],
-                              val action: UserActions[SimpleUser])
-    extends UserServices[SimpleUser] {
-
-  def isAdmin(operation: String): SecurityCheck[Future[JValue],SimpleUser] =
-    SecurityCheck.simpleCheck(user => user.map(_.admin).getOrElse(false), operation)
-
-  val canCreate = isAdmin("user.create")
-  val canRead   = isAdmin("user.read")
-  val canUpdate = isAdmin("user.update")
-  val canDelete = isAdmin("user.delete")
-}
-
-case class SimpleUserSessionServices(val authorizer: Authorizer[SimpleUser],
-                                     val action: SessionActions[SimpleUser])
-  extends SessionServices[SimpleUser]
-  with SessionCreateService[SimpleUser]
-  with SessionReadService[SimpleUser]

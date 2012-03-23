@@ -56,7 +56,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
   }
 
   def deleteAllUsers = {
-    userActions.database(remove.from(userActions.store.collection))
+    database(remove.from("users"))
   }
 
   var noel = SimpleUser(Uuid.create,
