@@ -29,7 +29,7 @@ trait SessionServices[U <: User] extends Logging
   val switchUser: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
 
   def service =
-    path("/api/session/v1/switchUser/'id") {
+    path("/api/session/v1/switch-user/'id") {
       json {
         switchUser
       }
