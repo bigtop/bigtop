@@ -11,12 +11,10 @@ import scalaz.Validation
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
-trait SessionCookieAuthorizer[U <: User] extends Authorizer[U]
+case class SessionCookieAuthorizer[U <: User](val action: SessionRead[U]) extends Authorizer[U]
     with HttpHeaderImplicits
     with FutureImplicits
 {
-
-  def action: SessionRead[U]
 
   def authenticate[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
     SessionCookie.get(request) map {
@@ -27,7 +25,7 @@ trait SessionCookieAuthorizer[U <: User] extends Authorizer[U]
                                      "Session cookie did not contain a valid UUID")
           ).fv
           session <- action.read(uuid)
-        } yield (Some(session.user) : Option[U])
+        } yield (Some(session.effectiveUser) : Option[U])
     } getOrElse (None : Option[U]).success[Problem].fv
   }
 

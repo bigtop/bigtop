@@ -76,7 +76,7 @@ case class SessionReadService[U <: User](val actions: SessionActions[U], val aut
         for {
           id      <- req.mandatoryParam[Uuid]('id).fv
           session <- actions.read(id)
-          user    <- if(user.map(_ == session.user).getOrElse(false))
+          user    <- if(user.map(_ == session.effectiveUser).getOrElse(false))
                        user.success[Problem].fv
                      else
                        Client.notAuthorized(user.map(_.username).getOrElse("unknown"),

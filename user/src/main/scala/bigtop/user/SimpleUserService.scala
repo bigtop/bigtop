@@ -27,7 +27,7 @@ object SimpleUserService {
     val sessionCore     = new LruMapSessionCore
     val sessionCreate   = SessionCreate[SimpleUser](userActions, sessionCore)
     val sessionRead     = SessionRead[SimpleUser](sessionCore)
-    val authorizer      = SimpleUserAuthorizer(sessionRead)
+    val authorizer      = SessionCookieAuthorizer[SimpleUser](sessionRead)
     val sessionActions  = SessionActionsBuilder[SimpleUser](sessionCore.externalFormat, sessionCreate, sessionRead)
 
     val userServices    = UserServicesBuilder(userActions, canCreate, canRead, canUpdate, canDelete, authorizer)
@@ -46,6 +46,3 @@ class LruMapSessionCore extends SessionCore[SimpleUser] {
   val externalFormat = new SessionWriter[SimpleUser] {}
 
 }
-
-case class SimpleUserAuthorizer(val action: SessionRead[SimpleUser])
-  extends SessionCookieAuthorizer[SimpleUser]

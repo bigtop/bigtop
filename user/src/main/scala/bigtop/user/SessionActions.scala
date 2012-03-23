@@ -54,7 +54,7 @@ case class SessionCreate[U <: User](val userActions: UserActions[U], val core: S
       user <- userActions.login(username, password)
     } yield {
       val id = Uuid.create()
-      val session = Session(id, user, new HashMap[String, JValue]())(userActions.externalFormat)
+      val session = Session(id, user, user, new HashMap[String, JValue]())(userActions.externalFormat)
       core.store.create(id, session)
       session
     }
