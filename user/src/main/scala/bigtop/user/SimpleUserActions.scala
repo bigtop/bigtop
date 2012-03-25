@@ -9,7 +9,7 @@ import bigtop.json._
 import bigtop.problem._
 import bigtop.problem.Problems._
 import bigtop.util.Uuid
-import blueeyes.persistence.mongo.{ConfigurableMongo, MongoImplicits, MongoUpdateObject}
+import blueeyes.persistence.mongo._
 import blueeyes.json.JsonAST._
 import com.weiglewilczek.slf4s.Logging
 import org.streum.configrity.Configuration
@@ -17,20 +17,22 @@ import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
-class SimpleUserActions(val config: Configuration) extends UserActions[SimpleUser] with ConfigurableMongo with Logging {
-  val self = this
+object SimpleUserActionsBuilder extends ConfigurableMongo {
 
-  logger.debug("user config %s".format(config))
+  def apply(config: Configuration): UserActions[SimpleUser] = {
+    lazy val mongoConfig = config.detach("mongo")
+    lazy val mongoFacade = mongo(mongoConfig)
+    lazy val database = mongoFacade.database(config[String]("mongo.database"))
 
-  lazy val mongoConfig = config.detach("mongo")
-  lazy val mongoFacade = mongo(mongoConfig)
-  lazy val database = mongoFacade.database(config[String]("mongo.database"))
+    val externalFormat = SimpleUser.externalFormat
+    lazy val store = new SimpleUserStore(database)
 
-  val externalFormat = SimpleUser.externalFormat
-  lazy val store = new SimpleUserStore(self)
+    UserActionsBuilder(store, externalFormat)
+  }
+
 }
 
-class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser] with JsonFormatters with MongoImplicits {
+class SimpleUserStore(database: Database) extends UserStore[SimpleUser] with JsonFormatters with MongoImplicits {
   import FutureImplicits._
 
   implicit def queryTimeout = Timeout(3.seconds)
@@ -53,21 +55,21 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser] w
 
   def create(user: SimpleUser): UserValidation = {
     val result: Future[Unit] =
-      config.database(insert(internalFormat.write(user)).into(collection))
+      database(insert(internalFormat.write(user)).into(collection))
 
     mapOrHandleError(result, (_: Unit) => user)
   }
 
   def read(id: Uuid): UserValidation = {
     val user: Future[Option[JObject]] =
-      config.database(selectOne().from(collection).where("id" === id.toJson))
+      database(selectOne().from(collection).where("id" === id.toJson))
 
     user map { u => u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _) }
   }
 
   def update(user: SimpleUser): UserValidation = {
     val result: Future[Unit] =
-      config.database(MongoImplicits.update(collection)
+      database(MongoImplicits.update(collection)
                       .set(new MongoUpdateObject(internalFormat.write(user)))
                       .where("username" === user.username))
     mapOrHandleError(result, (_: Unit) => user)
@@ -75,14 +77,14 @@ class SimpleUserStore(config: SimpleUserActions) extends UserStore[SimpleUser] w
 
   def delete(id: Uuid): UnitValidation = {
     val result: Future[Unit] =
-      config.database(remove.from(collection).where("id" === id.toJson))
+      database(remove.from(collection).where("id" === id.toJson))
 
     mapOrHandleError(result, (_: Unit) => ())
   }
 
   def searchByUsername(username: String): UserValidation = {
     val user: Future[Option[JObject]] =
-      config.database(selectOne().from(collection).where("username" === username))
+      database(selectOne().from(collection).where("username" === username))
 
     user map { u => u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _) }
   }

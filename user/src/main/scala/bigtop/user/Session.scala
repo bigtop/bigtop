@@ -9,7 +9,8 @@ import bigtop.util.Uuid
 import scala.collection.mutable.Map
 
 case class Session[U](val id: Uuid,
-                      val user: U,
+                      val realUser: U,
+                      val effectiveUser: U,
                       val session: Map[String, JValue])
                      (implicit val userWriter: JsonWriter[U])
 
@@ -19,7 +20,7 @@ trait SessionWriter[U] extends JsonWriter[Session[U]] with JsonFormatters {
     ("typename" -> "session") ~
     ("id" -> session.id.toJson) ~
     ("session" -> session.session.toList.map(pair => JField(pair._1, pair._2))) ~
-    ("user" -> session.userWriter.write(session.user))
+    ("user" -> session.userWriter.write(session.effectiveUser))
   }
 
 }

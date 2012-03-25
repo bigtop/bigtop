@@ -23,16 +23,23 @@ trait Authenticator[U <: User] {
       user => user.toSuccess(Client.notAuthorized("unknown", operation))
     }
 
+  /** Return the session, if one exists, this request is authenticated as */
+  def session[A](request: HttpRequest[A]): FutureValidation[Problem,Option[Session[U]]]
+
+  def mandatorySession[A](request: HttpRequest[A], operation: String): FutureValidation[Problem,Session[U]] =
+    session(request).flatMap {
+      sess => sess.toSuccess(Client.notAuthorized("unknown", operation))
+    }
+
 }
 
 trait Authorizer[U <: User] extends Authenticator[U] with FutureImplicits {
 
-  def authorize[A,B](request: HttpRequest[A], condition: SecurityCheck[A,U])(f: Option[U] => FutureValidation[Problem, B]) = {
+  def authorize[A,B](request: HttpRequest[A], condition: SecurityCheck[A,U]) = {
     for {
       user1    <- authenticate(request)
       user2    <- condition(request, user1).fv
-      response <- f(user2)
-    } yield response
+    } yield user2
   }
 
 }

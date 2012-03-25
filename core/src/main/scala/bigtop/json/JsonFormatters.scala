@@ -94,7 +94,7 @@ trait JsonFormatters {
   implicit val SeqIntJsonFormat: JsonFormat[Problem,Seq[Int]] = buildSeqFormat(IntJsonFormat)
   implicit val SeqDoubleJsonFormat: JsonFormat[Problem,Seq[Double]] = buildSeqFormat(DoubleJsonFormat)
 
-  implicit def buildSeqFormat[A](format: JsonFormat[Problem,A]): JsonFormat[Problem,Seq[A]] =
+  implicit def buildSeqFormat[A](implicit format: JsonFormat[Problem,A]): JsonFormat[Problem,Seq[A]] =
     new JsonFormat[Problem,Seq[A]] {
       def write(in: Seq[A]) = JArray(in.map(format.write _).toList)
       def read(json: JValue) =

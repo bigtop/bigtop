@@ -2,8 +2,8 @@ package bigtop
 package user
 
 import akka.dispatch.Future
-import blueeyes.core.http.HttpRequest
-import blueeyes.core.service.HttpRequestHandlerCombinators
+import blueeyes.core.http.{HttpRequest, HttpResponse}
+import blueeyes.core.service.{HttpRequestHandlerCombinators, HttpService}
 import blueeyes.json.JsonAST.JValue
 import blueeyes.json.JsonDSL._
 import bigtop.concurrent.FutureImplicits
@@ -16,25 +16,49 @@ import bigtop.problem.Problems._
 import scalaz.syntax.validation._
 import com.weiglewilczek.slf4s.Logging
 
-trait UserServices[U <: User] extends UserCreateService[U]
-    with UserReadService[U]
-    with UserUpdateService[U]
-    with UserDeleteService[U]
-    with Logging
-{
 
-  def action: UserActions[U]
+// Interface
+
+trait UserServices[U <: User] extends Logging {
+
+  def actions: UserActions[U]
+
+  def create : HttpService[Future[JValue], Future[HttpResponse[JValue]]]
+  def read   : HttpService[Future[JValue], Future[HttpResponse[JValue]]]
+  def update : HttpService[Future[JValue], Future[HttpResponse[JValue]]]
+  def delete : HttpService[Future[JValue], Future[HttpResponse[JValue]]]
 
   def service =
     JsonSyncService(
-      "user",
-      "/api/user/v1",
-      create,
-      read,
-      update,
-      delete
-    )(logger)
+      name   = "user",
+      prefix = "/api/user/v1",
+      create = create,
+      read   = read,
+      update = update,
+      delete = delete)(logger)
 
+}
+
+// Implementations
+
+case class UserServicesBuilder[U <: User](
+  val actions: UserActions[U],
+  val canCreate: SecurityCheck[Future[JValue],U],
+  val canRead  : SecurityCheck[Future[JValue],U],
+  val canUpdate: SecurityCheck[Future[JValue],U],
+  val canDelete: SecurityCheck[Future[JValue],U],
+  val auth: Authorizer[U]
+) extends UserServices[U] {
+
+  val userCreate = UserCreateService(actions, canCreate, auth)
+  val userRead   = UserReadService(actions, canRead, auth)
+  val userUpdate = UserUpdateService(actions, canUpdate, auth)
+  val userDelete = UserDeleteService(actions, canDelete, auth)
+
+  val create = userCreate.create
+  val read   = userRead.read
+  val update = userUpdate.update
+  val delete = userDelete.delete
 }
 
 
@@ -44,91 +68,67 @@ trait UserService[U <: User] extends HttpRequestHandlerCombinators
     with JsonFormatters
 {
 
-  def authorizer: Authorizer[U]
+  def auth: Authorizer[U]
 
 }
 
 
-trait UserCreateService[U <: User] extends UserService[U] {
+case class UserCreateService[U <: User](val actions: UserActions[U], val canCreate: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
 
-  def action: UserCreate[U]
-
-  def canCreate: SecurityCheck[Future[JValue],U]
-
-  def create =
+  val create =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        authorizer.authorize(req, canCreate) {
-          user =>
-            for {
-              json <- req.json
-              user <- action.create(json)
-            } yield user
-        }.toResponse(action.externalFormat)
+        (for {
+          _    <- auth.authorize(req, canCreate)
+          json <- req.json
+          user <- actions.create(json)
+        } yield user).toResponse(actions.externalFormat)
     }
 
 }
 
 
-trait UserReadService[U <: User] extends UserService[U] {
-
-  def action: UserRead[U]
-
-  def canRead: SecurityCheck[Future[JValue],U]
+case class UserReadService[U <: User](val actions: UserActions[U], val canRead: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
 
   def read =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        authorizer.authorize(req, canRead) {
-          user =>
-            for {
-              id   <- req.mandatoryParam[Uuid]('id).fv
-              user <- action.read(id)
-            } yield user
-        }.toResponse(action.externalFormat)
+        (for {
+          user <- auth.authorize(req, canRead)
+          id   <- req.mandatoryParam[Uuid]('id).fv
+          user <- actions.read(id)
+        } yield user).toResponse(actions.externalFormat)
     }
 
 }
 
 
-trait UserUpdateService[U <: User] extends UserService[U] {
-
-  def action: UserUpdate[U]
-
-  def canUpdate: SecurityCheck[Future[JValue],U]
+case class UserUpdateService[U <: User](val actions: UserActions[U], val canUpdate: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
 
   def update =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        authorizer.authorize(req, canUpdate) {
-          user =>
-            for {
-              id   <- req.mandatoryParam[Uuid]('id).fv
-              data <- req.json
-              _    <- action.update(id, data)
-            } yield ("status" -> "ok"): JValue
-        }.toResponse
+        (for {
+          user <- auth.authorize(req, canUpdate)
+          id   <- req.mandatoryParam[Uuid]('id).fv
+          data <- req.json
+          _    <- actions.update(id, data)
+        } yield ("status" -> "ok"): JValue).toResponse
     }
 
 }
 
 
-trait UserDeleteService[U <: User] extends UserService[U] {
-
-  def action: UserDelete[U]
-
-  def canDelete: SecurityCheck[Future[JValue],U]
+case class UserDeleteService[U <: User](val actions: UserActions[U], val canDelete: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
 
   def delete =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        authorizer.authorize(req, canDelete) {
-          user =>
-            for {
-              id <- req.mandatoryParam[Uuid]('id).fv
-              _  <- action.delete(id)
-            } yield ("status" -> "ok"): JValue
-        }.toResponse
+        (for {
+          user <- auth.authorize(req, canDelete)
+          id <- req.mandatoryParam[Uuid]('id).fv
+          _  <- actions.delete(id)
+        } yield ("status" -> "ok"): JValue).toResponse
     }
 
 }
