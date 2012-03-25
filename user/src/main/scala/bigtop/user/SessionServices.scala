@@ -55,9 +55,9 @@ case class SessionServicesBuilder[U <: User](
   val sessionRead       = SessionReadService(actions, auth)
   val sessionSwitchUser = SessionSwitchUserService(actions, canSwitch, auth)
 
-  val create     = sessionCreate.create
-  val read       = sessionRead.read
-  val switchUser = sessionSwitchUser.switchUser
+  lazy val create     = sessionCreate.create
+  lazy val read       = sessionRead.read
+  lazy val switchUser = sessionSwitchUser.switchUser
 
 }
 

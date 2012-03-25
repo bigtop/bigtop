@@ -55,10 +55,10 @@ case class UserServicesBuilder[U <: User](
   val userUpdate = UserUpdateService(actions, canUpdate, auth)
   val userDelete = UserDeleteService(actions, canDelete, auth)
 
-  val create = userCreate.create
-  val read   = userRead.read
-  val update = userUpdate.update
-  val delete = userDelete.delete
+  lazy val create = userCreate.create
+  lazy val read   = userRead.read
+  lazy val update = userUpdate.update
+  lazy val delete = userDelete.delete
 }
 
 
