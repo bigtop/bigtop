@@ -45,14 +45,14 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     auth(client(service), login(username, password))
 
   def createUser(user: SimpleUser): Uuid = {
-    userActions.store.create(user).await.fold(
+    userActions.create(user).await.fold(
       success = u => u.id,
       failure = p => sys.error(p.toString)
     )
   }
 
   def deleteUser(user: SimpleUser): Unit = {
-    userActions.store.delete(user.id)
+    userActions.delete(user.id)
   }
 
   def deleteAllUsers = {

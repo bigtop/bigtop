@@ -7,7 +7,7 @@ import blueeyes.core.service._
 import blueeyes.json.JsonAST.JValue
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
-import bigtop.json.JsonFormatters
+import bigtop.json._
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
@@ -21,7 +21,6 @@ trait SessionServices[U <: User] extends Logging
   with HttpRequestHandlerCombinators
   with JsonRequestHandlerCombinators
 {
-
   val create: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
 
   val read: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
@@ -48,27 +47,27 @@ trait SessionServices[U <: User] extends Logging
 case class SessionServicesBuilder[U <: User](
   val actions: SessionActions[U],
   val canSwitch: SecurityCheck[Future[JValue],U],
-  val auth: Authorizer[U]
+  val auth: Authorizer[U],
+  val externalFormat: JsonWriter[Session[U]]
 ) extends SessionServices[U] {
-
-  val sessionCreate     = SessionCreateService(actions)
-  val sessionRead       = SessionReadService(actions, auth)
-  val sessionSwitchUser = SessionSwitchUserService(actions, canSwitch, auth)
+  val sessionCreate     = SessionCreateService(actions, externalFormat)
+  val sessionRead       = SessionReadService(actions, auth, externalFormat)
+  val sessionSwitchUser = SessionSwitchUserService(actions, canSwitch, auth, externalFormat)
 
   lazy val create     = sessionCreate.create
   lazy val read       = sessionRead.read
   lazy val switchUser = sessionSwitchUser.switchUser
-
 }
 
 trait SessionService[U <: User] extends HttpRequestHandlerCombinators
-    with JsonServiceImplicits
-    with FutureImplicits
-    with JsonFormatters
+  with JsonServiceImplicits
+  with FutureImplicits
+  with JsonFormatters
 
-
-case class SessionCreateService[U <: User](val actions: SessionActions[U]) extends SessionService[U] {
-
+case class SessionCreateService[U <: User](
+  val actions: SessionActions[U],
+  val externalFormat: JsonWriter[Session[U]]
+) extends SessionService[U] {
   val create =
     service {
       (req: HttpRequest[Future[JValue]]) =>
@@ -77,14 +76,15 @@ case class SessionCreateService[U <: User](val actions: SessionActions[U]) exten
           username <- json.mandatory[String]("username").fv
           password <- json.mandatory[String]("password").fv
           result   <- actions.create(username, password)
-        } yield result).toResponse(actions.externalFormat)
+        } yield result).toResponse(externalFormat)
     }
-
 }
 
-
-case class SessionReadService[U <: User](val actions: SessionActions[U], val auth: Authorizer[U]) extends SessionService[U] {
-
+case class SessionReadService[U <: User](
+  val actions: SessionActions[U],
+  val auth: Authorizer[U],
+  val externalFormat: JsonWriter[Session[U]]
+) extends SessionService[U] {
   /** Only the user that created this session can read */
   val canRead: SecurityCheck[Future[JValue],U] =
     SecurityCheck(
@@ -107,18 +107,16 @@ case class SessionReadService[U <: User](val actions: SessionActions[U], val aut
           user    <- auth.authorize(req, canRead)
           id      <- req.mandatoryParam[Uuid]('id).fv
           session <- actions.read(id)
-        } yield session).toResponse(actions.externalFormat)
+        } yield session).toResponse(externalFormat)
     }
-
 }
-
 
 case class SessionSwitchUserService[U <: User](
   val actions: SessionActions[U],
   val canSwitch: SecurityCheck[Future[JValue],U],
-  val auth: Authorizer[U]
+  val auth: Authorizer[U],
+  val externalFormat: JsonWriter[Session[U]]
 ) extends SessionService[U] {
-
   val switchUser =
     service {
       (req: HttpRequest[Future[JValue]]) =>
@@ -127,7 +125,6 @@ case class SessionSwitchUserService[U <: User](
           user          <- canSwitch(req, Some(session.realUser))
           effectiveUser <- req.mandatoryParam[Uuid]('effectiveUser).fv
           session       <- actions.switchUser(session.id, effectiveUser)
-        } yield session).toResponse(actions.externalFormat)
+        } yield session).toResponse(externalFormat)
     }
-
 }

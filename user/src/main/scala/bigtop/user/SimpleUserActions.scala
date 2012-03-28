@@ -17,29 +17,71 @@ import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
-object SimpleUserActionsBuilder extends ConfigurableMongo {
+case class SimpleUserActions(val config: Configuration) extends UserActions[SimpleUser]
+  with ConfigurableMongo
+  with JsonFormatters
+  with MongoImplicits
+  with FutureImplicits
+{
+  lazy val mongoConfig = config.detach("mongo")
+  lazy val mongoFacade = mongo(mongoConfig)
+  lazy val database = mongoFacade.database(config[String]("mongo.database"))
+  lazy val collection = "users"
 
-  def apply(config: Configuration): UserActions[SimpleUser] = {
-    lazy val mongoConfig = config.detach("mongo")
-    lazy val mongoFacade = mongo(mongoConfig)
-    lazy val database = mongoFacade.database(config[String]("mongo.database"))
-
-    val externalFormat = SimpleUser.externalFormat
-    lazy val store = new SimpleUserStore(database)
-
-    UserActionsBuilder(store, externalFormat)
-  }
-
-}
-
-class SimpleUserStore(database: Database) extends UserStore[SimpleUser] with JsonFormatters with MongoImplicits {
-  import FutureImplicits._
+  lazy val internalFormat = SimpleUser.internalFormat
 
   implicit def queryTimeout = Timeout(3.seconds)
 
-  def collection = "users"
+  def read(id: Uuid): UserValidation = {
+    val user: Future[Option[JObject]] =
+      database(
+        selectOne().
+        from(collection).
+        where("id" === id.toJson)
+      )
 
-  implicit val internalFormat = SimpleUser.internalFormat
+    user map { u =>
+      u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _)
+    }
+  }
+
+  def readByUsername(username: String): UserValidation = {
+    val user: Future[Option[JObject]] =
+      database(
+        selectOne().
+        from(collection).
+        where("username" === username.toJson)
+      )
+
+    user map { u =>
+      u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _)
+    }
+  }
+
+  def save(user: SimpleUser): UserValidation = {
+    for {
+      data: JObject <- internalFormat.write(user) match {
+                         case JObject(fields) => JObject(fields.filter(_.name != "id")).success[Problem].fv
+                         case _               => Problems.Server.unknown("could not save user: internal format did not produce a JObject").fail[JObject].fv
+                       }
+      result        <- database(
+                         upsert(collection).
+                         set(data).
+                         where("id" === user.id.toJson)
+                       ).map(_ => user.success[Problem]).fv
+    } yield result
+  }
+
+  def delete(id: Uuid): UnitValidation = {
+    val result: Future[Unit] =
+      database(
+        remove.
+        from(collection).
+        where("id" === id.toJson)
+      )
+
+    mapOrHandleError(result, (_: Unit) => ())
+  }
 
   private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem,S] = {
     val ans = Promise[Validation[Problem,S]]
@@ -51,41 +93,5 @@ class SimpleUserStore(database: Database) extends UserStore[SimpleUser] with Jso
     }
 
     ans.fv
-  }
-
-  def create(user: SimpleUser): UserValidation = {
-    val result: Future[Unit] =
-      database(insert(internalFormat.write(user)).into(collection))
-
-    mapOrHandleError(result, (_: Unit) => user)
-  }
-
-  def read(id: Uuid): UserValidation = {
-    val user: Future[Option[JObject]] =
-      database(selectOne().from(collection).where("id" === id.toJson))
-
-    user map { u => u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _) }
-  }
-
-  def update(user: SimpleUser): UserValidation = {
-    val result: Future[Unit] =
-      database(MongoImplicits.update(collection)
-                      .set(new MongoUpdateObject(internalFormat.write(user)))
-                      .where("username" === user.username))
-    mapOrHandleError(result, (_: Unit) => user)
-  }
-
-  def delete(id: Uuid): UnitValidation = {
-    val result: Future[Unit] =
-      database(remove.from(collection).where("id" === id.toJson))
-
-    mapOrHandleError(result, (_: Unit) => ())
-  }
-
-  def searchByUsername(username: String): UserValidation = {
-    val user: Future[Option[JObject]] =
-      database(selectOne().from(collection).where("username" === username))
-
-    user map { u => u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _) }
   }
 }

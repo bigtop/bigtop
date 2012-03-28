@@ -9,6 +9,12 @@ object Problems extends ProblemImplicits {
   object Server {
     val databaseError: Problem =
       ServerProblem("databaseError")
+
+    def typeError(msg: String, expected: String, received: String) =
+      ServerProblem("typeError", "message" -> msg, "expected" -> expected, "received" -> received)
+
+    def unknown(msg: String) =
+      ServerProblem("unknown", "message" -> msg)
   }
 
   object Client {

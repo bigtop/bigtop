@@ -10,7 +10,6 @@ object BigtopBuild extends Build {
     "Sonatype"    at "http://oss.sonatype.org/content/repositories/releases",
     "Scala Tools" at "http://scala-tools.org/repo-snapshots",
     "JBoss"       at "http://repository.jboss.org/nexus/content/groups/public",
-    //"Akka"        at "http://akka.io/repository",
     "Typesafe"    at "http://repo.typesafe.com/typesafe/releases",
     "ReportGrid"  at "http://nexus.reportgrid.com/content/repositories/public-snapshots",
     "Untyped"     at "http://repo.untyped.com/",
@@ -18,9 +17,9 @@ object BigtopBuild extends Build {
   )
 
   lazy val scalaz        = "org.scalaz"              %% "scalaz-core"     % "7.0-SNAPSHOT"
-  lazy val blueeyesCore  = "com.reportgrid"          %% "blueeyes-core"   % "0.6.0-SNAPSHOT"
-  lazy val blueeyesMongo = "com.reportgrid"          %% "blueeyes-mongo"  % "0.6.0-SNAPSHOT"
-  lazy val blueeyesJson  = "com.reportgrid"          %% "blueeyes-json"   % "0.6.0-SNAPSHOT"
+  lazy val blueeyesCore  = "com.reportgrid"          %% "blueeyes-core"   % "0.6.0-UNTYPED"
+  lazy val blueeyesMongo = "com.reportgrid"          %% "blueeyes-mongo"  % "0.6.0-UNTYPED"
+  lazy val blueeyesJson  = "com.reportgrid"          %% "blueeyes-json"   % "0.6.0-UNTYPED"
   lazy val specs2        = "org.specs2"              %% "specs2"          % "1.8.1"
   lazy val scalacheck    = "org.scala-tools.testing" %% "scalacheck"      % "1.9"
   lazy val jbCrypt       = "org.mindrot"             %  "jbcrypt"         % "0.3m"

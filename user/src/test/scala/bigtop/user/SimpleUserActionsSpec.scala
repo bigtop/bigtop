@@ -7,6 +7,7 @@ import akka.util.duration._
 import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemWriters}
 import bigtop.problem.Problems._
+import bigtop.util.Uuid
 import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.json.JsonDSL._
 import blueeyes.json.JsonAST.JValue
@@ -37,7 +38,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
     }
   """
 
-  val userActions = SimpleUserActionsBuilder(rootConfig.detach("services.user.v1"))
+  val userActions = SimpleUserActions(rootConfig.detach("services.user.v1"))
 
   def await[A](f: Future[A]) =
     Await.result(f, Duration("3s"))
@@ -47,25 +48,33 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
 
   "SimpleUserActions.create" should {
     "return new user given username and password" in {
-      await(userActions.create(("username" -> "noel") ~ ("password" -> "secret") ~ ("forenames" -> "Noel") ~ ("surname" -> "Welsh") ~ ("admin" -> false))) match {
-        case Success(user)     => user.username mustEqual "noel"
+      val user = SimpleUser(
+        id        = Uuid.create,
+        username  = "noel",
+        password  = Password.fromPassword("secret"),
+        forenames = "Noel",
+        surname   = "Welsh",
+        admin     = false
+      )
+      await(userActions.create(user)) match {
+        case Success(created)  => created mustEqual user
         case Failure(response) => failure("did not expect failure: " + response)
       }
     }
 
-    "return error given no username" in {
-      await(userActions.create(("password" -> "secret"))) match {
-        case Success(user)    => failure("did not expect success: " + user)
-        case Failure(problem) => problem mustEqual Client.missing("username")
-      }
-    }
+    // "return error given no username" in {
+    //   await(userActions.create(("password" -> "secret"))) match {
+    //     case Success(user)    => failure("did not expect success: " + user)
+    //     case Failure(problem) => problem mustEqual Client.missing("username")
+    //   }
+    // }
 
-    "return error given no password" in {
-      await(userActions.create(("username" -> "noel"))) match {
-        case Success(user)    => failure("did not expect success: " + user)
-        case Failure(problem) => problem mustEqual Client.missing("password")
-      }
-    }
+    // "return error given no password" in {
+    //   await(userActions.create(("username" -> "noel"))) match {
+    //     case Success(user)    => failure("did not expect success: " + user)
+    //     case Failure(problem) => problem mustEqual Client.missing("password")
+    //   }
+    // }
   }
 
 }

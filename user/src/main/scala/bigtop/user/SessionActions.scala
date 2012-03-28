@@ -11,83 +11,34 @@ import blueeyes.json.JsonDSL._
 import com.twitter.util.{LruMap,SynchronizedLruMap}
 import scala.collection.mutable.HashMap
 
-// Interface
-
 trait SessionActions[U <: User] extends UserTypes[U] {
-
-  def externalFormat: JsonWriter[Session[U]]
-
-  def create(username: String, password: String): SessionValidation
+  def userActions: UserActions[U]
 
   def read(id: Uuid): SessionValidation
 
-  def switchUser(id: Uuid, effectiveUser: Uuid): SessionValidation
+  def save(session: Session[U]): SessionValidation
 
-}
+  def delete(id: Uuid): UnitValidation
 
-// Implementaiton
-
-case class SessionActionsBuilder[U <: User](
-  val externalFormat: JsonWriter[Session[U]],
-  val sessionCreate: SessionCreate[U],
-  val sessionRead: SessionRead[U],
-  val sessionSwitchUser: SessionSwitchUser[U]
-) extends SessionActions[U] with UserTypes[U] {
-
-  def create(username: String, password: String): SessionValidation =
-    sessionCreate.create(username, password)
-
-  def read(id: Uuid): SessionValidation =
-    sessionRead.read(id)
-
-  def switchUser(id: Uuid, effectiveUser: Uuid): SessionValidation =
-    sessionSwitchUser.switchUser(id, effectiveUser)
-
-}
-
-
-trait SessionAction[U <: User] extends UserTypes[U] {
-
-  def core: SessionCore[U]
-
-}
-
-
-case class SessionCreate[U <: User](val userActions: UserActions[U], val core: SessionCore[U]) extends SessionAction[U] {
-
-  def create(username: String, password: String): SessionValidation =
+  def create(username: String, password: String): SessionValidation = {
     for {
-      user <- userActions.login(username, password)
-    } yield {
-      val id = Uuid.create()
-      val session = Session(id, user, user, new HashMap[String, JValue]())(userActions.externalFormat)
-      core.store.create(id, session)
-      session
-    }
-
-}
-
-
-case class SessionRead[U <: User](val core: SessionCore[U]) extends SessionAction[U] {
-
-  def read(id: Uuid): SessionValidation =
-    core.store.read(id)
-
-}
-
-
-case class SessionSwitchUser[U <: User](
-  val userActions: UserActions[U],
-  val sessionRead: SessionRead[U],
-  val core: SessionCore[U]
-) extends SessionAction[U] {
-
-  def switchUser(id: Uuid, effectiveUser: Uuid) = {
-    for {
-      session <- sessionRead.read(id)
-      user    <- userActions.read(effectiveUser)
-      session <- core.store.update(id, session.copy(effectiveUser = user))
-    } yield session
+      user  <- userActions.login(username, password)
+      saved <- save(Session(Uuid.create, user, user, new HashMap[String, JValue]()))
+    } yield saved
   }
 
+  def switchUser(id: Uuid, effectiveId: Uuid): SessionValidation = {
+    for {
+      session <- read(id)
+      user    <- userActions.read(effectiveId)
+      saved   <- save(session.copy(effectiveUser = user))
+    } yield saved
+  }
+
+  def restoreIdentity(id: Uuid): SessionValidation = {
+    for {
+      session <- read(id)
+      saved   <- save(session.copy(effectiveUser = session.realUser))
+    } yield saved
+  }
 }

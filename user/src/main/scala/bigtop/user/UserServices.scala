@@ -20,7 +20,6 @@ import com.weiglewilczek.slf4s.Logging
 // Interface
 
 trait UserServices[U <: User] extends Logging {
-
   def actions: UserActions[U]
 
   def create : HttpService[Future[JValue], Future[HttpResponse[JValue]]]
@@ -36,7 +35,6 @@ trait UserServices[U <: User] extends Logging {
       read   = read,
       update = update,
       delete = delete)(logger)
-
 }
 
 // Implementations
@@ -47,12 +45,12 @@ case class UserServicesBuilder[U <: User](
   val canRead  : SecurityCheck[Future[JValue],U],
   val canUpdate: SecurityCheck[Future[JValue],U],
   val canDelete: SecurityCheck[Future[JValue],U],
-  val auth: Authorizer[U]
+  val auth: Authorizer[U],
+  val externalFormat: JsonUpdater[Problem,U]
 ) extends UserServices[U] {
-
-  val userCreate = UserCreateService(actions, canCreate, auth)
-  val userRead   = UserReadService(actions, canRead, auth)
-  val userUpdate = UserUpdateService(actions, canUpdate, auth)
+  val userCreate = UserCreateService(actions, canCreate, auth, externalFormat)
+  val userRead   = UserReadService(actions, canRead, auth, externalFormat)
+  val userUpdate = UserUpdateService(actions, canUpdate, auth, externalFormat)
   val userDelete = UserDeleteService(actions, canDelete, auth)
 
   lazy val create = userCreate.create
@@ -61,35 +59,38 @@ case class UserServicesBuilder[U <: User](
   lazy val delete = userDelete.delete
 }
 
-
 trait UserService[U <: User] extends HttpRequestHandlerCombinators
     with JsonServiceImplicits
     with FutureImplicits
     with JsonFormatters
 {
-
   def auth: Authorizer[U]
-
 }
 
-
-case class UserCreateService[U <: User](val actions: UserActions[U], val canCreate: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
-
+case class UserCreateService[U <: User](
+  val actions: UserActions[U],
+  val canCreate: SecurityCheck[Future[JValue],U],
+  val auth: Authorizer[U],
+  val externalFormat: JsonFormat[Problem,U]
+) extends UserService[U] {
   val create =
     service {
       (req: HttpRequest[Future[JValue]]) =>
         (for {
-          _    <- auth.authorize(req, canCreate)
-          json <- req.json
-          user <- actions.create(json)
-        } yield user).toResponse(actions.externalFormat)
+          _       <- auth.authorize(req, canCreate).fv
+          json    <- req.json.fv
+          unsaved <- externalFormat.read(json).fv
+          saved   <- actions.create(unsaved)
+        } yield saved).toResponse(externalFormat)
     }
-
 }
 
-
-case class UserReadService[U <: User](val actions: UserActions[U], val canRead: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
-
+case class UserReadService[U <: User](
+  val actions: UserActions[U],
+  val canRead: SecurityCheck[Future[JValue],U],
+  val auth: Authorizer[U],
+  val externalFormat: JsonWriter[U]
+) extends UserService[U] {
   def read =
     service {
       (req: HttpRequest[Future[JValue]]) =>
@@ -97,30 +98,35 @@ case class UserReadService[U <: User](val actions: UserActions[U], val canRead: 
           user <- auth.authorize(req, canRead)
           id   <- req.mandatoryParam[Uuid]('id).fv
           user <- actions.read(id)
-        } yield user).toResponse(actions.externalFormat)
+        } yield user).toResponse(externalFormat)
     }
-
 }
 
-
-case class UserUpdateService[U <: User](val actions: UserActions[U], val canUpdate: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
-
+case class UserUpdateService[U <: User](
+  val actions: UserActions[U],
+  val canUpdate: SecurityCheck[Future[JValue],U],
+  val auth: Authorizer[U],
+  val externalFormat: JsonUpdater[Problem,U]
+) extends UserService[U] {
   def update =
     service {
       (req: HttpRequest[Future[JValue]]) =>
         (for {
-          user <- auth.authorize(req, canUpdate)
-          id   <- req.mandatoryParam[Uuid]('id).fv
-          data <- req.json
-          _    <- actions.update(id, data)
-        } yield ("status" -> "ok"): JValue).toResponse
+          user    <- auth.authorize(req, canUpdate).fv
+          id      <- req.mandatoryParam[Uuid]('id).fv
+          json    <- req.json.fv
+          unsaved <- actions.read(id)
+          updated <- externalFormat.update(unsaved, json).fv
+          saved   <- actions.update(updated)
+        } yield saved).toResponse(externalFormat)
     }
-
 }
 
-
-case class UserDeleteService[U <: User](val actions: UserActions[U], val canDelete: SecurityCheck[Future[JValue],U], val auth: Authorizer[U]) extends UserService[U] {
-
+case class UserDeleteService[U <: User](
+  val actions: UserActions[U],
+  val canDelete: SecurityCheck[Future[JValue],U],
+  val auth: Authorizer[U]
+) extends UserService[U] {
   def delete =
     service {
       (req: HttpRequest[Future[JValue]]) =>
@@ -130,5 +136,4 @@ case class UserDeleteService[U <: User](val actions: UserActions[U], val canDele
           _  <- actions.delete(id)
         } yield ("status" -> "ok"): JValue).toResponse
     }
-
 }

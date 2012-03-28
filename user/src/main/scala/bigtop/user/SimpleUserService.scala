@@ -23,28 +23,29 @@ object SimpleUserService {
 
   def services(config: Configuration) = {
 
-    val userActions       = SimpleUserActionsBuilder(config)
+    val userActions = SimpleUserActions(config)
+    val sessionActions = LruMapSessionActions[SimpleUser](userActions)
 
-    val sessionCore       = new LruMapSessionCore
-    val sessionCreate     = SessionCreate[SimpleUser](userActions, sessionCore)
-    val sessionRead       = SessionRead[SimpleUser](sessionCore)
-    val sessionSwitchUser = SessionSwitchUser[SimpleUser](userActions, sessionRead, sessionCore)
-    val authorizer        = SessionCookieAuthorizer[SimpleUser](sessionRead)
-    val sessionActions    = SessionActionsBuilder[SimpleUser](sessionCore.externalFormat, sessionCreate, sessionRead, sessionSwitchUser)
+    val authorizer = SessionCookieAuthorizer[SimpleUser](sessionActions)
 
-    val userServices      = UserServicesBuilder(userActions, canCreate, canRead, canUpdate, canDelete, authorizer)
-    val sessionServices   = SessionServicesBuilder(sessionActions, canSwitch, authorizer)
+    val userServices = UserServicesBuilder(
+      userActions,
+      canCreate,
+      canRead,
+      canUpdate,
+      canDelete,
+      authorizer,
+      SimpleUser.externalFormat
+    )
+
+    val sessionServices = SessionServicesBuilder(
+      sessionActions,
+      canSwitch,
+      authorizer,
+      Session.externalWriter(SimpleUser.externalFormat)
+    )
 
     (sessionServices.service ~ userServices.service, authorizer, userActions, sessionActions)
   }
-
-}
-
-
-class LruMapSessionCore extends SessionCore[SimpleUser] {
-
-  val store = new LruMapSessionStore[SimpleUser]
-
-  val externalFormat = new SessionWriter[SimpleUser] {}
 
 }
