@@ -18,9 +18,7 @@ import org.specs2.matcher.Matcher
 import scalaz._
 import scalaz.syntax.validation._
 
-class SimpleUserActionsSpec extends BlueEyesServiceSpecification
-  with ConfigurableMongo {
-
+class SimpleUserActionsSpec extends BlueEyesServiceSpecification with ConfigurableMongo {
   import MimeTypes._
   import ProblemWriters._
 
@@ -61,20 +59,5 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification
         case Failure(response) => failure("did not expect failure: " + response)
       }
     }
-
-    // "return error given no username" in {
-    //   await(userActions.create(("password" -> "secret"))) match {
-    //     case Success(user)    => failure("did not expect success: " + user)
-    //     case Failure(problem) => problem mustEqual Client.missing("username")
-    //   }
-    // }
-
-    // "return error given no password" in {
-    //   await(userActions.create(("username" -> "noel"))) match {
-    //     case Success(user)    => failure("did not expect success: " + user)
-    //     case Failure(problem) => problem mustEqual Client.missing("password")
-    //   }
-    // }
   }
-
 }

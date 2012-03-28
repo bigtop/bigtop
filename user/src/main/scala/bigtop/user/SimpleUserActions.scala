@@ -24,6 +24,8 @@ case class SimpleUserActions(val config: Configuration) extends UserActions[Simp
   with FutureImplicits
 {
   lazy val mongoConfig = config.detach("mongo")
+  println("mongoConfig " + mongoConfig)
+  println("mongoConfig " + mongoConfig[List[String]]("servers"))
   lazy val mongoFacade = mongo(mongoConfig)
   lazy val database = mongoFacade.database(config[String]("mongo.database"))
   lazy val collection = "users"
@@ -59,16 +61,14 @@ case class SimpleUserActions(val config: Configuration) extends UserActions[Simp
   }
 
   def save(user: SimpleUser): UserValidation = {
+    import blueeyes.json.Printer._
     for {
-      data: JObject <- internalFormat.write(user) match {
-                         case JObject(fields) => JObject(fields.filter(_.name != "id")).success[Problem].fv
-                         case _               => Problems.Server.unknown("could not save user: internal format did not produce a JObject").fail[JObject].fv
-                       }
+      data: JObject <- internalFormat.write(user).success[Problem].fv
       result        <- database(
                          upsert(collection).
                          set(data).
                          where("id" === user.id.toJson)
-                       ).map(_ => user.success[Problem]).fv
+                       ).map(unit => user.success[Problem]).fv
     } yield result
   }
 

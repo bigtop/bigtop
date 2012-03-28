@@ -18,24 +18,24 @@ import blueeyes.persistence.mongo.ConfigurableMongo
 // import scalaz.syntax.validation._
 
 class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
+  args.execute(sequential = true)
 
-  val configuration = configure("""
+  val configuration = configure(
+    """
     mongo {
       servers = ["localhost"]
-      database = "user"
+      database = "bigtoptest"
       collection = ["users"]
-    }""")
+    }
+    """
+  )
 
   val (service, auth, userActions, sessionActions) = SimpleUserService.services(configuration)
 
-  lazy val mongoConfig = configuration
-  lazy val mongoFacade = mongo(mongoConfig)
-  lazy val database = mongoFacade.database("user")
-
   def login(username: String, password: String) =
     sessionActions.create(username, password).await.fold(
-      success = _.id,
-      failure = p => sys.error(p.toString)
+      success = u => u.id,
+      failure = p => sys.error("SimpleUserServiceSpec.login failed: " + p.toString)
     )
 
   def auth(client: HttpClient[ByteChunk], sessionId: Uuid) =
@@ -47,7 +47,14 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
   def createUser(user: SimpleUser): Uuid = {
     userActions.create(user).await.fold(
       success = u => u.id,
-      failure = p => sys.error(p.toString)
+      failure = p => sys.error("SimpleUserServiceSpec.createUser failed: " + p.toString)
+    )
+  }
+
+  def userExists(id: Uuid): Boolean = {
+    userActions.read(id).await.fold(
+      success = u => true,
+      failure = p => false
     )
   }
 
@@ -56,34 +63,60 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
   }
 
   def deleteAllUsers = {
-    database(remove.from("users"))
+    userActions.database(remove.from("users"))
   }
 
-  var noel = SimpleUser(Uuid.create,
-                        "noel",
-                        Password.fromPassword("password"),
-                        "Noel",
-                        "Welsh",
-                        true)
-  val dave = SimpleUser(Uuid.create,
-                        "dave",
-                        Password.fromPassword("password"),
-                        "Dave",
-                        "Gurnell",
-                        true)
-  val test = SimpleUser(Uuid.create,
-                        "test",
-                        Password.fromPassword("topsecret"),
-                        "Test",
-                        "McUser",
-                        false)
+  def allUsers = {
+    userActions.database(select().from("users")).await.map(_ \ "username").toList
+  }
 
+  var noel = SimpleUser(
+    Uuid.create,
+    "noel",
+    Password.fromPassword("password"),
+    "Noel",
+    "Welsh",
+    true
+  )
+
+  val dave = SimpleUser(
+    Uuid.create,
+    "dave",
+    Password.fromPassword("password"),
+    "Dave",
+    "Gurnell",
+    true
+  )
+
+  val test = SimpleUser(
+    Uuid.create,
+    "test",
+    Password.fromPassword("topsecret"),
+    "Test",
+    "McUser",
+    false
+  )
 
   def initialized[T](f: => T) = {
+    println("BEFORE DELETE")
+    println(" - dave = " + userExists(dave.id))
+    println(" - noel = " + userExists(noel.id))
+    println(" - test = " + userExists(test.id))
+    println(" - all = " + allUsers)
     deleteAllUsers.await
-    deleteUser(dave)
-    createUser(noel)
-    createUser(test)
+    println("AFTER DELETE")
+    println(" - dave = " + userExists(dave.id))
+    println(" - noel = " + userExists(noel.id))
+    println(" - test = " + userExists(test.id))
+    println(" - all = " + allUsers)
+    if(userExists(dave.id)) deleteUser(dave)
+    if(!userExists(noel.id)) createUser(noel)
+    if(!userExists(test.id)) createUser(test)
+    println("AFTER RECREATE")
+    println(" - dave = " + userExists(dave.id))
+    println(" - noel = " + userExists(noel.id))
+    println(" - test = " + userExists(test.id))
+    println(" - all = " + allUsers)
     f
   }
 
@@ -203,5 +236,4 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       }
     }
   }
-
 }
