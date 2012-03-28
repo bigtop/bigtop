@@ -36,7 +36,10 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification with Configurab
     }
   """
 
-  val userActions = SimpleUserActions(rootConfig.detach("services.user.v1"))
+  val userActions = SimpleUserActions[SimpleUser](
+    rootConfig.detach("services.user.v1"),
+    SimpleUser.internalFormat
+  )
 
   def await[A](f: Future[A]) =
     Await.result(f, Duration("3s"))

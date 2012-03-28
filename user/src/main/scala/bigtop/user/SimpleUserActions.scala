@@ -17,20 +17,19 @@ import scalaz.{NonEmptyList, Validation, ValidationNEL}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
-case class SimpleUserActions(val config: Configuration) extends UserActions[SimpleUser]
+case class SimpleUserActions[U <: User](
+  val config: Configuration,
+  val internalFormat: JsonFormat[Problem, U]
+) extends UserActions[U]
   with ConfigurableMongo
   with JsonFormatters
   with MongoImplicits
   with FutureImplicits
 {
   lazy val mongoConfig = config.detach("mongo")
-  println("mongoConfig " + mongoConfig)
-  println("mongoConfig " + mongoConfig[List[String]]("servers"))
   lazy val mongoFacade = mongo(mongoConfig)
   lazy val database = mongoFacade.database(config[String]("mongo.database"))
   lazy val collection = "users"
-
-  lazy val internalFormat = SimpleUser.internalFormat
 
   implicit def queryTimeout = Timeout(3.seconds)
 
@@ -60,15 +59,17 @@ case class SimpleUserActions(val config: Configuration) extends UserActions[Simp
     }
   }
 
-  def save(user: SimpleUser): UserValidation = {
-    import blueeyes.json.Printer._
+  def save(user: U): UserValidation = {
     for {
-      data: JObject <- internalFormat.write(user).success[Problem].fv
-      result        <- database(
-                         upsert(collection).
-                         set(data).
-                         where("id" === user.id.toJson)
-                       ).map(unit => user.success[Problem]).fv
+      data   <- internalFormat.write(user) match {
+                  case obj: JObject => obj.success[Problem].fv
+                  case other        => Problems.Server.unknown("could not save user: internalFormat didn't produce a JObject").fail[JObject].fv
+                }
+      result <- database(
+                  upsert(collection).
+                  set(data).
+                  where("id" === user.id.toJson)
+                ).map(unit => user.success[Problem]).fv
     } yield result
   }
 
@@ -83,7 +84,7 @@ case class SimpleUserActions(val config: Configuration) extends UserActions[Simp
     mapOrHandleError(result, (_: Unit) => ())
   }
 
-  private def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem,S] = {
+  def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem,S] = {
     val ans = Promise[Validation[Problem,S]]
     f foreach { v => ans.success(mapper(v).success[Problem]) }
     f recover { case e =>

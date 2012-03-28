@@ -22,13 +22,10 @@ object SimpleUserService {
   val canSwitch = isAdmin("session.switchUser")
 
   def services(config: Configuration) = {
-
-    val userActions = SimpleUserActions(config)
+    val userActions    = SimpleUserActions[SimpleUser](config, SimpleUser.internalFormat)
     val sessionActions = LruMapSessionActions[SimpleUser](userActions)
-
-    val authorizer = SessionCookieAuthorizer[SimpleUser](sessionActions)
-
-    val userServices = UserServicesBuilder(
+    val authorizer     = SessionCookieAuthorizer[SimpleUser](sessionActions)
+    val userServices   = UserServicesBuilder(
       userActions,
       canCreate,
       canRead,

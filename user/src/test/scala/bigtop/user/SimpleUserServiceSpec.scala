@@ -98,25 +98,10 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
   )
 
   def initialized[T](f: => T) = {
-    println("BEFORE DELETE")
-    println(" - dave = " + userExists(dave.id))
-    println(" - noel = " + userExists(noel.id))
-    println(" - test = " + userExists(test.id))
-    println(" - all = " + allUsers)
     deleteAllUsers.await
-    println("AFTER DELETE")
-    println(" - dave = " + userExists(dave.id))
-    println(" - noel = " + userExists(noel.id))
-    println(" - test = " + userExists(test.id))
-    println(" - all = " + allUsers)
     if(userExists(dave.id)) deleteUser(dave)
     if(!userExists(noel.id)) createUser(noel)
     if(!userExists(test.id)) createUser(test)
-    println("AFTER RECREATE")
-    println(" - dave = " + userExists(dave.id))
-    println(" - noel = " + userExists(noel.id))
-    println(" - test = " + userExists(test.id))
-    println(" - all = " + allUsers)
     f
   }
 
