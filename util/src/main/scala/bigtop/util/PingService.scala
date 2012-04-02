@@ -1,5 +1,4 @@
-package bigtop
-package util
+package bigtop.util
 
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
