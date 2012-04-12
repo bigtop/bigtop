@@ -9,8 +9,7 @@ import bigtop.concurrent._
 import bigtop.json._
 import bigtop.util._
 import bigtop.problem._
-// TODO: Uncomment when we update Blueeyes far enough:
-// import blueeyes.Environment
+import blueeyes.Environment
 import blueeyes.bkka.AkkaDefaults
 import blueeyes.concurrent.test._
 import blueeyes.core.data._
@@ -60,23 +59,18 @@ trait JsonServiceSpec extends Specification
   // def convertResponse(in: HttpResponse[ByteChunk])(implicit timeout: Timeout): HttpResponse[JValue] =
   //   in.copy(content = in.content.map(chunk => chunkToFutureJValue(timeout)(chunk).await))
 
-  // TODO: Uncomment when we update Blueeyes far enough:
-  // private val mockSwitch = sys.props.get(Environment.MockSwitch)
+  private val mockSwitch = sys.props.get(Environment.MockSwitch)
 
   private val specBefore = Step {
-    // TODO: Uncomment when we update Blueeyes far enough:
-    // sys.props.getOrElseUpdate (Environment.MockSwitch, "true")
-    sys.props.getOrElseUpdate (ConfigurableHttpClient.HttpClientSwitch, "true")
-    sys.props.getOrElseUpdate (ConfigurableMongo.MongoSwitch, "true")
+    sys.props.getOrElseUpdate (Environment.MockSwitch, "true")
   }
 
   private val specAfter = Step {
-    // TODO: Uncomment when we update Blueeyes far enough:
-    // def setProp(key: String, value: Option[String]) = value match{
-    //   case Some(x) => sys.props.put(key, x)
-    //   case None => sys.props.remove(key)
-    // }
-    // setProp(Environment.MockSwitch, mockSwitch)
+    def setProp(key: String, value: Option[String]) = value match{
+      case Some(x) => sys.props.put(key, x)
+      case None => sys.props.remove(key)
+    }
+    setProp(Environment.MockSwitch, mockSwitch)
   }
 
   override def map(fs: =>Fragments) = specBefore ^ fs ^ specAfter
