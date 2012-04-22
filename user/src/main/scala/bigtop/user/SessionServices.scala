@@ -13,7 +13,7 @@ import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import scalaz.syntax.validation._
-import com.weiglewilczek.slf4s.Logging
+import com.weiglewilczek.slf4s.{Logging, Logger}
 
 // Interface
 
@@ -21,6 +21,8 @@ trait SessionServices[U <: User] extends Logging
   with HttpRequestHandlerCombinators
   with JsonRequestHandlerCombinators
 {
+  implicit val log = logger
+
   val create: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
 
   val read: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
@@ -63,6 +65,10 @@ trait SessionService[U <: User] extends HttpRequestHandlerCombinators
   with JsonServiceImplicits
   with FutureImplicits
   with JsonFormatters
+  with Logging
+{
+  implicit val log = logger
+}
 
 case class SessionCreateService[U <: User](
   val actions: SessionActions[U],
@@ -76,7 +82,7 @@ case class SessionCreateService[U <: User](
           username <- json.mandatory[String]("username").fv
           password <- json.mandatory[String]("password").fv
           result   <- actions.create(username, password)
-        } yield result).toResponse(externalFormat)
+        } yield result).toResponse(externalFormat, log)
     }
 }
 
@@ -107,7 +113,7 @@ case class SessionReadService[U <: User](
           user    <- auth.authorize(req, canRead)
           id      <- req.mandatoryParam[Uuid]('id).fv
           session <- actions.read(id)
-        } yield session).toResponse(externalFormat)
+        } yield session).toResponse(externalFormat, log)
     }
 }
 
@@ -125,6 +131,6 @@ case class SessionSwitchUserService[U <: User](
           user          <- canSwitch(req, Some(session.realUser))
           effectiveUser <- req.mandatoryParam[Uuid]('effectiveUser).fv
           session       <- actions.switchUser(session.id, effectiveUser)
-        } yield session).toResponse(externalFormat)
+        } yield session).toResponse(externalFormat, log)
     }
 }

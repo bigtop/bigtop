@@ -12,13 +12,14 @@ import blueeyes.json.JsonParser
 import scalaz.{Success, Validation}
 import scalaz.syntax.validation._
 import bigtop.problem.Problems
+import com.weiglewilczek.slf4s.Logger
 
 /**
  * The JsonService wraps handlers that accept JSON input and produce JSON output.
  *
  * We don't require the Content-Type be set on the request, because it's inconvenient for a number of reasons.
  */
-case class JsonService(h: HttpService[Future[JValue], Future[HttpResponse[JValue]]])
+case class JsonService(h: HttpService[Future[JValue], Future[HttpResponse[JValue]]])(implicit logger: Logger)
      extends CustomHttpService[ByteChunk, Future[HttpResponse[ByteChunk]]]
      with AkkaDefaults
      with BijectionsChunkJson
