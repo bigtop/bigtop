@@ -5,6 +5,7 @@ import blueeyes.core.http._
 import blueeyes.json.JsonAST._
 import bigtop.util.Writer
 import bigtop.json.JsonWriter
+import com.weiglewilczek.slf4s.Logger
 import scalaz._
 import scalaz.Scalaz._
 
@@ -12,6 +13,7 @@ sealed trait Problem extends ProblemWriters {
   val status: HttpStatusCode
 
   def messages: Seq[Problem.Message]
+  def logMessages: Seq[String]
 
   import Problem._
 
@@ -25,25 +27,32 @@ sealed trait Problem extends ProblemWriters {
 
   def and(msg: Problem.Message): Problem
 
+  def log(msg: String): Problem
+
   def toJson: JValue =
     problemToJValue(this)
 
-  def toResponse: HttpResponse[JValue] =
+  def toResponse(implicit logger: Logger): HttpResponse[JValue] = {
+    logger.warn("Problem:\n  %s\n  messages: %s\n  logMessages: %s\n".format(status.toString, messages.toString, logMessages.toString))
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
+  }
 }
 
 object Problem extends ProblemImplicits {
   case class Message(val messageType: String, val args: Seq[(String, String)] = Seq())
 }
 
-final case class ServerProblem(val messages: Seq[Problem.Message]) extends Problem {
+final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String]) extends Problem {
   val status = HttpStatusCodes.InternalServerError
 
   def and(that: Problem): Problem =
-    ServerProblem(this.messages ++ that.messages)
+    ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages)
 
   def and(msg: Problem.Message) =
     this.copy(messages = this.messages ++ Seq(msg))
+
+  def log(msg: String): Problem =
+    this.copy(logMessages = msg +: this.logMessages)
 }
 
 object ServerProblem extends ProblemImplicits {
@@ -53,20 +62,23 @@ object ServerProblem extends ProblemImplicits {
     apply(Message(msg, args))
 
   def apply(msg: Message): Problem =
-    apply(Seq(msg))
+    apply(Seq(msg), Seq())
 }
 
-final case class ClientProblem(val messages: Seq[Problem.Message]) extends Problem {
+final case class ClientProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String]) extends Problem {
   val status = HttpStatusCodes.BadRequest
 
   def and(that: Problem): Problem =
     that match {
-      case ServerProblem(_) => ServerProblem(this.messages ++ that.messages)
-      case ClientProblem(_) => ClientProblem(this.messages ++ that.messages)
+      case ServerProblem(_, _) => ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages)
+      case ClientProblem(_, _) => ClientProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages)
     }
 
   def and(msg: Problem.Message): Problem =
     this.copy(messages = this.messages ++ Seq(msg))
+
+  def log(msg: String): Problem =
+    this.copy(logMessages = msg +: this.logMessages)
 }
 
 object ClientProblem extends ProblemImplicits {
@@ -76,7 +88,7 @@ object ClientProblem extends ProblemImplicits {
     apply(Message(msg, args))
 
   def apply(msg: Message): ClientProblem =
-    apply(Seq(msg))
+    apply(Seq(msg), Seq())
 }
 
 trait ProblemImplicits {
