@@ -7,17 +7,29 @@ object Problems extends ProblemImplicits {
   import Problem._
 
   object Server {
+    val empty: Problem =
+      ServerProblem(Nil, Nil)
+
     val databaseError: Problem =
       ServerProblem("databaseError")
 
     def typeError(msg: String, expected: String, received: String) =
       ServerProblem("typeError", "message" -> msg, "expected" -> expected, "received" -> received)
 
+    def missing(field: String): Problem =
+      ServerProblem("missing", "field" -> field)
+
+    def malformed(field: String, description: String): Problem =
+      ServerProblem("malformed", "field" -> field, "description" -> description)
+
     def unknown(msg: String) =
       ServerProblem("unknown", "message" -> msg)
   }
 
   object Client {
+    val empty: Problem =
+      ClientProblem(Nil, Nil)
+
     /** The client has no session. */
     val noSession: Problem =
       ClientProblem("noSession")
