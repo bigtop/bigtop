@@ -10,7 +10,7 @@ import scalaz._
 import scalaz.Scalaz._
 
 sealed trait Problem extends ProblemFormat {
-  val status: HttpStatusCode
+  def status: HttpStatusCode
 
   def messages: Seq[Problem.Message]
   def logMessages: Seq[String]
@@ -29,6 +29,8 @@ sealed trait Problem extends ProblemFormat {
 
   def log(msg: String): Problem
 
+  def status(code: HttpStatusCode): Problem
+
   def toJson(implicit w: JsonWriter[Problem]): JValue =
     w.write(this)
 
@@ -42,17 +44,21 @@ object Problem extends ProblemImplicits {
   case class Message(val messageType: String, val args: Seq[(String, String)] = Seq())
 }
 
-final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String]) extends Problem {
-  val status = HttpStatusCodes.InternalServerError
+final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
 
   def and(that: Problem): Problem =
-    ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages)
+    ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
 
   def and(msg: Problem.Message) =
     this.copy(messages = this.messages ++ Seq(msg))
 
   def log(msg: String): Problem =
     this.copy(logMessages = msg +: this.logMessages)
+
+  def status = code
+
+  def status(code: HttpStatusCode) =
+      this.copy(code = code)
 }
 
 object ServerProblem extends ProblemImplicits {
@@ -62,16 +68,15 @@ object ServerProblem extends ProblemImplicits {
     apply(Message(msg, args))
 
   def apply(msg: Message): Problem =
-    apply(Seq(msg), Seq())
+    apply(Seq(msg), Seq(), HttpStatusCodes.InternalServerError)
 }
 
-final case class ClientProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String]) extends Problem {
-  val status = HttpStatusCodes.BadRequest
+final case class ClientProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
 
   def and(that: Problem): Problem =
     that match {
-      case ServerProblem(_, _) => ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages)
-      case ClientProblem(_, _) => ClientProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages)
+      case ServerProblem(_, _, _) => ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
+      case ClientProblem(_, _, _) => ClientProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, that.status)
     }
 
   def and(msg: Problem.Message): Problem =
@@ -79,6 +84,11 @@ final case class ClientProblem(val messages: Seq[Problem.Message], val logMessag
 
   def log(msg: String): Problem =
     this.copy(logMessages = msg +: this.logMessages)
+
+  def status = code
+
+  def status(code: HttpStatusCode) =
+      this.copy(code = code)
 }
 
 object ClientProblem extends ProblemImplicits {
@@ -88,7 +98,7 @@ object ClientProblem extends ProblemImplicits {
     apply(Message(msg, args))
 
   def apply(msg: Message): ClientProblem =
-    apply(Seq(msg), Seq())
+    apply(Seq(msg), Seq(), HttpStatusCodes.BadRequest)
 }
 
 trait ProblemImplicits {

@@ -3,6 +3,7 @@ package problem
 
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
+import blueeyes.core.http._
 import bigtop.json._
 import scalaz.Validation
 import scalaz.syntax.validation._
@@ -48,16 +49,30 @@ trait ProblemFormat extends JsonFormatters {
       ("subtype"  -> in.status.value) ~
       ("messages" -> in.messages.toJson)
 
-    def read(in: JValue) =
+    def read(in: JValue) = {
+      import HttpStatusCodeImplicits._
+
       for {
         status   <- in.mandatory[Int]("subtype")
         messages <- in.mandatory[Seq[Problem.Message]]("messages")
-      } yield {
-        status match {
-          case 400 => ClientProblem(messages, Nil)
-          case 500 => ServerProblem(messages, Nil)
+        problem  <- {
+          val code: HttpStatusCode = status
+          code match {
+            case client: ClientError =>
+              ClientProblem(messages, Nil, code).success
+            case server: ServerError =>
+              ServerProblem(messages, Nil, code).success
+            case _ =>
+              ClientProblem("subtype",
+                            ((code.value + ":" + code.defaultMessage) ->
+                             "This status code is not an error code")).fail
+          }
         }
+
+      } yield {
+        problem
       }
+    }
   }
 
 }
