@@ -39,7 +39,10 @@ sealed trait Problem extends ProblemFormat {
 }
 
 object Problem extends ProblemImplicits {
-  case class Message(val messageType: String, val args: Seq[(String, String)] = Seq())
+  case class Message(val messageType: String, val args: Seq[(String, String)] = Seq()) {
+    override def toString =
+      "Message(" + (messageType +: args.map(pair => pair._1 + "=" + pair._2)).mkString(", ") + ")"
+  }
 }
 
 final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String]) extends Problem {
@@ -53,6 +56,9 @@ final case class ServerProblem(val messages: Seq[Problem.Message], val logMessag
 
   def log(msg: String): Problem =
     this.copy(logMessages = msg +: this.logMessages)
+
+  override def toString =
+    "ServerProblem(messages=%s, logMessages=%s)".format(messages, logMessages)
 }
 
 object ServerProblem extends ProblemImplicits {
@@ -79,6 +85,9 @@ final case class ClientProblem(val messages: Seq[Problem.Message], val logMessag
 
   def log(msg: String): Problem =
     this.copy(logMessages = msg +: this.logMessages)
+
+  override def toString =
+    "ClientProblem(messages=%s, logMessages=%s)".format(messages.toList, logMessages.toList)
 }
 
 object ClientProblem extends ProblemImplicits {

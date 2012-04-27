@@ -37,25 +37,6 @@ trait JsonServiceSpec extends Specification
   implicit val queryDuration = Duration("3s")
   implicit val queryTimeout = Timeout(queryDuration)
 
-  case class FutureW[A](val f: Future[A]) {
-    def await: A =
-      Await.result(f, Duration("3s"))
-  }
-
-  implicit def futureToFutureW[A](fv: Future[A]) =
-    FutureW(fv)
-
-  case class FutureValidationW[E,S](val fv: FutureValidation[E,S]) {
-    def await: Validation[E,S] =
-      Await.result(fv.inner, Duration("3s"))
-
-    def awaitSuccess: S =
-      await.toOption.get
-  }
-
-  implicit def futureValidationToFutureValidationW[E,S](fv: FutureValidation[E,S]) =
-    FutureValidationW(fv)
-
   // def convertResponse(in: HttpResponse[ByteChunk])(implicit timeout: Timeout): HttpResponse[JValue] =
   //   in.copy(content = in.content.map(chunk => chunkToFutureJValue(timeout)(chunk).await))
 
