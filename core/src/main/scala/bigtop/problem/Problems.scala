@@ -1,6 +1,8 @@
 package bigtop
 package problem
 
+import blueeyes.core.http.HttpStatusCodes._
+
 // Predefined problems
 
 object Problems extends ProblemImplicits {
@@ -8,7 +10,7 @@ object Problems extends ProblemImplicits {
 
   object Server {
     val empty: Problem =
-      ServerProblem(Nil, Nil)
+      ServerProblem(Nil, Nil, InternalServerError)
 
     val databaseError: Problem =
       ServerProblem("databaseError")
@@ -28,7 +30,7 @@ object Problems extends ProblemImplicits {
 
   object Client {
     val empty: Problem =
-      ClientProblem(Nil, Nil)
+      ClientProblem(Nil, Nil, BadRequest)
 
     /** The client has no session. */
     val noSession: Problem =
