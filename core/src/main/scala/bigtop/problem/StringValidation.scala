@@ -10,6 +10,9 @@ import scalaz.Validation
 import scalaz.syntax.validation._
 
 trait StringImplicits {
+  implicit def stringToStringValidation(str: String) =
+    StringValidation(str.success[Problem])
+
   implicit def stringValidationToStringValidation(sv: Validation[Problem,String]) =
     StringValidation(sv)
 }
@@ -59,6 +62,9 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
         Problems.Client.malformed(field, description).fail
       }
     }
+
+  def email(field: String) =
+    regex("[^@]+@[^@]+".r, field, "notEmail")
 
   def sv: StringValidation =
     this
