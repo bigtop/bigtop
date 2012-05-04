@@ -64,7 +64,7 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
     }
 
   def email(field: String) =
-    regex("[^@]+@[^@]+".r, field, "notEmail")
+    regex("^[^@]+@[^@]+$".r, field, "notEmail")
 
   def sv: StringValidation =
     this
