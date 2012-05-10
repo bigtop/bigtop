@@ -1,25 +1,36 @@
 package bigtop
 package concurrent
 
-import akka.dispatch.{Future, Promise}
+import akka.dispatch.{Await, Future, Promise}
+import akka.util.Duration
 import blueeyes.bkka.AkkaDefaults
 import scalaz.Validation
 import scalaz.syntax.validation._
 
 trait FutureImplicits extends AkkaDefaults {
+  class FutureW[A](inner: Future[A]) {
+    implicit val defaultDuration = Duration("3s")
 
-  case class WithFutureFlatMap[F, S](val inner: FutureValidation[F, S]) {
+    def await: A = await()
 
-    def flatMap[T](fn: (S) => Future[T]): FutureValidation[F, T] =
-      FutureValidation(inner.inner flatMap { validation => delayFailure(validation.map(fn)) })
+    def await(duration: Duration = defaultDuration): A =
+      Await.result(inner, duration)
 
+    def awaitOption: Option[A] = awaitOption()
+
+    def awaitOption(duration: Duration = defaultDuration): Option[A] =
+      try {
+        Some(await(duration))
+      } catch {
+        case exn: Exception => None
+      }
   }
 
-  case class WithValidationFlatMap[F, S](val inner: FutureValidation[F, S]) {
+  class FutureValidationW[E, S](val fv: FutureValidation[E,S]) extends FutureW(fv.inner) {
+    def awaitSuccess: S = awaitSuccess()
 
-    def flatMap[G >: F, T](fn: (S) => Validation[G, T]): FutureValidation[G, T] =
-      FutureValidation(inner.inner map { validation => validation.flatMap[T, G](fn) })
-
+    def awaitSuccess(duration: Duration = defaultDuration): S =
+      await(duration).toOption.get
   }
 
   def delayFailure[F, S](in: Validation[F, Future[S]]): Future[Validation[F, S]] =
@@ -40,6 +51,11 @@ trait FutureImplicits extends AkkaDefaults {
   implicit def validationToFutureValidation[F, S](in: Validation[F, S]): FutureValidation[F, S] =
     FutureValidation(Promise.successful(in))
 
+  implicit def futureValidationToFutureValidationW[E,S](fv: FutureValidation[E,S]) =
+    new FutureValidationW(fv)
+
+  implicit def futureToFutureW[A](f: Future[A]) =
+    new FutureW(f)
 }
 
 object FutureImplicits extends FutureImplicits

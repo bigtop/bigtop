@@ -1,8 +1,7 @@
 package bigtop
 package concurrent
 
-import akka.dispatch.{Await, Future, Promise}
-import akka.util.Duration
+import akka.dispatch.{Future, Promise}
 import blueeyes.bkka.AkkaDefaults
 import scalaz.Validation
 import scalaz.syntax.validation._
@@ -39,21 +38,13 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
     ()
   }
 
-  def or[G](f: F => FutureValidation[G, S]) =
+  def orElse[G](f: F => FutureValidation[G, S]) =
     inner flatMap {
       (v: Validation[F, S]) => v.fold(
         success = s => Promise.successful(s.success[G]),
         failure = f(_).inner
       )
     } fv
-
-  /** Modifier to allow use of Future's flatMap: `foo.byFuture.flatMap( ... )` */
-  def byFuture: WithFutureFlatMap[F, S] =
-    WithFutureFlatMap(this)
-
-  /** Modifier to allow use of Validation's flatMap: `foo.byFuture.flatMap( ... )` */
-  def byValidation: WithValidationFlatMap[F, S] =
-    WithValidationFlatMap(this)
 
   /** And the success shall be failures and the failures shall be successes. This is how you do logical negation */
   def invert: FutureValidation[S, F] =
@@ -63,14 +54,9 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
         failure = f => f.success))
     )
 
-  /** Only use for testing */
-  def await =
-      Await.result(inner, Duration("3s"))
-
-  def lift: FutureValidation[F, S] =
-    this
+  // def lift: FutureValidation[F, S] =
+  //   this
 
   def fv: FutureValidation[F, S] =
     this
-
 }

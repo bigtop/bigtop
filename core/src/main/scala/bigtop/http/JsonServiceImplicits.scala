@@ -9,6 +9,7 @@ import scalaz.syntax.validation._
 import bigtop.concurrent._
 import bigtop.problem._
 import bigtop.json.JsonWriter
+import com.weiglewilczek.slf4s.Logger
 
 /** A "wide" HttpRequest with JValue content */
 trait JsonHttpRequestW extends HttpRequestW[Future[JValue]] {
@@ -28,7 +29,7 @@ trait FutureJsonHttpResponseW[A] {
 
   val response: FutureValidation[Problem,A]
 
-  def toResponse(implicit w: JsonWriter[A]): Future[HttpResponse[JValue]] =
+  def toResponse(implicit w: JsonWriter[A], logger: Logger): Future[HttpResponse[JValue]] =
     response.fold (
       failure = _.toResponse,
       success = v => HttpResponse[JValue](content = Some(w.write(v)))
@@ -40,7 +41,7 @@ trait FutureJsonHttpResponseSeqW[A] {
 
   val response: FutureValidation[Problem,Seq[A]]
 
-  def toResponseSeq(implicit w: JsonWriter[A]): Future[HttpResponse[JValue]] = {
+  def toResponseSeq(implicit w: JsonWriter[A], logger: Logger): Future[HttpResponse[JValue]] = {
     response.fold (
       failure = prob => prob.toResponse,
       success = seq  => HttpResponse[JValue](content = Some(JArray(seq.map(w.write _).toList)))

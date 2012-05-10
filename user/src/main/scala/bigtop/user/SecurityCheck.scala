@@ -12,7 +12,7 @@ case class SecurityCheck[A,U <: User](val predicate: SecurityPredicate[A,U]) ext
     predicate(request, user)
 
   def or(other: SecurityCheck[A,U]): SecurityCheck[A,U] =
-    SecurityCheck((request, user) => predicate(request, user).or(_ => other(request, user)))
+    SecurityCheck((request, user) => predicate(request, user).orElse(_ => other(request, user)))
 
 }
 

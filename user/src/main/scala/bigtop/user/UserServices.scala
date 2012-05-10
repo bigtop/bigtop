@@ -14,7 +14,7 @@ import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
 import scalaz.syntax.validation._
-import com.weiglewilczek.slf4s.Logging
+import com.weiglewilczek.slf4s.{Logger, Logging}
 
 
 // Interface
@@ -63,7 +63,10 @@ trait UserService[U <: User] extends HttpRequestHandlerCombinators
     with JsonServiceImplicits
     with FutureImplicits
     with JsonFormatters
+    with Logging
 {
+  implicit val log = logger
+
   def auth: Authorizer[U]
 }
 
@@ -81,7 +84,7 @@ case class UserCreateService[U <: User](
           json    <- req.json.fv
           unsaved <- externalFormat.read(json).fv
           saved   <- actions.create(unsaved)
-        } yield saved).toResponse(externalFormat)
+        } yield saved).toResponse(externalFormat, log)
     }
 }
 
@@ -98,7 +101,7 @@ case class UserReadService[U <: User](
           user <- auth.authorize(req, canRead)
           id   <- req.mandatoryParam[Uuid]('id).fv
           user <- actions.read(id)
-        } yield user).toResponse(externalFormat)
+        } yield user).toResponse(externalFormat, log)
     }
 }
 
@@ -118,7 +121,7 @@ case class UserUpdateService[U <: User](
           unsaved <- actions.read(id)
           updated <- externalFormat.update(unsaved, json).fv
           saved   <- actions.update(updated)
-        } yield saved).toResponse(externalFormat)
+        } yield saved).toResponse(externalFormat, log)
     }
 }
 

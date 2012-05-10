@@ -48,7 +48,19 @@ object BigtopBuild extends Build {
   lazy val root = Project(
     id = "root",
     base = file(".")
-  ).aggregate(core, user)
+  ).aggregate(core, user, util)
+
+  lazy val core = Project(
+    id = "core",
+    base = file("core")
+  ).settings(
+    Project.defaultSettings ++
+    blueeyesSettings ++
+    Seq(
+      version := bigtopVersion,
+      libraryDependencies ++= Seq(specs2, jbCrypt, jodaTime, jodaConvert)
+    ) : _*
+  )
 
   lazy val user = Project(
     id = "user",
@@ -59,6 +71,18 @@ object BigtopBuild extends Build {
     Seq(
       version := bigtopVersion,
       libraryDependencies += twitterUtil
+    ) : _*
+  ).dependsOn(core)
+
+  lazy val util = Project(
+    id = "util",
+    base = file("util")
+  ).settings(
+    Project.defaultSettings ++
+    blueeyesSettings ++
+    Seq(
+      version := bigtopVersion,
+      libraryDependencies ++= Seq(specs2)
     ) : _*
   ).dependsOn(core)
 
@@ -73,17 +97,5 @@ object BigtopBuild extends Build {
       libraryDependencies += redisclient
     ) : _*
   ).dependsOn(core)
-
-  lazy val core = Project(
-    id = "core",
-    base = file("core")
-  ).settings(
-    Project.defaultSettings ++
-    blueeyesSettings ++
-    Seq(
-      version := bigtopVersion,
-      libraryDependencies ++= Seq(specs2, jbCrypt, jodaTime, jodaConvert)
-    ) : _*
-  )
 
 }

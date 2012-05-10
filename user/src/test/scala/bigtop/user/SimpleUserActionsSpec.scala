@@ -5,7 +5,7 @@ import akka.dispatch.{Await, Future}
 import akka.util.Duration
 import akka.util.duration._
 import bigtop.concurrent._
-import bigtop.problem.{Problem, ProblemWriters}
+import bigtop.problem.{Problem, ProblemFormat}
 import bigtop.problem.Problems._
 import bigtop.util.Uuid
 import blueeyes.core.service.test.BlueEyesServiceSpecification
@@ -20,7 +20,7 @@ import scalaz.syntax.validation._
 
 class SimpleUserActionsSpec extends BlueEyesServiceSpecification with ConfigurableMongo {
   import MimeTypes._
-  import ProblemWriters._
+  import ProblemFormat._
 
   override def configuration = """
     services {
