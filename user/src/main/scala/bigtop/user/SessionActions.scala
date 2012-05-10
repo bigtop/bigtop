@@ -27,10 +27,9 @@ trait SessionActions[U <: User] extends UserTypes[U] {
     } yield saved
   }
 
-  def switchUser(id: Uuid, effectiveId: Uuid): SessionValidation = {
+  def changeIdentity(id: Uuid, user: U): SessionValidation = {
     for {
       session <- read(id)
-      user    <- userActions.read(effectiveId)
       saved   <- save(session.copy(effectiveUser = user))
     } yield saved
   }

@@ -12,14 +12,16 @@ import scalaz.syntax.validation._
 trait Authenticator[U <: User] {
 
   /** Return the user this request is authenticated as, if it is authenticated as a user. It's not an error to not be authenticated, so the user is an option. We have a validation as other errors can occur. */
-  def authenticate[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]]
+  def effectiveUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]]
+
+  def realUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]]
 
   /** An alias for authenticate */
-  def optional[A](request: HttpRequest[A]) = authenticate[A](request)
+  def optional[A](request: HttpRequest[A]) = effectiveUser[A](request)
 
   /** Return the user this request is authenticated as, returning a Problem if there is no user. A convenience function */
   def mandatory[A](request: HttpRequest[A], operation: String): FutureValidation[Problem, U] =
-    authenticate(request).flatMap {
+    effectiveUser(request).flatMap {
       user => user.toSuccess(Client.notAuthorized("unknown", operation))
     }
 
@@ -37,8 +39,8 @@ trait Authorizer[U <: User] extends Authenticator[U] with FutureImplicits {
 
   def authorize[A,B](request: HttpRequest[A], condition: SecurityCheck[A,U]) = {
     for {
-      user1    <- authenticate(request)
-      user2    <- condition(request, user1).fv
+      user1 <- effectiveUser(request)
+      user2 <- condition(request, user1).fv
     } yield user2
   }
 

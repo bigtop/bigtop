@@ -15,10 +15,12 @@ case class SessionCookieAuthorizer[U <: User](val actions: SessionActions[U]) ex
   with HttpHeaderImplicits
   with FutureImplicits
 {
-  def authenticate[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
-    for {
-      sess <- session(request)
-    } yield sess.map(_.effectiveUser)
+  def effectiveUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+    session(request).map(_.map(_.effectiveUser))
+  }
+
+  def realUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+    session(request).map(_.map(_.realUser))
   }
 
   def session[A](request: HttpRequest[A]): FutureValidation[Problem,Option[Session[U]]] = {
@@ -26,8 +28,7 @@ case class SessionCookieAuthorizer[U <: User](val actions: SessionActions[U]) ex
       cookie =>
         for {
           uuid <- Uuid.parse(cookie.cookieValue).toSuccess(
-            Client.malformed("session",
-                             "Session cookie did not contain a valid UUID")
+            Client.malformed("session", "Session cookie did not contain a valid UUID")
           ).fv
           session <- actions.read(uuid)
         } yield (Some(session) : Option[Session[U]])
