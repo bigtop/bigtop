@@ -29,6 +29,8 @@ object BigtopBuild extends Build {
   lazy val jodaConvert   = "org.joda"                %  "joda-convert"    % "1.2"
   lazy val slf4s         = "com.weiglewilczek.slf4s" %% "slf4s"           % "1.0.7"
   lazy val configrity    = "org.streum"              %% "configrity"      % "0.9.0"
+  lazy val metricsCore   = "com.yammer.metrics"      %  "metrics-core"    % "2.1.2"
+  lazy val metricsScala  = "com.yammer.metrics"      %% "metrics-scala"   % "2.1.2"
 
   val blueeyesSettings = Seq(
     resolvers := bigtopResolvers,
@@ -82,7 +84,7 @@ object BigtopBuild extends Build {
     blueeyesSettings ++
     Seq(
       version := bigtopVersion,
-      libraryDependencies ++= Seq(specs2)
+      libraryDependencies ++= Seq(specs2, metricsCore, metricsScala)
     ) : _*
   ).dependsOn(core)
 
