@@ -60,4 +60,9 @@ class Iso8601Spec extends Specification {
       actual1 mustEqual expected1
     }
   }
+
+  "round-trip" in {
+    val time = new DateTime
+    Iso8601Format.read(Iso8601Format.write(time)).toOption must beSome(time.withZone(DateTimeZone.UTC))
+  }
 }

@@ -2,9 +2,6 @@ package bigtop
 package user
 
 import akka.dispatch.Future
-import blueeyes.core.http._
-import blueeyes.core.service._
-import blueeyes.json.JsonAST.JValue
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
 import bigtop.json._
@@ -12,6 +9,9 @@ import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
 import bigtop.problem.Problem
 import bigtop.problem.Problems._
+import blueeyes.core.http._
+import blueeyes.core.service._
+import blueeyes.json.JsonAST._
 import scalaz.syntax.validation._
 import com.weiglewilczek.slf4s.{Logging, Logger}
 
@@ -24,16 +24,16 @@ trait SessionServices[U <: User] extends Logging
   implicit val log = logger
 
   val create: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
-
   val read: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
-
-  val switchUser: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
+  val changeIdentity: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
+  val restoreIdentity: HttpService[Future[JValue],Future[HttpResponse[JValue]]]
 
   def service =
-    path("/api/session/v1/switch-user/'id") {
-      json {
-        switchUser
-      }
+    path("/api/session/v1/change-identity") {
+      json { changeIdentity }
+    } ~
+    path("/api/session/v1/restore-identity") {
+      json { restoreIdentity }
     } ~
     JsonSyncService(
       "session",
@@ -41,24 +41,26 @@ trait SessionServices[U <: User] extends Logging
       create,
       read
     )(logger)
-
 }
 
 // Implementation
 
 case class SessionServicesBuilder[U <: User](
   val actions: SessionActions[U],
-  val canSwitch: SecurityCheck[Future[JValue],U],
+  val userActions: UserActions[U],
+  val canChange: SecurityCheck[Future[JValue],U],
   val auth: Authorizer[U],
   val externalFormat: JsonWriter[Session[U]]
 ) extends SessionServices[U] {
-  val sessionCreate     = SessionCreateService(actions, externalFormat)
-  val sessionRead       = SessionReadService(actions, auth, externalFormat)
-  val sessionSwitchUser = SessionSwitchUserService(actions, canSwitch, auth, externalFormat)
+  val sessionCreate          = SessionCreateService(actions, externalFormat)
+  val sessionRead            = SessionReadService(actions, auth, externalFormat)
+  val sessionChangeIdentity  = SessionChangeIdentityService(actions, userActions, canChange, auth, externalFormat)
+  val sessionRestoreIdentity = SessionRestoreIdentityService(actions, auth, externalFormat)
 
-  lazy val create     = sessionCreate.create
-  lazy val read       = sessionRead.read
-  lazy val switchUser = sessionSwitchUser.switchUser
+  lazy val create          = sessionCreate.create
+  lazy val read            = sessionRead.read
+  lazy val changeIdentity  = sessionChangeIdentity.changeIdentity
+  lazy val restoreIdentity = sessionRestoreIdentity.restoreIdentity
 }
 
 trait SessionService[U <: User] extends HttpRequestHandlerCombinators
@@ -117,20 +119,47 @@ case class SessionReadService[U <: User](
     }
 }
 
-case class SessionSwitchUserService[U <: User](
+case class SessionChangeIdentityService[U <: User](
   val actions: SessionActions[U],
-  val canSwitch: SecurityCheck[Future[JValue],U],
+  val userActions: UserActions[U],
+  val canChange: SecurityCheck[Future[JValue],U],
+  val auth: Authorizer[U],
+  val externalFormat: JsonWriter[Session[U]]
+) extends SessionService[U]
+  with JsonRequestHandlerCombinators
+{
+  val changeIdentity =
+    post {
+      service {
+        (req: HttpRequest[Future[JValue]]) =>
+          (for {
+            session  <- auth.mandatorySession(req, "session.changeIdentity")
+            user     <- canChange(req, Some(session.realUser))
+            json     <- req.json
+            userId   <- json.optional[Uuid]("id").fv
+            username <- json.optional[String]("username").fv
+            user     <- (userId, username) match {
+                          case (Some(id),   _) => println("B"); userActions.read(id)
+                          case (_, Some(name)) => println("C"); userActions.readByUsername(name)
+                          case (_, _) => (Client.missing("id") and Client.missing("username")).fail[U].fv
+                        }
+            session  <- actions.changeIdentity(session.id, user)
+          } yield session).toResponse(externalFormat, log)
+      }
+    }
+}
+
+case class SessionRestoreIdentityService[U <: User](
+  val actions: SessionActions[U],
   val auth: Authorizer[U],
   val externalFormat: JsonWriter[Session[U]]
 ) extends SessionService[U] {
-  val switchUser =
+  val restoreIdentity =
     service {
       (req: HttpRequest[Future[JValue]]) =>
         (for {
-          session       <- auth.mandatorySession(req, "session.switchUser")
-          user          <- canSwitch(req, Some(session.realUser))
-          effectiveUser <- req.mandatoryParam[Uuid]('effectiveUser).fv
-          session       <- actions.switchUser(session.id, effectiveUser)
+          session <- auth.mandatorySession(req, "session.restoreIdentity")
+          session <- actions.restoreIdentity(session.id)
         } yield session).toResponse(externalFormat, log)
     }
 }

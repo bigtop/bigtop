@@ -19,7 +19,7 @@ object SimpleUserService {
   val canRead   = isAdmin("user.read")
   val canUpdate = isAdmin("user.update")
   val canDelete = isAdmin("user.delete")
-  val canSwitch = isAdmin("session.switchUser")
+  val canChange = isAdmin("session.changeIdentity")
 
   def services(config: Configuration) = {
     val userActions    = SimpleUserActions[SimpleUser](config, SimpleUser.internalFormat)
@@ -37,7 +37,8 @@ object SimpleUserService {
 
     val sessionServices = SessionServicesBuilder(
       sessionActions,
-      canSwitch,
+      userActions,
+      canChange,
       authorizer,
       Session.externalWriter(SimpleUser.externalFormat)
     )

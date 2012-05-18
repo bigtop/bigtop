@@ -37,15 +37,10 @@ trait JsonServiceSpec extends Specification
   implicit val queryDuration = Duration("3s")
   implicit val queryTimeout = Timeout(queryDuration)
 
-  // def convertResponse(in: HttpResponse[ByteChunk])(implicit timeout: Timeout): HttpResponse[JValue] =
-  //   in.copy(content = in.content.map(chunk => chunkToFutureJValue(timeout)(chunk).await))
-
   private val mockSwitch = sys.props.get(Environment.MockSwitch)
 
   private val specBefore = Step {
     sys.props.getOrElseUpdate (Environment.MockSwitch, "true")
-    // sys.props.getOrElseUpdate (ConfigurableHttpClient.HttpClientSwitch, "true")
-    // sys.props.getOrElseUpdate (ConfigurableMongo.MongoSwitch, "true")
   }
 
   private val specAfter = Step {
