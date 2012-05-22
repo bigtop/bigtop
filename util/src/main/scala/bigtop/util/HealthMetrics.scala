@@ -1,23 +1,13 @@
 package bigtop
 package util
 
-// import com.weiglewilczek.slf4s.Logger
+import scala.collection.JavaConversions._
 import com.yammer.metrics.scala.Instrumented
 import akka.dispatch.{ Future, Promise }
 import blueeyes.core.http._
-// import blueeyes.core.http.HttpHeaders._
 import blueeyes.core.http.HttpStatusCodes._
 import blueeyes.core.service._
-// import blueeyes.core.data._
-// import blueeyes.json.JsonAST._
-// import blueeyes.json.JsonParser.ParseException
-// import blueeyes.persistence.mongo.Database
-// import bigtop.concurrent.FutureValidation
-// import bigtop.concurrent.FutureImplicits._
-// import bigtop.problem.Problem
 import java.util.concurrent.TimeUnit
-// import scalaz._
-// import scalaz.syntax.validation._
 
 trait HealthMetrics extends Instrumented {
   lazy val responseTimeUnit = TimeUnit.MILLISECONDS
@@ -56,5 +46,12 @@ trait HealthMetrics extends Instrumented {
           }
       }
     }
+  }
+
+  def shutdownMetrics() = {
+    for(name <- metrics.metricsRegistry.allMetrics.keySet) {
+      metrics.metricsRegistry.removeMetric(name)
+    }
+    metrics.metricsRegistry.shutdown()
   }
 }
