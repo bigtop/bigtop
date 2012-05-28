@@ -26,32 +26,48 @@ trait HealthMetrics extends Instrumented {
     responseCountTimeUnit
   )
 
-  def healthMetrics[T](inner: AsyncHttpService[T]): AsyncHttpService[T] = {
-    new AsyncCustomHttpService[T] {
-      def metadata = None
-      def service = {
-        (req: HttpRequest[T]) =>
-          inner.service(req) map { futureRes =>
-            val responseTimer = responseTimes.time()
-            futureRes.map { res: HttpResponse[T] =>
-              res.status.code match {
-                case _ : HttpSuccess => successes.mark()
-                case _ : HttpWarning => warnings.mark()
-                case _ : ClientError => clientErrors.mark()
-                case _ : ServerError => serverErrors.mark()
-              }
-              responseTimer.stop()
-              res
+  def healthMetrics[T,S](monitored: => ServiceDescriptorFactory[T,S]): ServiceDescriptorFactory[T,S] = {
+    (context: ServiceContext) => {
+      val underlying = monitored(context)
+
+      ServiceDescriptor[T,S](
+        startup = underlying.startup,
+
+        request = (config: S) => {
+          val inner = underlying.request(config)
+
+          new AsyncCustomHttpService[T] {
+            def metadata = None
+            def service = {
+              (req: HttpRequest[T]) =>
+                inner.service(req) map {
+                  futureResult =>
+                    val responseTimer = responseTimes.time()
+                  futureResult.map {
+                    result: HttpResponse[T] =>
+                      result.status.code match {
+                        case _ : HttpSuccess => successes.mark()
+                        case _ : HttpWarning => warnings.mark()
+                        case _ : ClientError => clientErrors.mark()
+                        case _ : ServerError => serverErrors.mark()
+                      }
+                    responseTimer.stop()
+                    result
+                  }
+                }
             }
           }
-      }
-    }
-  }
+        },
 
-  def shutdownMetrics() = {
-    for(name <- metrics.metricsRegistry.allMetrics.keySet) {
-      metrics.metricsRegistry.removeMetric(name)
+        shutdown = (config: S) => {
+          for(name <- metrics.metricsRegistry.allMetrics.keySet) {
+            metrics.metricsRegistry.removeMetric(name)
+          }
+          metrics.metricsRegistry.shutdown()
+
+          underlying.shutdown(config)
+        }
+      )
     }
-    metrics.metricsRegistry.shutdown()
   }
 }
