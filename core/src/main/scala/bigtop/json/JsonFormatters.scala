@@ -15,32 +15,43 @@ import scalaz.std.option.optionSyntax._
 /** A "wide" (i.e. pimped) JSON value */
 case class JValueW(json: JValue) {
   import Problems._
+  import JsonFormatters._
 
   def mandatory[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     (json \? name).toSuccess(Client.missing(name)).flatMap(reader.read _)
 
-  def mandatorySeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] = {
-    type ValSeq[T] = Validation[Problem, T]
-    for {
-      field <- (json \? name).toSuccess(Problems.Client.missing(name))
-      array <- (field -->? classOf[JArray]).toSuccess(Problems.Client.malformed(name, "expected array"))
-      ans   <- array.elements.map(reader.read _).sequence[ValSeq, T]
-    } yield ans
-  }
-
   def optional[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,Option[T]] =
     (json \? name) match {
       case Some(json) => reader.read(json).map(Some(_))
-      case None       => (None : Option[T]).success[Problem]
+      case None       => Option.empty[T].success[Problem]
     }
 
   def optional[T](name: String, default: T)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     (json \? name).map(reader.read _).getOrElse(default.success)
 
+  def mandatorySeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] =
+    mandatory[JValue](name).flatMap(field => JValueW(field).asSeq[T])
+
+  def optionalSeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Option[Seq[T]]] =
+    (json \? name) match {
+      case Some(json) => json.asSeq[T].map(Some(_))
+      case None       => Option.empty[Seq[T]].success[Problem]
+    }
+
+  def optionalSeq[T](name: String, default: Seq[T])(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] =
+    (json \? name).map(_.asSeq[T]).getOrElse(default.success)
+
   def as[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     reader.read(json)
-}
 
+  def asSeq[T](implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] = {
+    type ValSeq[T] = Validation[Problem, T]
+    for {
+      array <- (json -->? classOf[JArray]).toSuccess(Problems.Client.malformed("array", "expected array, received something else"))
+      ans   <- array.elements.map(reader.read _).sequence[ValSeq, T]
+    } yield ans
+  }
+}
 
 trait JsonFormatters {
   import Problems._
