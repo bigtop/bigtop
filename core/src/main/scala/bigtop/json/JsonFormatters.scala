@@ -140,7 +140,7 @@ trait JsonFormatters {
   implicit def writableToJsonWritable[A](in: A): JsonWritable[A] =
     JsonWritable[A](in)
 
-  implicit def jsonToJValuenW(in: JValue): JValueW = JValueW(in)
+  implicit def jsonToJValueW(in: JValue): JValueW = JValueW(in)
 }
 
 object JsonFormatters extends JsonFormatters
