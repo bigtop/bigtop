@@ -19,6 +19,15 @@ case class JValueW(json: JValue) {
   def mandatory[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     (json \? name).toSuccess(Client.missing(name)).flatMap(reader.read _)
 
+  def mandatorySeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] = {
+    type ValSeq[T] = Validation[Problem, T]
+    for {
+      field <- (json \? name).toSuccess(Problems.Client.missing(name))
+      array <- (field -->? classOf[JArray]).toSuccess(Problems.Client.malformed(name, "expected array"))
+      ans   <- array.elements.map(reader.read _).sequence[ValSeq, T]
+    } yield ans
+  }
+
   def optional[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,Option[T]] =
     (json \? name) match {
       case Some(json) => reader.read(json).map(Some(_))
