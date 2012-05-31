@@ -18,13 +18,11 @@ trait HealthMetrics extends Instrumented {
   lazy val clientErrors = metrics.meter("client-errors", "client-errors", null, responseCountTimeUnit)
   lazy val serverErrors = metrics.meter("server-errors", "server-errors", null, responseCountTimeUnit)
 
+  def createTimer(name: String) =
+    metrics.metricsRegistry.newTimer(getClass, name, responseTimeUnit, responseCountTimeUnit)
+
   // We want the Java timer with the stop() method here, not the Scala wrapper with a time(foo) method:
-  lazy val responseTimes = metrics.metricsRegistry.newTimer(
-    getClass,
-    "response-times",
-    responseTimeUnit,
-    responseCountTimeUnit
-  )
+  lazy val responseTimes = createTimer("response-times")
 
   def healthMetrics[T,S](monitored: => ServiceDescriptorFactory[T,S]): ServiceDescriptorFactory[T,S] = {
     (context: ServiceContext) => {
@@ -43,17 +41,17 @@ trait HealthMetrics extends Instrumented {
                 inner.service(req) map {
                   futureResult =>
                     val responseTimer = responseTimes.time()
-                  futureResult.map {
-                    result: HttpResponse[T] =>
-                      result.status.code match {
-                        case _ : HttpSuccess => successes.mark()
-                        case _ : HttpWarning => warnings.mark()
-                        case _ : ClientError => clientErrors.mark()
-                        case _ : ServerError => serverErrors.mark()
-                      }
-                    responseTimer.stop()
-                    result
-                  }
+                    futureResult.map {
+                      result: HttpResponse[T] =>
+                        result.status.code match {
+                          case _ : HttpSuccess => successes.mark()
+                          case _ : HttpWarning => warnings.mark()
+                          case _ : ClientError => clientErrors.mark()
+                          case _ : ServerError => serverErrors.mark()
+                        }
+                      responseTimer.stop()
+                      result
+                    }
                 }
             }
           }
