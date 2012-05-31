@@ -10,7 +10,7 @@ class PasswordGeneratorSpec extends Specification with ScalaCheck {
 
   "PasswordGenerator" should {
 
-    val smallPositiveInt = Gen.choose(0,256)
+    val smallPositiveInt = Gen.choose(1, 256)
 
     "generate password of correct length" in {
       forAll(smallPositiveInt) {

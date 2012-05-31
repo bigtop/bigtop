@@ -59,9 +59,15 @@ trait JsonFormatters {
   // Atomic Values ---------------------
 
   implicit val UuidJsonFormat: JsonFormat[Problem,Uuid] = new JsonFormat[Problem,Uuid] {
-    def write(in: Uuid) = JString(in.toString)
+    def write(in: Uuid) = JString(in.name)
     def read(json: JValue) =
       json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("uuid", json))
+  }
+
+  implicit val EmailJsonFormat: JsonFormat[Problem,Email] = new JsonFormat[Problem,Email] {
+    def write(in: Email) = JString(in.email)
+    def read(json: JValue) =
+      json -->? classOf[JString] map (_.value) flatMap (Email.parse _) toSuccess (malformed("email", json))
   }
 
   implicit val StringJsonFormat: JsonFormat[Problem,String] = new JsonFormat[Problem,String] {
@@ -108,11 +114,12 @@ trait JsonFormatters {
 
   // Seq Values ------------------------
 
-  implicit val SeqUuidJsonFormat: JsonFormat[Problem,Seq[Uuid]] = buildSeqFormat(UuidJsonFormat)
-  implicit val SeqStringJsonFormat: JsonFormat[Problem,Seq[String]] = buildSeqFormat(StringJsonFormat)
-  implicit val SeqBooleanJsonFormat: JsonFormat[Problem,Seq[Boolean]] = buildSeqFormat(BooleanJsonFormat)
-  implicit val SeqIntJsonFormat: JsonFormat[Problem,Seq[Int]] = buildSeqFormat(IntJsonFormat)
-  implicit val SeqDoubleJsonFormat: JsonFormat[Problem,Seq[Double]] = buildSeqFormat(DoubleJsonFormat)
+  // implicit val SeqUuidJsonFormat: JsonFormat[Problem,Seq[Uuid]] = buildSeqFormat(UuidJsonFormat)
+  // implicit val SeqEmailJsonFormat: JsonFormat[Problem,Seq[Email]] = buildSeqFormat(EmailJsonFormat)
+  // implicit val SeqStringJsonFormat: JsonFormat[Problem,Seq[String]] = buildSeqFormat(StringJsonFormat)
+  // implicit val SeqBooleanJsonFormat: JsonFormat[Problem,Seq[Boolean]] = buildSeqFormat(BooleanJsonFormat)
+  // implicit val SeqIntJsonFormat: JsonFormat[Problem,Seq[Int]] = buildSeqFormat(IntJsonFormat)
+  // implicit val SeqDoubleJsonFormat: JsonFormat[Problem,Seq[Double]] = buildSeqFormat(DoubleJsonFormat)
 
   implicit def buildSeqFormat[A](implicit format: JsonFormat[Problem,A]): JsonFormat[Problem,Seq[A]] =
     new JsonFormat[Problem,Seq[A]] {
@@ -131,17 +138,16 @@ trait JsonFormatters {
         })
 
       def read(json: JValue) =
-        json -->? classOf[JObject] toSuccess (malformed("object", json)) flatMap (
-          obj =>
-            for {
-            fields <- obj.fields.foldLeft(Nil: List[Validation[Problem,(A,B)]]){
-                (accum, field) =>
-                  (for {
-                    key   <- keyFormat.read(field.name)
-                    value <- valFormat.read(field.value)
-                   } yield (key -> value)) :: accum
-              }.sequence[({type l[C] = Validation[Problem,C]})#l, (A,B)]
-            } yield Map[A,B]() ++ fields)
+        json -->? classOf[JObject] toSuccess (malformed("object", json)) flatMap { obj =>
+          for {
+            fields <- obj.fields.foldLeft(Nil: List[Validation[Problem,(A,B)]]) { (accum, field) =>
+                        (for {
+                          key   <- keyFormat.read(field.name)
+                          value <- valFormat.read(field.value)
+                        } yield (key -> value)) :: accum
+                      }.sequence[({type l[C] = Validation[Problem,C]})#l, (A,B)]
+          } yield Map[A,B]() ++ fields
+        }
     }
 
 
