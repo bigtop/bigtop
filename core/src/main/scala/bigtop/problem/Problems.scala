@@ -24,6 +24,9 @@ object Problems extends ProblemImplicits {
     def malformed(field: String, description: String): Problem =
       ServerProblem("malformed", "field" -> field, "description" -> description)
 
+    val noResponse: Problem =
+      ServerProblem("noResponse")
+
     val malformedResponse: Problem =
       ServerProblem("malformedResponse")
 
