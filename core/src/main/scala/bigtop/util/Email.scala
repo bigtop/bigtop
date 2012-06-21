@@ -17,4 +17,10 @@ object Email {
       case EmailRegex() => Some(Email(email))
       case _            => None
     }
+
+  object Parse {
+    def unapply(email: String): Option[Email] = {
+      parse(email)
+    }
+  }
 }

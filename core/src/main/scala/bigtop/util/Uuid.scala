@@ -12,7 +12,6 @@ case class Uuid(val name: String) {
 }
 
 object Uuid {
-
   private val UuidRegex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$".r
 
   def create() =
@@ -24,4 +23,9 @@ object Uuid {
       case _           => None
     }
 
+  object Parse {
+    def unapply(name: String): Option[Uuid] = {
+      parse(name)
+    }
+  }
 }
