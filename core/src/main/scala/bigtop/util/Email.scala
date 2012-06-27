@@ -7,20 +7,22 @@ import scalaz.syntax.validation._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 
-case class Email(val email: String)
+case class Email(val address: String) {
+  override def toString = address
+}
 
 object Email {
   private val EmailRegex = "^[^@]+@[^@]+$".r
 
-  def parse(email: String): Option[Email] =
-    email match {
-      case EmailRegex() => Some(Email(email))
+  def parse(address: String): Option[Email] =
+    address match {
+      case EmailRegex() => Some(Email(address))
       case _            => None
     }
 
   object Parse {
-    def unapply(email: String): Option[Email] = {
-      parse(email)
+    def unapply(address: String): Option[Email] = {
+      parse(address)
     }
   }
 }

@@ -65,7 +65,7 @@ trait JsonFormatters {
   }
 
   implicit val EmailJsonFormat: JsonFormat[Problem,Email] = new JsonFormat[Problem,Email] {
-    def write(in: Email) = JString(in.email)
+    def write(in: Email) = JString(in.address)
     def read(json: JValue) =
       json -->? classOf[JString] map (_.value) flatMap (Email.parse _) toSuccess (malformed("email", json))
   }
