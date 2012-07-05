@@ -3,11 +3,14 @@ package concurrent
 
 import akka.dispatch.{Await, Future, Promise}
 import akka.util.Duration
+import bigtop.problem.Problem
 import blueeyes.bkka.AkkaDefaults
 import scalaz.Validation
 import scalaz.syntax.validation._
 
 trait FutureImplicits extends AkkaDefaults {
+  type FvProblem[A] = FutureValidation[Problem, A]
+
   class FutureW[A](inner: Future[A]) {
     implicit val defaultDuration = Duration("3s")
 
