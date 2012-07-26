@@ -32,10 +32,19 @@ case class JValueW(json: JValue) {
   def mandatorySeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] =
     mandatory[JValue](name).flatMap(field => JValueW(field).asSeq[T])
 
+  def mandatoryMap[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Map[String,T]] =
+    mandatory[JValue](name).flatMap(field => JValueW(field).asMap[T])
+
   def optionalSeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Option[Seq[T]]] =
     (json \? name) match {
       case Some(json) => json.asSeq[T].map(Some(_))
       case None       => Option.empty[Seq[T]].success[Problem]
+    }
+
+  def optionalMap[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Option[Map[String,T]]] =
+    (json \? name) match {
+      case Some(json) => json.asMap[T].map(Some(_))
+      case None       => Option.empty[Map[String,T]].success[Problem]
     }
 
   def optionalSeq[T](name: String, default: Seq[T])(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] =
@@ -44,12 +53,20 @@ case class JValueW(json: JValue) {
   def as[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     reader.read(json)
 
-  def asSeq[T](implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] = {
-    type ValSeq[T] = Validation[Problem, T]
+  def asSeq[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,Seq[T]] = {
+    type ValSeq[T] = Validation[Problem,T]
     for {
-      array <- (json -->? classOf[JArray]).toSuccess(Problems.Client.malformed("array", "expected array, received something else"))
-      ans   <- array.elements.map(reader.read _).sequence[ValSeq, T]
+      arr <- (json -->? classOf[JArray]).toSuccess(Problems.Client.malformed("array", "expected array, received something else"))
+      ans <- arr.elements.map(reader.read _).sequence[ValSeq, T]
     } yield ans
+  }
+
+  def asMap[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,Map[String,T]] = {
+    type ValSeq[T] = Validation[Problem,T]
+    for {
+      obj <- (json -->? classOf[JObject]).toSuccess(Problems.Client.malformed("object", "expected object, received something else"))
+      ans <- obj.fields.map { case JField(name, value) => reader.read(value).map(value => name -> value) }.sequence[ValSeq, (String, T)]
+    } yield Map(ans : _*)
   }
 }
 
