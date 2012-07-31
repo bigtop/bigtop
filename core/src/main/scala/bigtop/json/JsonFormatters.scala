@@ -4,6 +4,7 @@ package json
 import bigtop.util._
 import bigtop.problem._
 import blueeyes.json.JsonAST._
+import blueeyes.json.Printer
 import java.net.URL
 import org.joda.time._
 import scalaz.{Failure,Success,Validation}
@@ -30,41 +31,41 @@ case class JValueW(json: JValue) {
     (json \? name).map(reader.read _).getOrElse(default.success)
 
   def mandatorySeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] =
-    mandatory[JValue](name).flatMap(field => JValueW(field).asSeq[T])
+    mandatory[JValue](name).flatMap(field => JValueW(field).asSeq[T](name))
 
   def mandatoryMap[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Map[String,T]] =
-    mandatory[JValue](name).flatMap(field => JValueW(field).asMap[T])
+    mandatory[JValue](name).flatMap(field => JValueW(field).asMap[T](name))
 
   def optionalSeq[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Option[Seq[T]]] =
     (json \? name) match {
-      case Some(json) => json.asSeq[T].map(Some(_))
+      case Some(json) => json.asSeq[T](name).map(Some(_))
       case None       => Option.empty[Seq[T]].success[Problem]
     }
 
   def optionalMap[T](name: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem,Option[Map[String,T]]] =
     (json \? name) match {
-      case Some(json) => json.asMap[T].map(Some(_))
+      case Some(json) => json.asMap[T](name).map(Some(_))
       case None       => Option.empty[Map[String,T]].success[Problem]
     }
 
   def optionalSeq[T](name: String, default: Seq[T])(implicit reader: JsonReader[Problem, T]): Validation[Problem,Seq[T]] =
-    (json \? name).map(_.asSeq[T]).getOrElse(default.success)
+    (json \? name).map(_.asSeq[T](name)).getOrElse(default.success)
 
   def as[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     reader.read(json)
 
-  def asSeq[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,Seq[T]] = {
+  def asSeq[T](name: String = "array")(implicit reader: JsonReader[Problem,T]): Validation[Problem,Seq[T]] = {
     type ValSeq[T] = Validation[Problem,T]
     for {
-      arr <- (json -->? classOf[JArray]).toSuccess(Problems.Client.malformed("array", "expected array, received something else"))
+      arr <- (json -->? classOf[JArray]).toSuccess(malformed(name, "array", json))
       ans <- arr.elements.map(reader.read _).sequence[ValSeq, T]
     } yield ans
   }
 
-  def asMap[T](implicit reader: JsonReader[Problem,T]): Validation[Problem,Map[String,T]] = {
+  def asMap[T](name: String = "object")(implicit reader: JsonReader[Problem,T]): Validation[Problem,Map[String,T]] = {
     type ValSeq[T] = Validation[Problem,T]
     for {
-      obj <- (json -->? classOf[JObject]).toSuccess(Problems.Client.malformed("object", "expected object, received something else"))
+      obj <- (json -->? classOf[JObject]).toSuccess(malformed(name, "array", json))
       ans <- obj.fields.map { case JField(name, value) => reader.read(value).map(value => name -> value) }.sequence[ValSeq, (String, T)]
     } yield Map(ans : _*)
   }
@@ -78,32 +79,32 @@ trait JsonFormatters {
   implicit val UuidJsonFormat: JsonFormat[Problem,Uuid] = new JsonFormat[Problem,Uuid] {
     def write(in: Uuid) = JString(in.name)
     def read(json: JValue) =
-      json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("uuid", json))
+      json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("json", "uuid", json))
   }
 
   implicit val EmailJsonFormat: JsonFormat[Problem,Email] = new JsonFormat[Problem,Email] {
     def write(in: Email) = JString(in.address)
     def read(json: JValue) =
-      json -->? classOf[JString] map (_.value) flatMap (Email.parse _) toSuccess (malformed("email", json))
+      json -->? classOf[JString] map (_.value) flatMap (Email.parse _) toSuccess (malformed("json", "email", json))
   }
 
   implicit val StringJsonFormat: JsonFormat[Problem,String] = new JsonFormat[Problem,String] {
     def write(in: String) = JString(in)
     def read(json: JValue) =
-      json -->? classOf[JString] map (_.value) toSuccess (malformed("string", json))
+      json -->? classOf[JString] map (_.value) toSuccess (malformed("json", "string", json))
   }
 
   implicit val BooleanJsonFormat: JsonFormat[Problem,Boolean] = new JsonFormat[Problem,Boolean] {
     def write(in: Boolean) = JBool(in)
     def read(json: JValue) =
-      json -->? classOf[JBool] map (_.value) toSuccess (malformed("boolean", json))
+      json -->? classOf[JBool] map (_.value) toSuccess (malformed("json", "boolean", json))
   }
 
   implicit val DateTimeJsonFormat: JsonFormat[Problem,DateTime] = new JsonFormat[Problem,DateTime] {
     def write(in: DateTime) = JString(Iso8601Format.write(in))
     def read(json: JValue) =
-      json -->? classOf[JString] map (_.value) toSuccess (malformed("time", json)) flatMap (Iso8601Format.read(_)) match {
-        case Failure(msg) => (malformed("time", json)).fail
+      json -->? classOf[JString] map (_.value) toSuccess (malformed("json", "time", json)) flatMap (Iso8601Format.read(_)) match {
+        case Failure(msg) => (malformed("json", "time", json)).fail
         case Success(s)   => s.success
       }
   }
@@ -111,13 +112,13 @@ trait JsonFormatters {
   implicit val IntJsonFormat: JsonFormat[Problem,Int] = new JsonFormat[Problem,Int] {
     def write(in: Int) = JInt(in)
     def read(json: JValue) =
-      json -->? classOf[JInt] map (_.value.toInt) toSuccess (malformed("int", json))
+      json -->? classOf[JInt] map (_.value.toInt) toSuccess (malformed("json", "int", json))
   }
 
   implicit val DoubleJsonFormat: JsonFormat[Problem,Double] = new JsonFormat[Problem,Double] {
     def write(in: Double) = JDouble(in)
     def read(json: JValue) =
-      json -->? classOf[JDouble] map (_.value) toSuccess (malformed("double", json))
+      json -->? classOf[JDouble] map (_.value) toSuccess (malformed("json", "double", json))
   }
 
   implicit val URLJsonWriter: JsonWriter[URL] = new JsonWriter[URL] {
@@ -142,7 +143,7 @@ trait JsonFormatters {
     new JsonFormat[Problem,Seq[A]] {
       def write(in: Seq[A]) = JArray(in.map(format.write _).toList)
       def read(json: JValue) =
-        json -->? classOf[JArray] toSuccess (malformed("array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem,A]})#l, A])
+        json -->? classOf[JArray] toSuccess (malformed("json", "array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem,A]})#l, A])
     }
 
   // Map -------------------------------
@@ -155,7 +156,7 @@ trait JsonFormatters {
         })
 
       def read(json: JValue) =
-        json -->? classOf[JObject] toSuccess (malformed("object", json)) flatMap { obj =>
+        json -->? classOf[JObject] toSuccess (malformed("json", "object", json)) flatMap { obj =>
           for {
             fields <- obj.fields.foldLeft(Nil: List[Validation[Problem,(A,B)]]) { (accum, field) =>
                         (for {
@@ -170,9 +171,9 @@ trait JsonFormatters {
 
   // Other -----------------------------
 
-  def malformed(`type`: String, json: JValue) = {
+  def malformed(name: String, `type`: String, json: JValue) = {
     import blueeyes.json.Printer._
-    Client.malformed("data", "expected %s, found %s".format(`type`, compact(render(json))))
+    Client.malformed(name, "expected %s, found %s".format(`type`, compact(render(json))))
   }
 
   case class JsonWritable[A](in: A) {
