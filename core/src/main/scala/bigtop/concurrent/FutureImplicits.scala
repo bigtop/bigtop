@@ -5,7 +5,7 @@ import akka.dispatch.{Await, Future, Promise}
 import akka.util.Duration
 import bigtop.problem.Problem
 import blueeyes.bkka.AkkaDefaults
-import scalaz.Validation
+import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
 
 trait FutureImplicits extends AkkaDefaults {
@@ -33,7 +33,10 @@ trait FutureImplicits extends AkkaDefaults {
     def awaitSuccess: S = awaitSuccess()
 
     def awaitSuccess(duration: Duration = defaultDuration): S =
-      await(duration).toOption.get
+      await(duration) match {
+        case Success(success) => success
+        case Failure(failure) => throw new Exception("awaitSuccess received failure: " + failure)
+      }
   }
 
   def delayFailure[F, S](in: Validation[F, Future[S]]): Future[Validation[F, S]] =
