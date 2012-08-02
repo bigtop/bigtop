@@ -30,6 +30,9 @@ object Problems extends ProblemImplicits {
     val malformedResponse: Problem =
       ServerProblem("malformedResponse")
 
+    def timeout(msg: String) =
+      ServerProblem("timeout", "message" -> msg)
+
     def unknown(msg: String) =
       ServerProblem("unknown", "message" -> msg)
   }

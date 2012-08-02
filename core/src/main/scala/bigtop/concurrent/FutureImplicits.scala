@@ -1,9 +1,10 @@
 package bigtop
 package concurrent
 
+import akka.actor.ActorSystem
 import akka.dispatch.{Await, Future, Promise}
-import akka.util.Duration
-import bigtop.problem.Problem
+import akka.util.{Duration, Timeout}
+import bigtop.problem._
 import blueeyes.bkka.AkkaDefaults
 import scalaz.{Validation, Success, Failure}
 import scalaz.syntax.validation._
@@ -27,6 +28,18 @@ trait FutureImplicits extends AkkaDefaults {
       } catch {
         case exn: Exception => None
       }
+
+    def onTimeout(system: ActorSystem, duration: Duration = defaultDuration)(default: => A): Future[A] = {
+      val orElse = Promise()
+      val timer  = system.scheduler.scheduleOnce(duration)(orElse.complete _)
+
+      val ifThen = inner.map { result =>
+        timer.cancel
+        result
+      }
+
+      Future.firstCompletedOf(Seq(ifThen, orElse))
+    }
   }
 
   class FutureValidationW[E, S](val fv: FutureValidation[E,S]) extends FutureW(fv.inner) {
@@ -57,10 +70,10 @@ trait FutureImplicits extends AkkaDefaults {
   implicit def validationToFutureValidation[F, S](in: Validation[F, S]): FutureValidation[F, S] =
     FutureValidation(Promise.successful(in))
 
-  implicit def futureValidationToFutureValidationW[E,S](fv: FutureValidation[E,S]) =
+  implicit def futureValidationToFutureValidationW[E,S](fv: FutureValidation[E,S]): FutureValidationW[E,S] =
     new FutureValidationW(fv)
 
-  implicit def futureToFutureW[A](f: Future[A]) =
+  implicit def futureToFutureW[A](f: Future[A]): FutureW[A] =
     new FutureW(f)
 }
 
