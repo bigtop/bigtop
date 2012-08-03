@@ -45,6 +45,15 @@ object Problem extends ProblemImplicits {
     override def toString =
       "Message(" + (messageType +: args.map(pair => pair._1 + "=" + pair._2)).mkString(", ") + ")"
   }
+
+  /** A utility to convert an exception into an unknown Server problem */
+  def fromException(exn: Exception, why: String): Problem = {
+    val stackTrace = new java.io.StringWriter();
+    val printWriter = new java.io.PrintWriter(stackTrace);
+    exn.printStackTrace(printWriter);
+
+    Problems.Server.unknown(why).log(stackTrace.toString)
+  }
 }
 
 final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
