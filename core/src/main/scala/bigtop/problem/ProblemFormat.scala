@@ -59,15 +59,13 @@ trait ProblemFormat extends JsonFormatters {
           val code: HttpStatusCode = status
           code match {
             case client: ClientError =>
-              ClientProblem(SourceLocation.Unknown, messages, Nil, code).success
+              ClientProblem(messages, Nil, code).success
             case server: ServerError =>
-              ServerProblem(SourceLocation.Unknown, messages, Nil, code).success
+              ServerProblem(messages, Nil, code).success
             case _ =>
-              ClientProblem(
-                SourceLocation.atDepth(2),
-                "subtype",
-                ((code.value + ":" + code.defaultMessage) -> "This status code is not an error code")
-              ).fail
+              ClientProblem("subtype",
+                            ((code.value + ":" + code.defaultMessage) ->
+                             "This status code is not an error code")).fail
           }
         }
 
