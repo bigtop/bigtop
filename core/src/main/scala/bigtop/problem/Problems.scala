@@ -8,85 +8,88 @@ import blueeyes.core.http.HttpStatusCodes._
 object Problems extends ProblemImplicits {
   import Problem._
 
-  object Server {
-    val empty: Problem =
-      ServerProblem(Nil, Nil, InternalServerError)
+  def loc: SourceLocation =
+    SourceLocation.atDepth(2)
 
-    val databaseError: Problem =
-      ServerProblem("databaseError")
+  object Server {
+    def empty: Problem =
+      ServerProblem(loc, Nil, Nil, InternalServerError)
+
+    def databaseError: Problem =
+      ServerProblem(loc, "databaseError")
 
     def typeError(msg: String, expected: String, received: String) =
-      ServerProblem("typeError", "message" -> msg, "expected" -> expected, "received" -> received)
+      ServerProblem(loc, "typeError", "message" -> msg, "expected" -> expected, "received" -> received)
 
     def missing(field: String): Problem =
-      ServerProblem("missing", "field" -> field)
+      ServerProblem(loc, "missing", "field" -> field)
 
     def malformed(field: String, description: String): Problem =
-      ServerProblem("malformed", "field" -> field, "description" -> description)
+      ServerProblem(loc, "malformed", "field" -> field, "description" -> description)
 
-    val noResponse: Problem =
-      ServerProblem("noResponse")
+    def noResponse: Problem =
+      ServerProblem(loc, "noResponse")
 
-    val malformedResponse: Problem =
-      ServerProblem("malformedResponse")
+    def malformedResponse: Problem =
+      ServerProblem(loc, "malformedResponse")
 
     def timeout(msg: String) =
-      ServerProblem("timeout", "message" -> msg)
+      ServerProblem(loc, "timeout", "message" -> msg)
 
     def unknown(msg: String) =
-      ServerProblem("unknown", "message" -> msg)
+      ServerProblem(loc, "unknown", "message" -> msg)
   }
 
   object Client {
-    val empty: Problem =
-      ClientProblem(Nil, Nil, BadRequest)
+    def empty: Problem =
+      ClientProblem(loc, Nil, Nil, BadRequest)
 
     /** The client has no session. */
-    val noSession: Problem =
-      ClientProblem("noSession")
+    def noSession: Problem =
+      ClientProblem(loc, "noSession")
 
     /** The client was not authorized to perform an operation. */
     def notAuthorized(username: String, operation: String, args: (String, String)*): Problem =
-      ClientProblem("unauthorized", Seq("username" -> username, "operation" -> operation) ++ args : _*)
+      ClientProblem(loc, "unauthorized", Seq("username" -> username, "operation" -> operation) ++ args : _*)
 
     /** Some server functionality is not yet implemented. */
     def notImplemented(what: String): Problem =
-      ClientProblem("notImplemented", "what" -> what)
+      ClientProblem(loc, "notImplemented", "what" -> what)
 
     /** A record was not found on the server. */
     def notFound(item: String): Problem =
-      ClientProblem("notFound", "item" -> item)
+      ClientProblem(loc, "notFound", "item" -> item)
 
     /** A record already exists on the server. */
     def exists(item: String): Problem =
-      ClientProblem("exists", "item" -> item)
+      ClientProblem(loc, "exists", "item" -> item)
 
     /** The client supplied a bodiless request. */
-    val emptyRequest: Problem =
-      ClientProblem("emptyRequest")
+    def emptyRequest: Problem =
+      ClientProblem(loc, "emptyRequest")
 
     /** The client supplied bad JSON. */
-    val malformedRequest: Problem =
-      ClientProblem("malformedRequest")
+    def malformedRequest: Problem =
+      ClientProblem(loc, "malformedRequest")
 
     /** The client supplied a request with a missing argument. */
     def missing(field: String): Problem =
-      ClientProblem("missing", "field" -> field)
+      ClientProblem(loc, "missing", "field" -> field)
 
     /** The client supplied a request with a malformed argument. */
     def malformed(field: String, description: String): Problem =
-      ClientProblem("malformed", "field" -> field, "description" -> description)
+      ClientProblem(loc, "malformed", "field" -> field, "description" -> description)
 
     /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
     def loginUsernameIncorrect: Problem =
-      ClientProblem("loginIncorrect")
+      ClientProblem(loc, "loginIncorrect")
 
     /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
     def loginPasswordIncorrect: Problem =
-      ClientProblem("loginIncorrect")
+      ClientProblem(loc, "loginIncorrect")
 
     def customProblem(messageType: String, args: (String, String) *): Problem =
-      ClientProblem(messageType, args : _*)
+      ClientProblem(loc, messageType, args : _*)
   }
 
 }

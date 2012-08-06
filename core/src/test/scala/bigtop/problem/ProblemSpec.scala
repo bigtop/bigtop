@@ -8,10 +8,18 @@ import blueeyes.core.http._
 class ProblemSpec extends Specification {
   import Problem._
 
+  def loc(depth: Int) = {
+    SourceLocation.atDepth(depth + 1)
+  }
+
   "Problem.client" should {
     "have the correct status code and messages" in {
       Problems.Client.empty.status mustEqual HttpStatusCodes.BadRequest
       Problems.Client.empty.messages mustEqual Seq()
+    }
+
+    "have the correct source location" in {
+      Problems.Client.empty.location mustEqual SourceLocation("ProblemSpec.scala", 22)
     }
   }
 
@@ -20,12 +28,16 @@ class ProblemSpec extends Specification {
       Problems.Server.empty.status mustEqual HttpStatusCodes.InternalServerError
       Problems.Server.empty.messages mustEqual Seq()
     }
+
+    "have the correct source location" in {
+      Problems.Server.empty.location mustEqual SourceLocation("ProblemSpec.scala", 33)
+    }
   }
 
   "Problem.and" should {
     "work with a string" in {
       val problem0 = Problems.Client.empty
-      val problem1 = ClientProblem("Dave was here")
+      val problem1 = ClientProblem(loc(0), "Dave was here")
       val problem2 = problem1 and "Noel was here"
       problem2.messages mustEqual Seq(Message("Dave was here"), Message("Noel was here"))
     }
@@ -42,8 +54,8 @@ class ProblemSpec extends Specification {
 
     "work with another problem" in {
       val problem0 = Problems.Client.empty
-      val problem1 = ClientProblem("Dave was here")
-      val problem2 = ClientProblem("Noel was here")
+      val problem1 = ClientProblem(loc(0), "Dave was here")
+      val problem2 = ClientProblem(loc(0), "Noel was here")
       (problem1 and problem2).messages mustEqual Seq(
         Message("Dave was here"),
         Message("Noel was here")
@@ -51,8 +63,8 @@ class ProblemSpec extends Specification {
     }
 
     "prefer server status to client status" in {
-      val problem1 = ClientProblem("Dave was here")
-      val problem2 = ServerProblem("Noel was here")
+      val problem1 = ClientProblem(loc(0), "Dave was here")
+      val problem2 = ServerProblem(loc(0), "Noel was here")
       (problem1 and problem1).status mustEqual HttpStatusCodes.BadRequest
       (problem1 and problem2).status mustEqual HttpStatusCodes.InternalServerError
       (problem2 and problem1).status mustEqual HttpStatusCodes.InternalServerError

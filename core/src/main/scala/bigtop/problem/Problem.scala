@@ -12,6 +12,7 @@ import scalaz.Scalaz._
 sealed trait Problem extends ProblemFormat {
   def status: HttpStatusCode
 
+  def location: SourceLocation
   def messages: Seq[Problem.Message]
   def logMessages: Seq[String]
 
@@ -56,10 +57,15 @@ object Problem extends ProblemImplicits {
   }
 }
 
-final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
+final case class ServerProblem(
+  val location: SourceLocation,
+  val messages: Seq[Problem.Message],
+  val logMessages: Seq[String],
+  val code: HttpStatusCode
+) extends Problem {
 
   def and(that: Problem): Problem =
-    ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
+    ServerProblem(this.location, this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
 
   def and(msg: Problem.Message) =
     this.copy(messages = this.messages ++ Seq(msg))
@@ -73,25 +79,30 @@ final case class ServerProblem(val messages: Seq[Problem.Message], val logMessag
       this.copy(code = code)
 
   override def toString =
-    "ServerProblem(messages=%s, logMessages=%s)".format(messages, logMessages)
+    "ServerProblem(location=%s, messages=%s, logMessages=%s)".format(location, messages, logMessages)
 }
 
 object ServerProblem extends ProblemImplicits {
   import Problem.Message
 
-  def apply(msg: String, args: (String, String) *): Problem =
-    apply(Message(msg, args))
+  def apply(loc: SourceLocation, msg: String, args: (String, String) *): Problem =
+    apply(loc, Message(msg, args))
 
-  def apply(msg: Message): Problem =
-    apply(Seq(msg), Seq(), HttpStatusCodes.InternalServerError)
+  def apply(loc: SourceLocation, msg: Message): Problem =
+    apply(loc, Seq(msg), Seq(), HttpStatusCodes.InternalServerError)
 }
 
-final case class ClientProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
+final case class ClientProblem(
+  val location: SourceLocation,
+  val messages: Seq[Problem.Message],
+  val logMessages: Seq[String],
+  val code: HttpStatusCode
+) extends Problem {
 
   def and(that: Problem): Problem =
     that match {
-      case ServerProblem(_, _, _) => ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
-      case ClientProblem(_, _, _) => ClientProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, that.status)
+      case ServerProblem(_, _, _, _) => ServerProblem(this.location, this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
+      case ClientProblem(_, _, _, _) => ClientProblem(this.location, this.messages ++ that.messages, this.logMessages ++ that.logMessages, that.status)
     }
 
   def and(msg: Problem.Message): Problem =
@@ -106,17 +117,17 @@ final case class ClientProblem(val messages: Seq[Problem.Message], val logMessag
       this.copy(code = code)
 
   override def toString =
-    "ClientProblem(messages=%s, logMessages=%s)".format(messages.toList, logMessages.toList)
+    "ClientProblem(location=%s, messages=%s, logMessages=%s)".format(location, messages.toList, logMessages.toList)
 }
 
 object ClientProblem extends ProblemImplicits {
   import Problem.Message
 
-  def apply(msg: String, args: (String, String) *): Problem =
-    apply(Message(msg, args))
+  def apply(loc: SourceLocation, msg: String, args: (String, String) *): Problem =
+    apply(loc, Message(msg, args))
 
-  def apply(msg: Message): ClientProblem =
-    apply(Seq(msg), Seq(), HttpStatusCodes.BadRequest)
+  def apply(loc: SourceLocation, msg: Message): ClientProblem =
+    apply(loc, Seq(msg), Seq(), HttpStatusCodes.BadRequest)
 }
 
 trait ProblemImplicits {
