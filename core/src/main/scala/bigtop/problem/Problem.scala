@@ -34,8 +34,17 @@ sealed trait Problem extends ProblemFormat {
   def toJson(implicit w: JsonWriter[Problem]): JValue =
     w.write(this)
 
+  def print(print: (String) => Unit): Unit = {
+    print("%s:\n  %s\n  messages: %s\n  logMessages: %s\n".format(
+      getClass.getSimpleName,
+      status.toString,
+      messages.toString,
+      logMessages.toString
+    ))
+  }
+
   def toResponse(implicit logger: Logger): HttpResponse[JValue] = {
-    logger.warn("Problem:\n  %s\n  messages: %s\n  logMessages: %s\n".format(status.toString, messages.toString, logMessages.toString))
+    print(logger.error(_))
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
   }
 }
