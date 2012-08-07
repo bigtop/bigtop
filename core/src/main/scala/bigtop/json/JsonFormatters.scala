@@ -110,9 +110,15 @@ trait JsonFormatters {
   }
 
   implicit val IntJsonFormat: JsonFormat[Problem,Int] = new JsonFormat[Problem,Int] {
+    def isWholeNumber(num: Double) = {
+      math.abs(num - math.round(num)) < 0.01
+    }
+
     def write(in: Int) = JInt(in)
     def read(json: JValue) =
-      json -->? classOf[JInt] map (_.value.toInt) toSuccess (malformed("json", "int", json))
+      (json -->? classOf[JInt] map (_.value.toInt)) orElse
+      (json -->? classOf[JDouble] filter (json => isWholeNumber(json.value)) map (_.value.toInt)) toSuccess
+      (malformed("json", "int", json))
   }
 
   implicit val DoubleJsonFormat: JsonFormat[Problem,Double] = new JsonFormat[Problem,Double] {
