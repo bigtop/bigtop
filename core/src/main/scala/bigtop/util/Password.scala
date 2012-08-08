@@ -5,7 +5,7 @@ import bigtop.problem._
 import scalaz._
 import scalaz.Scalaz._
 
-case class Password(val hash: String) {
+case class Password private (val hash: String) {
   def matches(password: String): Boolean = {
     BCrypt.compare(password, hash)
   }
@@ -16,9 +16,9 @@ object Password {
     Password(BCrypt.hash(password))
   }
 
-  // def fromHash(hash: String): Password = {
-  //   Password(hash)
-  // }
+  def fromHash(hash: String): Password = {
+    Password(hash)
+  }
 
   def parseHash(hash: String): Validation[Problem, Password] = {
     if(BCrypt.isHash(hash)) {
