@@ -56,7 +56,7 @@ object Problem extends ProblemImplicits {
   }
 
   /** A utility to convert an exception into an unknown Server problem */
-  def fromException(exn: Exception, why: String): Problem = {
+  def fromException(exn: Throwable, why: String): Problem = {
     val stackTrace = new java.io.StringWriter();
     val printWriter = new java.io.PrintWriter(stackTrace);
     exn.printStackTrace(printWriter);
