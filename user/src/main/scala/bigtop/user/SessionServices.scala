@@ -139,8 +139,8 @@ case class SessionChangeIdentityService[U <: User](
             userId   <- json.optional[Uuid]("id").fv
             username <- json.optional[String]("username").fv
             user     <- (userId, username) match {
-                          case (Some(id),   _) => println("B"); userActions.read(id)
-                          case (_, Some(name)) => println("C"); userActions.readByUsername(name)
+                          case (Some(id),   _) => userActions.read(id)
+                          case (_, Some(name)) => userActions.readByUsername(name)
                           case (_, _) => (Client.missing("id") and Client.missing("username")).fail[U].fv
                         }
             session  <- actions.changeIdentity(session.id, user)
