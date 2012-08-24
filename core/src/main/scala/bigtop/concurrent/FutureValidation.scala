@@ -38,6 +38,10 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
     ()
   }
 
+  def recover(pf: PartialFunction[Throwable, Validation[F,S]]): FutureValidation[F,S] = {
+    FutureValidation[F,S](this.inner.recover(pf))
+  }
+
   def orElse[G](f: F => FutureValidation[G, S]) =
     inner flatMap {
       (v: Validation[F, S]) => v.fold(
