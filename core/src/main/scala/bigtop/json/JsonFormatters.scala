@@ -77,7 +77,7 @@ trait JsonFormatters {
   // Atomic Values ---------------------
 
   implicit val UuidJsonFormat: JsonFormat[Problem,Uuid] = new JsonFormat[Problem,Uuid] {
-    def write(in: Uuid) = JString(in.name)
+    def write(in: Uuid) = JString(in.toString)
     def read(json: JValue) =
       json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("json", "uuid", json))
   }

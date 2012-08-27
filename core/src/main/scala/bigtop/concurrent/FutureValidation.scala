@@ -3,8 +3,8 @@ package concurrent
 
 import akka.dispatch.{Future, Promise}
 import blueeyes.bkka.AkkaDefaults
-import scalaz.Validation
-import scalaz.syntax.validation._
+import scalaz._
+import scalaz.Scalaz._
 
 case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
     extends FutureImplicits with AkkaDefaults
