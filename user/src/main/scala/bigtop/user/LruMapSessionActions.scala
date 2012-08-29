@@ -10,9 +10,9 @@ import bigtop.concurrent._
 import scalaz.syntax.validation._
 import scalaz.std.option.optionSyntax._
 
-case class LruMapSessionActions[U <: User](val userActions: UserActions[U]) extends SessionActions[U]
-  with FutureImplicits
-{
+case class LruMapSessionActions[U <: User](
+  val userActions: UserActions[U]
+) extends SessionActions[U] with FutureImplicits {
   val map = new SynchronizedLruMap[Uuid, Session[U]](16384)
 
   def read(id: Uuid): SessionValidation = {

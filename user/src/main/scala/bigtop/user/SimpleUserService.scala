@@ -40,7 +40,7 @@ object SimpleUserService {
       userActions,
       canChange,
       authorizer,
-      Session.externalWriter(SimpleUser.externalFormat)
+      Session.externalFormat(SimpleUser.externalFormat)
     )
 
     (sessionServices.service ~ userServices.service, authorizer, userActions, sessionActions)
