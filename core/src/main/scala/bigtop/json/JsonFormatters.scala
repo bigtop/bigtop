@@ -114,12 +114,29 @@ trait JsonFormatters {
   }
 
   implicit val DateTimeJsonFormat: JsonFormat[Problem,DateTime] = new JsonFormat[Problem,DateTime] {
-    def write(in: DateTime) = JString(Iso8601Format.write(in))
-    def read(json: JValue) =
-      json -->? classOf[JString] map (_.value) toSuccess (malformed("json", "time", json)) flatMap (Iso8601Format.read(_)) match {
-        case Failure(msg) => (malformed("json", "time", json)).fail
-        case Success(s)   => s.success
+    def write(in: DateTime) = {
+      // JInt(in.getMillis)
+      JString(Iso8601Format.write(in))
+    }
+
+    def read(json: JValue) = {
+      json match {
+        // case JInt(bigInt) =>
+        //   new DateTime(bigInt.toLong).success[Problem]
+
+        // case JDouble(bigDecimal) =>
+        //   new DateTime(bigDecimal.toLong).success[Problem]
+
+        case JString(str) =>
+          Iso8601Format.read(str) match {
+            case Failure(str)  => malformed("json", "time", json).fail[DateTime]
+            case Success(date) => date.success[Problem]
+          }
+
+        case _ =>
+          malformed("json", "time", json).fail[DateTime]
       }
+    }
   }
 
   implicit val IntJsonFormat: JsonFormat[Problem,Int] = new JsonFormat[Problem,Int] {
