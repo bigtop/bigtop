@@ -17,9 +17,12 @@ object BigtopBuild extends Build {
   )
 
   lazy val scalaz        = "org.scalaz"              %% "scalaz-core"     % "7.0-SNAPSHOT" changing()
-  lazy val blueeyesCore  = "com.github.jdegoes"      %% "blueeyes-core"   % "0.6.0-SNAPSHOT" changing()
-  lazy val blueeyesMongo = "com.github.jdegoes"      %% "blueeyes-mongo"  % "0.6.0-SNAPSHOT" changing()
-  lazy val blueeyesJson  = "com.github.jdegoes"      %% "blueeyes-json"   % "0.6.0-SNAPSHOT" changing()
+  lazy val blueeyesCore  = "com.github.jdegoes"      %% "blueeyes-core"   % "0.6.0" changing()
+  lazy val blueeyesMongo = "com.github.jdegoes"      %% "blueeyes-mongo"  % "0.6.0" changing()
+  lazy val blueeyesJson  = "com.github.jdegoes"      %% "blueeyes-json"   % "0.6.0" changing()
+  // lazy val blueeyesCore  = "com.github.jdegoes"      %% "blueeyes-core"   % "0.6.0-SNAPSHOT" changing()
+  // lazy val blueeyesMongo = "com.github.jdegoes"      %% "blueeyes-mongo"  % "0.6.0-SNAPSHOT" changing()
+  // lazy val blueeyesJson  = "com.github.jdegoes"      %% "blueeyes-json"   % "0.6.0-SNAPSHOT" changing()
   lazy val specs2        = "org.specs2"              %% "specs2"          % "1.8.1"
   lazy val scalacheck    = "org.scala-tools.testing" %% "scalacheck"      % "1.9"
   lazy val jbCrypt       = "org.mindrot"             %  "jbcrypt"         % "0.3m"
