@@ -2,6 +2,7 @@ package bigtop
 package http
 
 import akka.dispatch.{Future, Promise}
+import akka.util.Timeout
 import blueeyes.bkka.AkkaDefaults
 import blueeyes.core.http.{HttpRequest, HttpResponse}
 import blueeyes.core.http.MimeTypes._
@@ -23,18 +24,17 @@ case class JsonService(h: HttpService[Future[JValue], Future[HttpResponse[JValue
      extends CustomHttpService[ByteChunk, Future[HttpResponse[ByteChunk]]]
      with AkkaDefaults
      with BijectionsChunkJson
-     with BijectionsChunkFutureJson
+     with SafeBijectionsChunkFutureJson
      with HttpRequestHandlerCombinators
 {
-
   val metadata = None
 
   val service: HttpRequest[ByteChunk] => Validation[NotServed,Future[HttpResponse[ByteChunk]]] =
     (req: HttpRequest[ByteChunk]) => {
       try {
-        produce(application/json) { h } service {
-          req.copy(content = req.content.map(chunk => chunkToFutureJValue()(chunk)))
-        }
+        val copy = req.copy(content = req.content.map(chunk => chunkToFutureJValue(chunk)))
+        val result = produce(application/json) { h } service { copy }
+        result
       } catch {
         case exn: JsonParser.ParseException => {
           val resp = Problems.Client.malformedRequest.toResponse

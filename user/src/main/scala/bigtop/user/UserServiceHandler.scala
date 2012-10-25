@@ -5,10 +5,10 @@ import akka.dispatch.Future
 import blueeyes.core.service.{AsyncHttpService, HttpService, HttpServiceHandler, HttpRequestHandlerCombinators}
 import blueeyes.core.http.MimeTypes._
 import blueeyes.core.http.{HttpRequest, HttpResponse, HttpStatus}
-import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson, BijectionsChunkFutureJson}
+import blueeyes.core.data.{ByteChunk, Bijection, BijectionsChunkJson}
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import bigtop.http.JsonSyncService
+import bigtop.http.{JsonSyncService, SafeBijectionsChunkFutureJson}
 import bigtop.json.{JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
 import bigtop.problem.{Problem, Problems, ProblemFormat}
@@ -21,7 +21,7 @@ import scalaz.std.option._
 
 
 object UserServiceHandler extends BijectionsChunkJson
-    with BijectionsChunkFutureJson
+    with SafeBijectionsChunkFutureJson
     with FutureImplicits
     with HttpRequestHandlerCombinators
     with ProblemFormat
