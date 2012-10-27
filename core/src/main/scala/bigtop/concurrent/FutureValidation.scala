@@ -17,19 +17,19 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
     FutureValidation(
       inner flatMap { validation =>
         validation fold (
-          failure = f => Promise.successful(f.fail[T]),
-          success = s => fn(s).inner
+          fail = f => Promise.successful(f.fail[T]),
+          succ = s => fn(s).inner
         )
       })
 
-  def fold[T](failure: (F) => T = identity[F] _, success: (S) => T = identity[S] _): Future[T] =
-    inner map { validation => validation fold (failure = failure, success = success) }
+  def fold[T](fail: (F) => T = identity[F] _, succ: (S) => T = identity[S] _): Future[T] =
+    inner map { validation => validation fold (fail = fail, succ = succ) }
 
   def mapFailure[G](f: F => G): FutureValidation[G, S] =
     FutureValidation(
       this.fold(
-        failure = f(_).fail,
-        success = x => x.success
+        fail = f(_).fail,
+        succ = x => x.success
       )
     )
 
@@ -45,8 +45,8 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
   def orElse[G](f: F => FutureValidation[G, S]) =
     inner flatMap {
       (v: Validation[F, S]) => v.fold(
-        success = s => Promise.successful(s.success[G]),
-        failure = f(_).inner
+        succ = s => Promise.successful(s.success[G]),
+        fail = f(_).inner
       )
     } fv
 
@@ -54,8 +54,8 @@ case class FutureValidation[F, S](val inner: Future[Validation[F, S]])
   def invert: FutureValidation[S, F] =
     FutureValidation(
       inner map (v => v fold (
-        success = s => s.fail,
-        failure = f => f.success))
+        succ = s => s.fail,
+        fail = f => f.success))
     )
 
   // def lift: FutureValidation[F, S] =

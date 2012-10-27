@@ -34,8 +34,8 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
 
   def login(username: String, password: String) =
     sessionActions.create(username, password).await.fold(
-      success = u => u.id,
-      failure = p => sys.error("SimpleUserServiceSpec.login failed: " + p.toString)
+      succ = u => u.id,
+      fail = p => sys.error("SimpleUserServiceSpec.login failed: " + p.toString)
     )
 
   def auth(client: HttpClient[ByteChunk], sessionId: Uuid) =
@@ -46,15 +46,15 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
 
   def createUser(user: SimpleUser): Uuid = {
     userActions.create(user).await.fold(
-      success = u => u.id,
-      failure = p => sys.error("SimpleUserServiceSpec.createUser failed: " + p.toString)
+      succ = u => u.id,
+      fail = p => sys.error("SimpleUserServiceSpec.createUser failed: " + p.toString)
     )
   }
 
   def userExists(id: Uuid): Boolean = {
     userActions.read(id).await.fold(
-      success = u => true,
-      failure = p => false
+      succ = u => true,
+      fail = p => false
     )
   }
 

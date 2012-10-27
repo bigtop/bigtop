@@ -31,8 +31,8 @@ trait FutureJsonHttpResponseW[A] {
 
   def toResponse(implicit w: JsonWriter[A], logger: Logger): Future[HttpResponse[JValue]] =
     response.fold (
-      failure = _.toResponse,
-      success = v => HttpResponse[JValue](content = Some(w.write(v)))
+      fail = _.toResponse,
+      succ = v => HttpResponse[JValue](content = Some(w.write(v)))
     )
 
 }
@@ -43,8 +43,8 @@ trait FutureJsonHttpResponseSeqW[A] {
 
   def toResponseSeq(implicit w: JsonWriter[A], logger: Logger): Future[HttpResponse[JValue]] = {
     response.fold (
-      failure = prob => prob.toResponse,
-      success = seq  => HttpResponse[JValue](content = Some(JArray(seq.map(w.write _).toList)))
+      fail = prob => prob.toResponse,
+      succ = seq  => HttpResponse[JValue](content = Some(JArray(seq.map(w.write _).toList)))
     )
   }
 

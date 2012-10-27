@@ -54,14 +54,14 @@ trait FutureImplicits extends AkkaDefaults {
 
   def delayFailure[F, S](in: Validation[F, Future[S]]): Future[Validation[F, S]] =
     in fold (
-      failure = f => Promise.successful(f.fail[S]),
-      success = s => s map (_.success[F])
+      fail = f => Promise.successful(f.fail[S]),
+      succ = s => s map (_.success[F])
     )
 
   def flattenValidations[F, S](in: Validation[F, Validation[F, S]]): Validation[F, S] =
     in fold (
-      failure = f => f.fail[S],
-      success = s => s
+      fail = f => f.fail[S],
+      succ = s => s
     )
 
   implicit def futureOfValidationToFutureValidation[F, S](in: Future[Validation[F, S]]): FutureValidation[F, S] =

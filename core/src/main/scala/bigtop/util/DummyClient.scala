@@ -10,10 +10,10 @@ import blueeyes.core.service.{HttpClient, HttpService}
 class DummyClient(service: HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]) extends HttpClient[ByteChunk] with AkkaDefaults {
   def apply(request: HttpRequest[ByteChunk]) =
     service.service(request).fold(
-      failure = f => Promise.successful(
+      fail = f => Promise.successful(
         HttpResponse[ByteChunk](status = HttpStatus(HttpStatusCodes.NotFound))
       ),
-      success = s => s
+      succ = s => s
     )
 
   def isDefinedAt(x: HttpRequest[ByteChunk]) = true

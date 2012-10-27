@@ -16,10 +16,10 @@ object BigtopBuild extends Build {
     "Twitter"       at "http://maven.twttr.com"
   )
 
-  lazy val scalaz        = "org.scalaz"              %% "scalaz-core"     % "7.0-SNAPSHOT" changing()
-  lazy val blueeyesCore  = "com.github.jdegoes"      %% "blueeyes-core"   % "0.6.0" changing()
-  lazy val blueeyesMongo = "com.github.jdegoes"      %% "blueeyes-mongo"  % "0.6.0" changing()
-  lazy val blueeyesJson  = "com.github.jdegoes"      %% "blueeyes-json"   % "0.6.0" changing()
+  lazy val scalaz        = "org.scalaz"              %  "scalaz-core_2.9.2" % "7.0-SNAPSHOT" changing()
+  lazy val blueeyesCore  = "com.github.jdegoes"      %% "blueeyes-core"   % "0.6.1-SNAPSHOT" changing()
+  lazy val blueeyesMongo = "com.github.jdegoes"      %% "blueeyes-mongo"  % "0.6.1-SNAPSHOT" changing()
+  lazy val blueeyesJson  = "com.github.jdegoes"      %% "blueeyes-json"   % "0.6.1-SNAPSHOT" changing()
   // lazy val blueeyesCore  = "com.github.jdegoes"      %% "blueeyes-core"   % "0.6.0-SNAPSHOT" changing()
   // lazy val blueeyesMongo = "com.github.jdegoes"      %% "blueeyes-mongo"  % "0.6.0-SNAPSHOT" changing()
   // lazy val blueeyesJson  = "com.github.jdegoes"      %% "blueeyes-json"   % "0.6.0-SNAPSHOT" changing()
