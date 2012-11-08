@@ -47,7 +47,7 @@ object Problems extends ProblemImplicits {
 
     /** The client was not authorized to perform an operation. */
     def notAuthorized(username: String, operation: String, args: (String, String)*): Problem =
-      ClientProblem("unauthorized", Seq("username" -> username, "operation" -> operation) ++ args : _*)
+      ClientProblem("unauthorized", Seq("username" -> username, "operation" -> operation) ++ args : _*) status Unauthorized
 
     /** Some server functionality is not yet implemented. */
     def notImplemented(what: String): Problem =
