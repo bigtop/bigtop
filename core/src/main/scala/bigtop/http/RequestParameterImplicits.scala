@@ -42,6 +42,13 @@ trait RequestParameterImplicits {
   implicit def buildUuid(str: String): Validation[Problem,Uuid] =
     Uuid.parse(str).toSuccess(malformed("uuid", str))
 
+  implicit def buildBoolean(str: String): Validation[Problem,Boolean] =
+    str.toLowerCase match {
+      case "true"  => true.success[Problem]
+      case "false" => false.success[Problem]
+      case _       => malformed("boolean", str).fail[Boolean]
+    }
+
   implicit def buildInt(str: String): Validation[Problem,Int] =
     parseInt(str).toSuccess(malformed("int", str))
 

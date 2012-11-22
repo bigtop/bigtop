@@ -6,8 +6,8 @@ import blueeyes.bkka.AkkaDefaults
 import bigtop.concurrent._
 import bigtop.problem._
 import scala.util.matching.Regex
-import scalaz.Validation
-import scalaz.syntax.validation._
+import scalaz._
+import scalaz.Scalaz._
 
 trait StringImplicits {
   implicit def stringToStringValidation(str: String) =

@@ -77,7 +77,7 @@ object BigtopBuild extends Build {
   )
 
   lazy val core = Project(
-    id = "bigtop-core",
+    id = "core",
     base = file("core")
   ).settings(
     Project.defaultSettings ++
@@ -88,8 +88,20 @@ object BigtopBuild extends Build {
     ) : _*
   )
 
+  lazy val redis = Project(
+    id = "redis",
+    base = file("redis")
+  ).settings(
+    Project.defaultSettings ++
+    blueeyesSettings ++
+    publishSettings ++
+    Seq(
+      libraryDependencies += redisclient
+    ) : _*
+  ).dependsOn(user, core)
+
   lazy val user = Project(
-    id = "bigtop-user",
+    id = "user",
     base = file("user")
   ).settings(
     Project.defaultSettings ++
@@ -101,7 +113,7 @@ object BigtopBuild extends Build {
   ).dependsOn(core)
 
   lazy val util = Project(
-    id = "bigtop-util",
+    id = "util",
     base = file("util")
   ).settings(
     Project.defaultSettings ++
@@ -109,18 +121,6 @@ object BigtopBuild extends Build {
     publishSettings ++
     Seq(
       libraryDependencies ++= Seq(specs2, metricsCore, metricsScala)
-    ) : _*
-  ).dependsOn(core)
-
-  lazy val redis = Project(
-    id = "bigtop-redis",
-    base = file("redis")
-  ).settings(
-    Project.defaultSettings ++
-    blueeyesSettings ++
-    publishSettings ++
-    Seq(
-      libraryDependencies += redisclient
     ) : _*
   ).dependsOn(core)
 

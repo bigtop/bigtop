@@ -6,8 +6,8 @@ import akka.dispatch.{Await, Future, Promise}
 import akka.util.{Duration, Timeout}
 import bigtop.problem._
 import blueeyes.bkka.AkkaDefaults
-import scalaz.{Validation, Success, Failure}
-import scalaz.syntax.validation._
+import scalaz._
+import scalaz.Scalaz._
 
 trait FutureImplicits extends AkkaDefaults {
   type FvProblem[A] = FutureValidation[Problem, A]

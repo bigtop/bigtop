@@ -73,20 +73,25 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
     path(prefix) {
       path("/'id") {
         get {
-          logAndProcess("read", read)
+          // logAndProcess("read", read)
+          read
         } ~
         put {
-          logAndProcess("update", update)
+          // logAndProcess("update", update)
+          update
         } ~
         this.delete {
-          logAndProcess("delete", delete)
+          // logAndProcess("delete", delete)
+          delete
         }
       } ~
       get {
-        logAndProcess("search", search)
+        // logAndProcess("search", search)
+        search
       } ~
       post {
-        logAndProcess("create", create)
+        // logAndProcess("create", create)
+        create
       } ~
       logAndProcess(
         "not found",
