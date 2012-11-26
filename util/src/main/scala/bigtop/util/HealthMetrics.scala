@@ -2,30 +2,48 @@ package bigtop
 package util
 
 import scala.collection.JavaConversions._
-import com.yammer.metrics.scala.Instrumented
+import com.yammer.metrics.Metrics
+import com.yammer.metrics.core.{MetricName, MetricsRegistry, Timer}
+import com.yammer.metrics.scala.Meter
 import akka.dispatch.{ Future, Promise }
 import blueeyes.core.http._
 import blueeyes.core.http.HttpStatusCodes._
 import blueeyes.core.service._
 import java.util.concurrent.TimeUnit
+import org.streum.configrity.Configuration
 
-trait HealthMetrics extends Instrumented {
+trait HealthMetrics {
   lazy val responseTimeUnit = TimeUnit.MILLISECONDS
   lazy val responseCountTimeUnit = TimeUnit.SECONDS
 
-  lazy val successes    = metrics.meter("successes",     "successes",     null, responseCountTimeUnit)
-  lazy val warnings     = metrics.meter("warnings",      "warnings",      null, responseCountTimeUnit)
-  lazy val clientErrors = metrics.meter("client-errors", "client-errors", null, responseCountTimeUnit)
-  lazy val serverErrors = metrics.meter("server-errors", "server-errors", null, responseCountTimeUnit)
+  lazy val registry = Metrics.defaultRegistry()
 
-  def createTimer(name: String) =
-    metrics.metricsRegistry.newTimer(getClass, name, responseTimeUnit, responseCountTimeUnit)
+  def prefix(config: Configuration): String =
+    config[String]("metrics.prefix")
+
+  def meter(prefix: String, name: String, eventType: String, unit: TimeUnit): Meter = {
+    val metricName = new MetricName(prefix, eventType, name)
+    new Meter(registry.newMeter(metricName, eventType, unit))
+  }
 
   // We want the Java timer with the stop() method here, not the Scala wrapper with a time(foo) method:
-  lazy val responseTimes = createTimer("response-times")
+  def timer(prefix: String, eventType: String, name: String): Timer = {
+    val metricName = new MetricName(prefix, eventType, name)
+    registry.newTimer(metricName, responseTimeUnit, responseCountTimeUnit)
+  }
+
 
   def healthMetrics[T,S](monitored: => ServiceDescriptorFactory[T,S]): ServiceDescriptorFactory[T,S] = {
     (context: ServiceContext) => {
+      val loggingPrefix = prefix(context.config)
+
+      val responseTimes = timer(loggingPrefix, "response-times", "response-times")
+      val successes     = meter(loggingPrefix, "successes",      "successes",     responseCountTimeUnit)
+      val warnings      = meter(loggingPrefix, "warnings",       "warnings",      responseCountTimeUnit)
+      val clientErrors  = meter(loggingPrefix, "client-errors",  "client-errors", responseCountTimeUnit)
+      val serverErrors  = meter(loggingPrefix, "server-errors",  "server-errors", responseCountTimeUnit)
+
+
       val underlying = monitored(context)
 
       ServiceDescriptor[T,S](
@@ -58,10 +76,10 @@ trait HealthMetrics extends Instrumented {
         },
 
         shutdown = (config: S) => {
-          for(name <- metrics.metricsRegistry.allMetrics.keySet) {
-            metrics.metricsRegistry.removeMetric(name)
+          for(name <- registry.allMetrics.keySet) {
+            registry.removeMetric(name)
           }
-          metrics.metricsRegistry.shutdown()
+          registry.shutdown()
 
           underlying.shutdown(config)
         }
