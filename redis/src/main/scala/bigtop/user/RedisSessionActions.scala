@@ -68,8 +68,8 @@ trait RedisSessionActions[U <: User] extends SessionActions[U] {
         } yield session
 
       session.fold(
-        failure = f => sys.error(f.toString),
-        success = s => s
+        fail = f => sys.error(f.toString),
+        succ = s => s
       )
     })
   }
