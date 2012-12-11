@@ -27,7 +27,7 @@ import scalaz._
 trait JsonServiceSpec extends Specification
   with AkkaDefaults
   with SafeBijectionsChunkFutureJson
-  with BijectionsChunkJson
+  with SafeBijectionsChunkJson
   with ResponseMatchers
   with ValidationMatchers
   with FutureImplicits

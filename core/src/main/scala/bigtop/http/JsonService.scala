@@ -23,7 +23,7 @@ import com.weiglewilczek.slf4s.Logger
 case class JsonService(h: HttpService[Future[JValue], Future[HttpResponse[JValue]]])(implicit logger: Logger)
      extends CustomHttpService[ByteChunk, Future[HttpResponse[ByteChunk]]]
      with AkkaDefaults
-     with BijectionsChunkJson
+     with SafeBijectionsChunkJson
      with SafeBijectionsChunkFutureJson
      with HttpRequestHandlerCombinators
 {

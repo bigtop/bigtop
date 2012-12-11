@@ -3,6 +3,7 @@ package bigtop.util
 import akka.dispatch.{Future, Promise}
 import akka.util.Timeout
 import akka.util.duration._
+import bigtop.http.SafeBijectionsChunkJson
 import blueeyes.bkka.AkkaDefaults
 import blueeyes.concurrent._
 import blueeyes.core.data._
@@ -17,7 +18,7 @@ import scala.util.matching.Regex
 import com.weiglewilczek.slf4s.Logging
 
 case class PingService(val path: String = "/api/ping/v1") extends HttpRequestHandlerCombinators
-  with BijectionsChunkJson
+  with SafeBijectionsChunkJson
   with AkkaDefaults
   with Logging
 {

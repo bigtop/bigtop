@@ -22,7 +22,7 @@ import scalaz.syntax.validation._
 object JsonSyncService extends JsonRequestHandlerCombinators
     with HttpRequestHandlerCombinators
     with SafeBijectionsChunkFutureJson
-    with BijectionsChunkJson
+    with SafeBijectionsChunkJson
     with BijectionsChunkString
     with AkkaDefaults
 {
