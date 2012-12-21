@@ -4,11 +4,10 @@
 
 ## Libraries
 
-Concurrent
-
-JSON
-
-URL
+ - Concurrency
+ - JSON handling
+ - UUIDs, email addresses, and password data types
+ - Redis utilities
 
 ## Services
 
