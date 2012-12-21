@@ -3,6 +3,7 @@ package user
 
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
+import bigtop.concurrent.FutureValidation
 import bigtop.json._
 import bigtop.json.JsonFormatters._
 import bigtop.problem._
@@ -19,8 +20,8 @@ case class Session[U <: User](
 )
 
 object Session {
-  trait SessionFormat[U <: User] extends JsonFormat[Problem, Session[U]] {
-    implicit def userFormat: JsonFormat[Problem, U]
+  trait SessionFormat[U <: User] extends JsonFormat[Session[U]] {
+    implicit def userFormat: JsonFormat[U]
 
     def write(in: Session[U]): JValue = {
       ("typename" -> "session") ~
@@ -30,14 +31,16 @@ object Session {
       ("realUser" -> (if(in.realUser.id == in.effectiveUser.id) JNothing else in.realUser.toJson))
     }
 
-    def read(in: JValue): Validation[Problem, Session[U]] = {
+    def read(in: JValue): Validation[JsonErrors, Session[U]] = {
       for {
-        id            <- in.mandatory[Uuid]("id")
-        session       <- in.mandatoryMap[JValue]("session").map { map =>
-                           mutable.HashMap(map.toList : _*)
-                         }
-        effectiveUser <- in.mandatory[U]("user")
-        realUser      <- in.optional[U]("realUser").map(_.getOrElse(effectiveUser))
+        (id, session, effectiveUser) <- tuple(
+                                          in.mandatory[Uuid]("id"),
+                                          in.mandatoryMap[JValue]("session").map { map =>
+                                            mutable.HashMap(map.toList : _*)
+                                          },
+                                          in.mandatory[U]("user")
+                                        )
+        realUser                     <- in.optional[U]("realUser").map(_.getOrElse(effectiveUser))
       } yield Session(
         id             = id,
         realUser       = realUser,
@@ -47,13 +50,13 @@ object Session {
     }
   }
 
-  def internalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U]) = {
+  def internalFormat[U <: User](implicit uFormat: JsonFormat[U]) = {
     new SessionFormat[U] {
       implicit val userFormat = uFormat
     }
   }
 
-  def externalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U]) = {
+  def externalFormat[U <: User](implicit uFormat: JsonFormat[U]) = {
     new SessionFormat[U] {
       implicit val userFormat = uFormat
     }

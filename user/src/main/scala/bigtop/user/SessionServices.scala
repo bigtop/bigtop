@@ -4,11 +4,11 @@ package user
 import akka.dispatch.Future
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
+import bigtop.http.RequestParameterImplicits._
 import bigtop.json._
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
-import bigtop.problem.Problem
-import bigtop.problem.Problems._
+import bigtop.problem._
 import blueeyes.core.http._
 import blueeyes.core.service._
 import blueeyes.json.JsonAST._
@@ -80,10 +80,12 @@ case class SessionCreateService[U <: User](
     service {
       (req: HttpRequest[Future[JValue]]) =>
         (for {
-          json     <- req.json
-          username <- json.mandatory[String]("username").fv
-          password <- json.mandatory[String]("password").fv
-          result   <- actions.create(username, password)
+          json                 <- req.json
+          (username, password) <- tuple(
+                                    json.mandatory[String]("username"),
+                                    json.mandatory[String]("password")
+                                  ).toClientProblem.fv
+          result               <- actions.create(username, password)
         } yield result).toResponse(externalFormat, log)
     }
 }
@@ -98,13 +100,14 @@ case class SessionReadService[U <: User](
     SecurityCheck(
       (req: HttpRequest[Future[JValue]], user: Option[U]) =>
         for {
-          id      <- req.mandatoryParam[Uuid]('id).fv
+          id      <- req.mandatoryParam[Uuid]('id).toClientProblem.fv
           session <- actions.read(id)
-          user    <- if(user.map(_ == session.effectiveUser).getOrElse(false))
+          user    <- if(user.map(_ == session.effectiveUser).getOrElse(false)) {
                        user.success[Problem].fv
-                     else
-                       Client.notAuthorized(user.map(_.username).getOrElse("unknown"),
-                                            "session.read").fail.fv
+                     } else Problems.Authorization(
+                       user.map(_.username).getOrElse("unknown"),
+                       "session.read"
+                     ).fail.fv
         } yield user
     )
 
@@ -113,7 +116,7 @@ case class SessionReadService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user    <- auth.authorize(req, canRead)
-          id      <- req.mandatoryParam[Uuid]('id).fv
+          id      <- req.mandatoryParam[Uuid]('id).toClientProblem.fv
           session <- actions.read(id)
         } yield session).toResponse(externalFormat, log)
     }
@@ -133,17 +136,22 @@ case class SessionChangeIdentityService[U <: User](
       service {
         (req: HttpRequest[Future[JValue]]) =>
           (for {
-            session  <- auth.mandatorySession(req, "session.changeIdentity")
-            user     <- canChange(req, Some(session.realUser))
-            json     <- req.json
-            userId   <- json.optional[Uuid]("id").fv
-            username <- json.optional[String]("username").fv
-            user     <- (userId, username) match {
-                          case (Some(id),   _) => userActions.read(id)
-                          case (_, Some(name)) => userActions.readByUsername(name)
-                          case (_, _) => (Client.missing("id") and Client.missing("username")).fail[U].fv
-                        }
-            session  <- actions.changeIdentity(session.id, user)
+            session            <- auth.mandatorySession(req, "session.changeIdentity")
+            user               <- canChange(req, Some(session.realUser))
+            json               <- req.json : FutureValidation[JValue]
+            (userId, username) <- tuple(
+                                    json.optional[Uuid]("id"),
+                                    json.optional[String]("username")
+                                  ).toClientProblem.fv
+            user               <- (userId, username) match {
+                                    case (Some(id),   _) => userActions.read(id)
+                                    case (_, Some(name)) => userActions.readByUsername(name)
+                                    case (_, _)          => JsonErrors(
+                                                              JsonError.Missing("id"),
+                                                              JsonError.Missing("username")
+                                                            ).fail[U].toClientProblem.fv
+                                  }
+            session            <- actions.changeIdentity(session.id, user)
           } yield session).toResponse(externalFormat, log)
       }
     }

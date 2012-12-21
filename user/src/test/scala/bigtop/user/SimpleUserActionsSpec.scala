@@ -5,8 +5,7 @@ import akka.dispatch.{Await, Future}
 import akka.util.Duration
 import akka.util.duration._
 import bigtop.concurrent._
-import bigtop.problem.{Problem, ProblemFormat}
-import bigtop.problem.Problems._
+import bigtop.problem._
 import bigtop.util.Uuid
 import blueeyes.core.service.test.BlueEyesServiceSpecification
 import blueeyes.json.JsonDSL._
@@ -20,7 +19,6 @@ import scalaz.syntax.validation._
 
 class SimpleUserActionsSpec extends BlueEyesServiceSpecification with ConfigurableMongo {
   import MimeTypes._
-  import ProblemFormat._
 
   override def configuration = """
     services {
@@ -44,7 +42,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification with Configurab
   def await[A](f: Future[A]) =
     Await.result(f, Duration("3s"))
 
-  def await[F, S](f: FutureValidation[F, S]) =
+  def await[S](f: FutureValidation[S]) =
     Await.result(f.inner, Duration("3s"))
 
   "SimpleUserActions.create" should {

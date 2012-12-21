@@ -19,7 +19,7 @@
 //
 // trait SessionAuth[U <: User] extends SessionCore[U] with FutureImplicits {
 //
-//   type FV[T] = FutureValidation[Problem, T]
+//   type FV[T] = FutureValidation[T]
 //
 //   def userActions: UserActions[U]
 //
@@ -35,6 +35,6 @@
 //     if(isAuthorized(user))
 //       body
 //     else
-//       Problems.Client.notAuthorized.fail[T].fv
+//       Problems.NotAuthorized.fail[T].fv
 //
 // }

@@ -2,137 +2,163 @@ package bigtop
 package problem
 
 import blueeyes.core.http._
+import blueeyes.json._
 import blueeyes.json.JsonAST._
+import blueeyes.json.JsonDSL._
 import bigtop.util.Writer
-import bigtop.json.JsonWriter
+import bigtop.json._
+import bigtop.json.JsonFormatters._
 import com.weiglewilczek.slf4s.Logger
+import org.joda.time._
 import scalaz._
 import scalaz.Scalaz._
 
-sealed trait Problem extends ProblemFormat {
-  def status: HttpStatusCode
+class Problem(
+  var id: String,
+  var message: String,
+  var cause: Option[Throwable] = None,
+  var timestamp: DateTime = new DateTime,
+  var logMessage: Option[String] = None,
+  var status: HttpStatusCode = HttpStatusCodes.BadRequest,
+  var data: JsonConfig = JsonConfig()
+) extends Throwable(message, cause getOrElse null) {
+  // Helper for use in custom extractors. See Problems.scala:
+  def checkId(expected: String): Option[Unit] =
+    if(id == expected) Some(()) else None
 
-  def messages: Seq[Problem.Message]
-  def logMessages: Seq[String]
+  // Getters ------------------------------------
 
-  import Problem._
+  def isClientProblem =
+    this.status.isInstanceOf[ClientError]
 
-  def and(that: Problem): Problem
+  def isServerProblem =
+    this.status.isInstanceOf[ServerError]
 
-  def and(messageType: String): Problem =
-    this.and(Message(messageType))
+  // Setters ------------------------------------
 
-  def and(messageType: String, args: (String, String) *): Problem =
-    this.and(Message(messageType, args))
+  // Restrictions in Throwable mean we can't have setters for message or cause.
 
-  def and(msg: Problem.Message): Problem
-
-  def log(msg: String): Problem
-
-  def status(code: HttpStatusCode): Problem
-
-  def toJson(implicit w: JsonWriter[Problem]): JValue =
-    w.write(this)
-
-  def print(print: (String) => Unit): Unit = {
-    print("%s:\n  %s\n  messages: %s\n  logMessages: %s\n".format(
-      getClass.getSimpleName,
-      status.toString,
-      messages.toString,
-      logMessages.toString
-    ))
+  def logMessage(in: String): Problem = {
+    this.logMessage = Option(in)
+    this
   }
 
-  def toResponse(implicit logger: Logger): HttpResponse[JValue] = {
-    print(logger.error(_))
+  def status(in: HttpStatusCode): Problem = {
+    this.status = in
+    this
+  }
+
+  def status(in: Int): Problem = {
+    import HttpStatusCodeImplicits._
+    this.status(in : HttpStatusCode)
+  }
+
+  def data[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[T] = {
+    this.data.get(path)
+  }
+
+  def setData[T](path: JPath, value: T)(implicit writer: JsonWriter[T]): Problem = {
+    this.data = this.data.set(path, value)
+    this
+  }
+
+  def removeData[T](path: JPath): Problem = {
+    this.data = this.data.remove(path)
+    this
+  }
+
+  def toResponse(implicit logger: Logger, format: JsonFormat[Problem]): HttpResponse[JValue] = {
+    print(msg => logger.error(msg))
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
   }
-}
 
-object Problem extends ProblemImplicits {
-  case class Message(val messageType: String, val args: Seq[(String, String)] = Seq()) {
-    override def toString =
-      "Message(" + (messageType +: args.map(pair => pair._1 + "=" + pair._2)).mkString(", ") + ")"
-  }
-
-  /** A utility to convert an exception into an unknown Server problem */
-  def fromException(exn: Throwable, why: String): Problem = {
-    val stackTrace = new java.io.StringWriter();
-    val printWriter = new java.io.PrintWriter(stackTrace);
-    exn.printStackTrace(printWriter);
-
-    Problems.Server.unknown(why).log(stackTrace.toString)
-  }
-}
-
-final case class ServerProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
-
-  def and(that: Problem): Problem =
-    ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
-
-  def and(msg: Problem.Message) =
-    this.copy(messages = this.messages ++ Seq(msg))
-
-  def log(msg: String): Problem =
-    this.copy(logMessages = msg +: this.logMessages)
-
-  def status = code
-
-  def status(code: HttpStatusCode) =
-      this.copy(code = code)
-
-  override def toString =
-    "ServerProblem(messages=%s, logMessages=%s)".format(messages, logMessages)
-}
-
-object ServerProblem extends ProblemImplicits {
-  import Problem.Message
-
-  def apply(msg: String, args: (String, String) *): Problem =
-    apply(Message(msg, args))
-
-  def apply(msg: Message): Problem =
-    apply(Seq(msg), Seq(), HttpStatusCodes.InternalServerError)
-}
-
-final case class ClientProblem(val messages: Seq[Problem.Message], val logMessages: Seq[String], val code: HttpStatusCode) extends Problem {
-
-  def and(that: Problem): Problem =
-    that match {
-      case ServerProblem(_, _, _) => ServerProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, this.status)
-      case ClientProblem(_, _, _) => ClientProblem(this.messages ++ that.messages, this.logMessages ++ that.logMessages, that.status)
+  def print(print: (String) => Unit): Unit = {
+    print("Problem: " + id + " (status " + status + ")")
+    print("  timestamp: " + timestamp)
+    printMessage(print, "  message: ")
+    printLogMessage(print, "  log: ")
+    printData(print, "  data: ")
+    print("  stackTrace:")
+    getStackTrace.foreach { item => print("    " + item) }
+    cause.foreach { cause =>
+      print("  causedBy: " + cause.getMessage)
+      cause.getStackTrace.foreach { item => print("    " + item) }
     }
+  }
 
-  def and(msg: Problem.Message): Problem =
-    this.copy(messages = this.messages ++ Seq(msg))
+  private def printMessage(print: String => Unit, prefix: String) =
+    printLongString(message, print, prefix)
 
-  def log(msg: String): Problem =
-    this.copy(logMessages = msg +: this.logMessages)
+  private def printLogMessage(print: String => Unit, prefix: String) =
+    logMessage.foreach(printLongString(_, print, prefix))
 
-  def status = code
+  private def printData(print: String => Unit, prefix: String) =
+    printLongString(data.data.toString, print, prefix)
 
-  def status(code: HttpStatusCode) =
-      this.copy(code = code)
+  private def printLongString(str: String, print: String => Unit, prefix: String) =
+    str.split("[\r\n]").foreach(line => print(prefix + line))
 
   override def toString =
-    "ClientProblem(messages=%s, logMessages=%s)".format(messages.toList, logMessages.toList)
+    "Problem(" + id + "," + message + "," + cause + "," + timestamp + "," + logMessage + "," + status + "," + data + ")"
 }
 
-object ClientProblem extends ProblemImplicits {
-  import Problem.Message
+object Problem {
 
-  def apply(msg: String, args: (String, String) *): Problem =
-    apply(Message(msg, args))
+  def apply(
+    id: String,
+    message: String,
+    cause: Option[Throwable]   = None,
+    timestamp: DateTime        = new DateTime,
+    logMessage: Option[String] = None,
+    status: HttpStatusCode     = HttpStatusCodes.BadRequest,
+    data: JValue               = JObject.empty
+  ) = new Problem(
+    id         = id,
+    message    = message,
+    cause      = cause,
+    timestamp  = timestamp,
+    logMessage = logMessage,
+    status     = status,
+    data       = JsonConfig(data)
+  )
 
-  def apply(msg: Message): ClientProblem =
-    apply(Seq(msg), Seq(), HttpStatusCodes.BadRequest)
-}
+  def unapply(in: Problem) = Some((
+    in.id,
+    in.message,
+    in.cause,
+    in.timestamp,
+    in.logMessage,
+    in.status,
+    in.data
+  ))
 
-trait ProblemImplicits {
-  import Problem._
+  implicit object problemFormat extends JsonFormat[Problem] {
+    def write(in: Problem): JValue =
+      ("typename"  -> "problem") ~
+      ("subtype"   -> in.id) ~
+      ("timestamp" -> in.timestamp.toJson) ~
+      ("message"   -> in.message) ~
+      ("status"    -> in.status.code.value) ~
+      ("data"      -> in.data.data)
 
-  implicit def ProblemSemigroup =
+    def read(in: JValue) =
+      for {
+        id         <- in.mandatory[String]("subtype")
+        message    <- in.optional[String]("message", "No message provided.")
+        logMessage <- in.optional[String]("logMessage")
+        status     <- in.optional[Int]("status", 500).map(HttpStatusCodeImplicits.int2HttpStatusCode _)
+        data       <- in.optional[JValue]("data", JObject.empty)
+      } yield Problem(
+        id          = id,
+        message     = message,
+        logMessage  = logMessage,
+        status      = status,
+        data        = data
+      )
+  }
+
+  implicit val problemSemigroup =
     new Semigroup[Problem] {
-      def append(a: Problem, b: => Problem): Problem = a and b
+      def append(a: Problem, b: => Problem): Problem = a // and b
     }
 }

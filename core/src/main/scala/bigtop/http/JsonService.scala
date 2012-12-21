@@ -37,7 +37,7 @@ case class JsonService(h: HttpService[Future[JValue], Future[HttpResponse[JValue
         result
       } catch {
         case exn: JsonParser.ParseException => {
-          val resp = Problems.Client.malformedRequest.toResponse
+          val resp = Problems.MalformedRequest().toResponse
           Success(Promise.successful(resp.copy(content = resp.content.map(JValueToChunk))))
         }
       }

@@ -4,6 +4,7 @@ package problem
 import akka.dispatch.{ExecutionContext, Promise}
 import blueeyes.bkka.AkkaDefaults
 import bigtop.concurrent._
+import bigtop.json._
 import bigtop.problem._
 import scala.util.matching.Regex
 import scalaz._
@@ -11,22 +12,22 @@ import scalaz.Scalaz._
 
 trait StringImplicits {
   implicit def stringToStringValidation(str: String) =
-    StringValidation(str.success[Problem])
+    StringValidation(str.success[JsonErrors])
 
-  implicit def stringValidationToStringValidation(sv: Validation[Problem,String]) =
+  implicit def stringValidationToStringValidation(sv: JsonValidation[String]) =
     StringValidation(sv)
 }
 
-case class StringValidation(val inner: Validation[Problem,String]) extends AkkaDefaults {
+case class StringValidation(val inner: JsonValidation[String]) extends AkkaDefaults {
   def trim =
     StringValidation(inner.map(_.trim))
 
   def nonBlank(field: String) =
     inner.flatMap { str =>
       if(str.length > 0) {
-        str.success[Problem]
+        str.success[JsonErrors]
       } else {
-        Problems.Client.missing(field).fail
+        JsonErrors.Missing(field).fail
       }
     }
 
@@ -39,27 +40,29 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
   def shorterThan(field: String, length: Int) =
     inner.flatMap(
       str =>
-        if(str.length < length)
-          str.success[Problem]
-        else
-          Problems.Client.malformed(field, "tooLong").fail
+        if(str.length < length) {
+          str.success[JsonErrors]
+        } else {
+          JsonErrors.Malformed(field, "tooLong").fail
+        }
     )
 
   def longerThan(field: String, length: Int) =
     inner.flatMap(
       str =>
-        if(str.length > length)
-          str.success[Problem]
-        else
-          Problems.Client.malformed(field, "tooShort").fail
+        if(str.length > length) {
+          str.success[JsonErrors]
+        } else {
+          JsonErrors.Malformed(field, "tooShort").fail
+        }
     )
 
   def regex(rx: Regex, field: String, description: String) =
     inner.flatMap { str =>
       if(rx.findFirstIn(str).isDefined) {
-        str.success[Problem]
+        str.success[JsonErrors]
       } else {
-        Problems.Client.malformed(field, description).fail
+        JsonErrors.Malformed(field, description).fail
       }
     }
 
@@ -68,7 +71,4 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
 
   def sv: StringValidation =
     this
-
-  def fv: FutureValidation[Problem,String] =
-    FutureValidation(Promise.successful(inner))
 }

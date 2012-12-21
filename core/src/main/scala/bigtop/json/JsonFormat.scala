@@ -4,10 +4,10 @@ package json
 import blueeyes.json.JsonAST.JValue
 import bigtop.util.{Reader, Writer, Updater, Format}
 
-trait JsonReader[E,I] extends Reader[E,I,JValue]
+trait JsonReader[T] extends Reader[JsonErrors, T, JValue]
 
-trait JsonWriter[I] extends Writer[I,JValue]
+trait JsonWriter[T] extends Writer[T, JValue]
 
-trait JsonFormat[E,I] extends Format[E,I,JValue] with JsonWriter[I] with JsonReader[E,I]
+trait JsonFormat[T] extends Format[JsonErrors, T, JValue] with JsonWriter[T] with JsonReader[T]
 
-trait JsonUpdater[E,I] extends Updater[E,I,JValue] with JsonFormat[E,I]
+trait JsonUpdater[T] extends Updater[JsonErrors, T, JValue] with JsonFormat[T]

@@ -6,7 +6,6 @@ import blueeyes.core.http.HttpHeaders._
 import bigtop.util.Uuid
 import bigtop.concurrent._
 import bigtop.problem._
-import bigtop.problem.Problems._
 import scalaz.Validation
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
@@ -15,21 +14,22 @@ case class SessionCookieAuthorizer[U <: User](val actions: SessionActions[U]) ex
   with HttpHeaderImplicits
   with FutureImplicits
 {
-  def effectiveUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+  def effectiveUser[A](request: HttpRequest[A]): FutureValidation[Option[U]] = {
     session(request).map(_.map(_.effectiveUser))
   }
 
-  def realUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+  def realUser[A](request: HttpRequest[A]): FutureValidation[Option[U]] = {
     session(request).map(_.map(_.realUser))
   }
 
-  def session[A](request: HttpRequest[A]): FutureValidation[Problem,Option[Session[U]]] = {
+  def session[A](request: HttpRequest[A]): FutureValidation[Option[Session[U]]] = {
     SessionCookie.get(request) map {
       cookie =>
         for {
-          uuid <- Uuid.parse(cookie.cookieValue).toSuccess(
-            Client.malformed("session", "Session cookie did not contain a valid UUID")
-          ).fv
+          uuid    <- Uuid.parse(cookie.cookieValue).toSuccess(Problems.Authentication(
+                       credentials = "unknown",
+                       message     = "The session cookie did not contain a valid ID."
+                     )).fv
           session <- actions.read(uuid)
         } yield (Some(session) : Option[Session[U]])
     } getOrElse (None : Option[Session[U]]).success[Problem].fv

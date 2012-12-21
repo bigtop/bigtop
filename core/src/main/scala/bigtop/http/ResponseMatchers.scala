@@ -6,11 +6,11 @@ import blueeyes.core.http.{HttpStatus, HttpResponse, MimeTypes}
 import blueeyes.core.http.HttpStatusCodes._
 import org.specs2.Specification
 import org.specs2.matcher._
-import bigtop.problem.{Problem, ProblemFormat}
+import bigtop.json.JsonFormatters._
+import bigtop.problem._
 
 trait ResponseMatchers extends MustMatchers
-  with StandardMatchResults
-  with ProblemFormat {
+  with StandardMatchResults {
 
   def beOk: Matcher[HttpResponse[JValue]] =
     beLike {
@@ -32,11 +32,13 @@ trait ResponseMatchers extends MustMatchers
         (status.code mustEqual OK)
     }
 
-  def beProblem(expected: Problem): Matcher[HttpResponse[JValue]] =
+  def beProblem(beExpected: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, Some(content), _) =>
-        (jsonString(content) mustEqual jsonString(expected.toJson)) and
-        (status.code mustEqual expected.status.code)
+        content.as[Problem].fold(
+          succ = { problem => problem must beExpected },
+          fail = { problem => ko(problem.toString) }
+        )
     }
 
   def jsonDesc(json: JValue, prefix: String = "") =

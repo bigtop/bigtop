@@ -2,7 +2,7 @@ package bigtop
 package user
 
 import blueeyes.json.JsonAST.JValue
-import bigtop.concurrent.FutureImplicits
+import bigtop.concurrent._
 import bigtop.json._
 import bigtop.problem._
 import bigtop.util.Uuid
@@ -10,7 +10,7 @@ import scalaz._
 import scalaz.syntax.validation._
 
 trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
-  implicit def internalFormat: JsonFormat[Problem,U]
+  implicit def internalFormat: JsonFormat[U]
 
   def read(id: Uuid): UserValidation
 
@@ -18,26 +18,28 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
 
   def save(user: U): UserValidation
 
-  def delete(id: Uuid): UnitValidation
+  def delete(id: Uuid): FutureValidation[Unit]
 
   def login(username: String, password: String): UserValidation =
     for {
-      user <- readByUsername(username).mapFailure(_ => Problems.Client.loginUsernameIncorrect)
-      ans  <- if(user.isPasswordOk(password))
+      user <- readByUsername(username).mapFailure(exn => Problems.Authentication(username, cause = Some(exn)))
+      ans  <- if(user.isPasswordOk(password)) {
                 user.success[Problem].fv
-              else
-                Problems.Client.loginPasswordIncorrect.fail.fv
+              } else {
+                Problems.Authentication(username).logMessage("Password incorrect.").fail.fv
+              }
     } yield ans
 
   def create(user: U): UserValidation = {
-    def doesntExist(user: User) =
-      (for {
-        _ <- read(user.id).invert
-        _ <- readByUsername(user.username).invert
-      } yield ()).mapFailure(f => Problems.Client.exists("user"))
-
     for {
-      _     <- doesntExist(user)
+      _     <- read(user.id).fold(
+                 fail = { prob => ().success },
+                 succ = { user => Problems.Exists("user").fail }
+               ).fv
+      _     <- readByUsername(user.username).fold(
+                 fail = { prob => ().success },
+                 succ = { user => Problems.Exists("user").fail }
+               ).fv
       saved <- save(user)
     } yield saved
   }
@@ -46,7 +48,7 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
     def exists(user: User) =
       (for {
         _ <- read(user.id)
-      } yield ()).mapFailure(f => Problems.Client.notFound("user"))
+      } yield ()).mapFailure(f => Problems.NotFound("user"))
 
     for {
       _     <- exists(user)

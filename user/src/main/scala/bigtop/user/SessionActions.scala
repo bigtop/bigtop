@@ -2,6 +2,7 @@ package bigtop
 package user
 
 import akka.dispatch.{Future, Promise}
+import bigtop.concurrent._
 import bigtop.json.{JsonWriter, JsonFormatters}
 import bigtop.util.Uuid
 import blueeyes.core.service.ServiceContext
@@ -18,7 +19,7 @@ trait SessionActions[U <: User] extends UserTypes[U] {
 
   def save(session: Session[U]): SessionValidation
 
-  def delete(id: Uuid): UnitValidation
+  def delete(id: Uuid): FutureValidation[Unit]
 
   def create(username: String, password: String): SessionValidation = {
     for {
