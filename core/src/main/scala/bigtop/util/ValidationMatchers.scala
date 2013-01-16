@@ -17,6 +17,11 @@ trait ValidationMatchers extends MustMatchers with StandardMatchResults {
       case Success(_) => ok
     }
 
+  def beFailure[A](matcher: Matcher[A]): Matcher[Validation[A, _]] =
+    beLike {
+      case Failure(a) => a must matcher
+    }
+
   def beFailure(): Matcher[Validation[_,_]] =
     beLike {
       case Failure(_) => ok
