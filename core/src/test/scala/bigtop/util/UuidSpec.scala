@@ -8,7 +8,7 @@ class UuidSpec extends Specification {
 
   "Uuid.create()" should {
     "create a UUID that can be read by Uuid.parse" in {
-      val uuid = Uuid.create()
+      val uuid = Uuid.create
 
       Uuid.parse(uuid.toString) must beSome(uuid)
     }
