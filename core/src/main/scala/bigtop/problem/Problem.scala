@@ -35,12 +35,12 @@ sealed trait Problem extends ProblemFormat {
     w.write(this)
 
   def print(print: (String) => Unit): Unit = {
-    print("%s:\n  %s\n  messages: %s\n  logMessages: %s\n".format(
+    "%s:\n  %s\n  messages: %s\n  logMessages: %s\n".format(
       getClass.getSimpleName,
       status.toString,
       messages.toString,
       logMessages.toString
-    ))
+    ).split("[\r\n]").foreach(print)
   }
 
   def toResponse(implicit logger: Logger): HttpResponse[JValue] = {

@@ -13,7 +13,7 @@ import blueeyes.persistence.mongo._
 import blueeyes.json.JsonAST._
 import com.weiglewilczek.slf4s.Logging
 import org.streum.configrity.Configuration
-import scalaz.{NonEmptyList, Validation, ValidationNEL}
+import scalaz.{NonEmptyList, Validation}
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
 
