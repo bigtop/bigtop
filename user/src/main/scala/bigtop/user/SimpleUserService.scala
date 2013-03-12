@@ -1,7 +1,7 @@
 package bigtop
 package user
 
-import akka.dispatch.{Future,Promise}
+import scala.concurrent.{Future,Promise}
 import blueeyes.BlueEyesServer
 import blueeyes.bkka.AkkaDefaults
 import blueeyes.persistence.mongo.{ConfigurableMongo, Mongo, Database}

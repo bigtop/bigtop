@@ -1,7 +1,7 @@
 package bigtop
 package user
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
 import bigtop.json._

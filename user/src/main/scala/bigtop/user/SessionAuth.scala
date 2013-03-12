@@ -1,7 +1,7 @@
 // package bigtop
 // package user
 //
-// import akka.dispatch.{Future, Promise}
+// import scala.concurrent.{Future, Promise}
 // import bigtop.concurrent._
 // import bigtop.json.{JsonWriter, JsonFormatters}
 // import bigtop.problem._

@@ -1,7 +1,7 @@
 package bigtop
 package problem
 
-import akka.dispatch.{ExecutionContext, Promise}
+import scala.concurrent.{ExecutionContext, Promise}
 import blueeyes.bkka.AkkaDefaults
 import bigtop.concurrent._
 import bigtop.problem._

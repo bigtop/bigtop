@@ -1,13 +1,13 @@
 package bigtop
 package http
 
-import akka.util.Timeout
+import scala.concurrent.duration._
 import blueeyes.core.data.BijectionsChunkFutureJson
 
 /** Bijection that doesn't have a timeout of zero */
 trait SafeBijectionsChunkFutureJson {
-  val jsonTimeout = Timeout(200)
-  implicit def futureJValueToChunk = BijectionsChunkFutureJson.futureJValueToChunk(jsonTimeout)
+  val safeJsonTimeout = Timeout(200)
+  implicit def futureJValueToChunk = BijectionsChunkFutureJson.futureJValueToChunk(safeJsonTimeout)
   implicit def chunkToFutureJValue = futureJValueToChunk.inverse
 }
 

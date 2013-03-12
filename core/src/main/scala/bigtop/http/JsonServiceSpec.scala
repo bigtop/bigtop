@@ -1,16 +1,13 @@
 package bigtop
 package http
 
-import akka.dispatch.{Await, Future}
-import akka.util.duration._
-import akka.util.Duration
-import akka.util.Timeout
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import bigtop.concurrent._
 import bigtop.json._
 import bigtop.util._
 import bigtop.problem._
 import blueeyes.Environment
-import blueeyes.bkka.AkkaDefaults
 import blueeyes.concurrent.test._
 import blueeyes.core.data._
 import blueeyes.core.http._

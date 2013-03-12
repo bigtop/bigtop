@@ -1,7 +1,7 @@
 package bigtop
 package http
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import blueeyes.core.http._
 import blueeyes.json.JsonAST._
 import scalaz.Validation

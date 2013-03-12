@@ -5,7 +5,7 @@ import scala.collection.JavaConversions._
 import com.yammer.metrics.Metrics
 import com.yammer.metrics.core.{MetricName, MetricsRegistry, Timer}
 import com.yammer.metrics.scala.Meter
-import akka.dispatch.{ Future, Promise }
+import scala.concurrent.{ Future, Promise }
 import blueeyes.core.http._
 import blueeyes.core.http.HttpStatusCodes._
 import blueeyes.core.service._

@@ -1,9 +1,7 @@
 package bigtop.util
 
-import akka.dispatch.{Future, Promise}
-import akka.util.Timeout
-import akka.util.duration._
-import blueeyes.bkka.AkkaDefaults
+import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration._
 import blueeyes.concurrent._
 import blueeyes.core.data._
 import blueeyes.core.http._

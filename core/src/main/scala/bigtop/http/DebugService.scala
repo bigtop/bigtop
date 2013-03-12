@@ -1,7 +1,7 @@
 package bigtop
 package http
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import blueeyes.core.http.{HttpRequest, HttpResponse}
 import blueeyes.core.http.MimeTypes._
 import blueeyes.core.data._

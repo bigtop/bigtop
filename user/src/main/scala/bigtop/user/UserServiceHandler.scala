@@ -1,7 +1,7 @@
 package bigtop
 package user
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import blueeyes.core.service.{AsyncHttpService, HttpService, HttpServiceHandler, HttpRequestHandlerCombinators}
 import blueeyes.core.http.MimeTypes._
 import blueeyes.core.http.{HttpRequest, HttpResponse, HttpStatus}

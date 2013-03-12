@@ -1,9 +1,8 @@
 package bigtop
 package user
 
-import akka.dispatch.{Future, Promise}
-import akka.util.Timeout
-import akka.util.duration._
+import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
 import bigtop.json._
 import bigtop.problem._

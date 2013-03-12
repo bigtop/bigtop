@@ -52,7 +52,7 @@ object BigtopBuild extends Build {
 
   val publishSettings = Seq(
     organization := "com.untyped",
-    scalaVersion := "2.9.1",
+    scalaVersion := "2.10.0",
     version := bigtopVersion,
     publishMavenStyle := false,
     publishTo <<= (version) { version: String =>

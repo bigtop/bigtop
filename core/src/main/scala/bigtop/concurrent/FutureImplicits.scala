@@ -2,18 +2,17 @@ package bigtop
 package concurrent
 
 import akka.actor.ActorSystem
-import akka.dispatch.{Await, Future, Promise}
-import akka.util.{Duration, Timeout}
 import bigtop.problem._
-import blueeyes.bkka.AkkaDefaults
+import scala.concurrent._
+import scala.concurrent.duration._
 import scalaz._
 import scalaz.Scalaz._
 
-trait FutureImplicits extends AkkaDefaults {
+trait FutureImplicits {
   type FvProblem[A] = FutureValidation[Problem, A]
 
   class FutureW[A](inner: Future[A]) {
-    implicit val defaultDuration = Duration("3s")
+    implicit val defaultDuration = 3.seconds
 
     def await: A = await()
 
@@ -29,8 +28,8 @@ trait FutureImplicits extends AkkaDefaults {
         case exn: Exception => None
       }
 
-    def onTimeout(system: ActorSystem, duration: Duration = defaultDuration)(default: => A): Future[A] = {
-      val orElse = Promise()
+    def onTimeout(duration: FiniteDuration = defaultDuration)(default: => A)(implicit system: ActorSystem, executor: ExecutionContext): Future[A] = {
+      val orElse = Promise[A]()
       val timer  = system.scheduler.scheduleOnce(duration)(orElse.complete _)
 
       val ifThen = inner.map { result =>
@@ -38,7 +37,7 @@ trait FutureImplicits extends AkkaDefaults {
         result
       }
 
-      Future.firstCompletedOf(Seq(ifThen, orElse))
+      Future.firstCompletedOf(Seq(ifThen, orElse.future))
     }
   }
 
@@ -52,9 +51,9 @@ trait FutureImplicits extends AkkaDefaults {
       }
   }
 
-  def delayFailure[F, S](in: Validation[F, Future[S]]): Future[Validation[F, S]] =
+  def delayFailure[F, S](in: Validation[F, Future[S]])(implicit executor: ExecutionContext): Future[Validation[F, S]] =
     in fold (
-      fail = f => Promise.successful(f.fail[S]),
+      fail = f => future(f.fail[S]),
       succ = s => s map (_.success[F])
     )
 

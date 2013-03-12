@@ -1,7 +1,7 @@
 package bigtop
 package user
 
-import akka.dispatch.Future
+import scala.concurrent.Future
 import blueeyes.core.http.{HttpRequest, HttpResponse}
 import blueeyes.core.service.{HttpRequestHandlerCombinators, HttpService}
 import blueeyes.json.JsonAST.JValue

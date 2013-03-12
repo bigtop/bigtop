@@ -1,9 +1,8 @@
 package bigtop
 package user
 
-import akka.dispatch.{Await, Future}
-import akka.util.Duration
-import akka.util.duration._
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 import bigtop.concurrent._
 import bigtop.problem.{Problem, ProblemFormat}
 import bigtop.problem.Problems._

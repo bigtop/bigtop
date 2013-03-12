@@ -1,9 +1,8 @@
 package bigtop
 package http
 
-import akka.dispatch.{Future, Promise}
-import akka.util.Timeout
-import blueeyes.bkka.AkkaDefaults
+import scala.concurrent.{Future, Promise}
+import scala.concurrent.duration._
 import blueeyes.core.http.{HttpRequest, HttpResponse}
 import blueeyes.core.http.MimeTypes._
 import blueeyes.core.data._

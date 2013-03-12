@@ -1,7 +1,7 @@
 package bigtop
 package http
 
-import akka.dispatch.{Future, Promise}
+import scala.concurrent.{Future, Promise}
 import blueeyes.bkka.AkkaDefaults
 import blueeyes.core.http._
 import blueeyes.core.http.HttpStatusCodes._
