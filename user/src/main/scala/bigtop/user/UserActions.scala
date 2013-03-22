@@ -30,14 +30,15 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
     } yield ans
 
   def create(user: U): UserValidation = {
-    def doesntExist(user: User) =
-      (for {
-        _ <- read(user.id).invert
-        _ <- readByUsername(user.username).invert
-      } yield ()).mapFailure(f => Problems.Client.exists("user"))
-
     for {
-      _     <- doesntExist(user)
+      _     <- read(user.id).fold(
+                 fail = { prob => ().success },
+                 succ = { user => Problems.Client.exists("user").fail }
+               ).fv
+      _     <- readByUsername(user.username).fold(
+                 fail = { prob => ().success },
+                 succ = { user => Problems.Client.exists("user").fail }
+               ).fv
       saved <- save(user)
     } yield saved
   }

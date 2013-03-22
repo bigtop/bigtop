@@ -26,16 +26,16 @@ trait RedisSessionActions[U <: User] extends SessionActions[U] {
 
   def redisPool: RedisClientPool = new RedisClientPool("localhost", 6379)
 
-  def read(id: Uuid): FutureValidation[Problem, Session[U]] = {
+  def read(id: Uuid): FutureValidation[Session[U]] = {
     cache.get(id.toString).toSuccess(Problems.Client.noSession).fv
   }
 
-  def save(session: Session[U]): FutureValidation[Problem, Session[U]] = {
+  def save(session: Session[U]): FutureValidation[Session[U]] = {
     cache.set(session.id.toString, session)
     session.success.fv
   }
 
-  def delete(id: Uuid): FutureValidation[Problem, Unit] = {
+  def delete(id: Uuid): FutureValidation[Unit] = {
     cache.delete(id.toString)
     ().success.fv
   }

@@ -15,15 +15,15 @@ case class SessionCookieAuthorizer[U <: User](val actions: SessionActions[U]) ex
   with HttpHeaderImplicits
   with FutureImplicits
 {
-  def effectiveUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+  def effectiveUser[A](request: HttpRequest[A]): FutureValidation[Option[U]] = {
     session(request).map(_.map(_.effectiveUser))
   }
 
-  def realUser[A](request: HttpRequest[A]): FutureValidation[Problem,Option[U]] = {
+  def realUser[A](request: HttpRequest[A]): FutureValidation[Option[U]] = {
     session(request).map(_.map(_.realUser))
   }
 
-  def session[A](request: HttpRequest[A]): FutureValidation[Problem,Option[Session[U]]] = {
+  def session[A](request: HttpRequest[A]): FutureValidation[Option[Session[U]]] = {
     SessionCookie.get(request) map {
       cookie =>
         for {

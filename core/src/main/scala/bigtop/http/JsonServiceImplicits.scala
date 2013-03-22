@@ -17,7 +17,7 @@ trait JsonHttpRequestW extends HttpRequestW[Future[JValue]] {
   import Problems._
   import FutureImplicits._
 
-  def json: FutureValidation[Problem,JValue] =
+  def json: FutureValidation[JValue] =
     request.content match {
       case Some(x) => x.map(_.success[Problem]).fv
       case None    => Problems.Client.emptyRequest.fail.fv
@@ -27,7 +27,7 @@ trait JsonHttpRequestW extends HttpRequestW[Future[JValue]] {
 
 trait FutureJsonHttpResponseW[A] {
 
-  val response: FutureValidation[Problem,A]
+  val response: FutureValidation[A]
 
   def toResponse(implicit w: JsonWriter[A], logger: Logger): Future[HttpResponse[JValue]] =
     response.fold (
@@ -39,7 +39,7 @@ trait FutureJsonHttpResponseW[A] {
 
 trait FutureJsonHttpResponseSeqW[A] {
 
-  val response: FutureValidation[Problem,Seq[A]]
+  val response: FutureValidation[Seq[A]]
 
   def toResponseSeq(implicit w: JsonWriter[A], logger: Logger): Future[HttpResponse[JValue]] = {
     response.fold (
@@ -58,12 +58,12 @@ trait JsonServiceImplicits extends RequestParameterImplicits {
       val request = req
     }
 
-  implicit def fvpToHttp[A](resp: FutureValidation[Problem,A]): FutureJsonHttpResponseW[A] =
+  implicit def fvpToHttp[A](resp: FutureValidation[A]): FutureJsonHttpResponseW[A] =
     new FutureJsonHttpResponseW[A] {
       val response = resp
     }
 
-  implicit def fvpSeqToHttp[A](resp: FutureValidation[Problem,Seq[A]]): FutureJsonHttpResponseSeqW[A] =
+  implicit def fvpSeqToHttp[A](resp: FutureValidation[Seq[A]]): FutureJsonHttpResponseSeqW[A] =
     new FutureJsonHttpResponseSeqW[A] {
       val response = resp
     }

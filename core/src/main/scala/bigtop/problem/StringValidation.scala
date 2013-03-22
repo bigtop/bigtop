@@ -69,6 +69,6 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
   def sv: StringValidation =
     this
 
-  def fv: FutureValidation[Problem,String] =
+  def fv: FutureValidation[String] =
     FutureValidation(Promise.successful(inner))
 }

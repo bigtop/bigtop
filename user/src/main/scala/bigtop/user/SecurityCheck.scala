@@ -8,7 +8,7 @@ import scalaz.syntax.validation._
 
 case class SecurityCheck[A,U <: User](val predicate: SecurityPredicate[A,U]) extends FutureImplicits {
 
-  def apply(request: HttpRequest[A], user: Option[U]): FutureValidation[Problem,Option[U]] =
+  def apply(request: HttpRequest[A], user: Option[U]): FutureValidation[Option[U]] =
     predicate(request, user)
 
   def or(other: SecurityCheck[A,U]): SecurityCheck[A,U] =
@@ -22,7 +22,7 @@ object SecurityCheck extends FutureImplicits {
     SecurityCheck(
       (request: HttpRequest[A], user: Option[U]) =>
         if(f(user))
-          user.success.fv
+          user.success[Problem].fv
         else
           Problems.Client.notAuthorized(user.map(_.username).getOrElse("unknown"), operation).fail.fv
     )

@@ -44,7 +44,7 @@ class SimpleUserActionsSpec extends BlueEyesServiceSpecification with Configurab
   def await[A](f: Future[A]) =
     Await.result(f, Duration("3s"))
 
-  def await[F, S](f: FutureValidation[F, S]) =
+  def await[S](f: FutureValidation[S]) =
     Await.result(f.inner, Duration("3s"))
 
   "SimpleUserActions.create" should {

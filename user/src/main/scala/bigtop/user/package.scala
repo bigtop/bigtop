@@ -7,14 +7,14 @@ import blueeyes.core.http.HttpRequest
 
 package object user {
 
-  type SecurityPredicate[A, U <: User] = (HttpRequest[A], Option[U]) => FutureValidation[Problem,Option[U]]
+  type SecurityPredicate[A, U <: User] = (HttpRequest[A], Option[U]) => FutureValidation[Option[U]]
 
   trait UserTypes[U <: User] {
 
-    type JsonValidation    = FutureValidation[Problem, JValue]
-    type SessionValidation = FutureValidation[Problem, Session[U]]
-    type UserValidation    = FutureValidation[Problem, U]
-    type UnitValidation    = FutureValidation[Problem, Unit]
+    type JsonValidation    = FutureValidation[JValue]
+    type SessionValidation = FutureValidation[Session[U]]
+    type UserValidation    = FutureValidation[U]
+    type UnitValidation    = FutureValidation[Unit]
 
   }
 

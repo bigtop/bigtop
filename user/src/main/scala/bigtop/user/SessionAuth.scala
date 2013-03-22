@@ -19,7 +19,7 @@
 //
 // trait SessionAuth[U <: User] extends SessionCore[U] with FutureImplicits {
 //
-//   type FV[T] = FutureValidation[Problem, T]
+//   type FV[T] = FutureValidation[T]
 //
 //   def userActions: UserActions[U]
 //

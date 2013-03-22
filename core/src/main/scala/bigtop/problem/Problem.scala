@@ -9,7 +9,7 @@ import com.weiglewilczek.slf4s.Logger
 import scalaz._
 import scalaz.Scalaz._
 
-sealed trait Problem extends ProblemFormat {
+sealed trait Problem extends Throwable with ProblemFormat {
   def status: HttpStatusCode
 
   def messages: Seq[Problem.Message]

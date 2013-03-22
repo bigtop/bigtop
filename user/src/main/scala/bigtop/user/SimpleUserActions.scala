@@ -84,7 +84,7 @@ case class SimpleUserActions[U <: User](
     mapOrHandleError(result, (_: Unit) => ())
   }
 
-  def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[Problem,S] = {
+  def mapOrHandleError[T,S](f: Future[T], mapper: T => S): FutureValidation[S] = {
     val ans = Promise[Validation[Problem,S]]
     f foreach { v => ans.success(mapper(v).success[Problem]) }
     f recover { case e =>

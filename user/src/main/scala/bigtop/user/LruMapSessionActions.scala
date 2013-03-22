@@ -21,11 +21,11 @@ case class LruMapSessionActions[U <: User](
 
   def save(session: Session[U]): SessionValidation = {
     map.put(session.id, session)
-    session.success.fv
+    session.success[Problem].fv
   }
 
   def delete(id: Uuid): UnitValidation = {
     map.remove(id)
-    ().success.fv
+    ().success[Problem].fv
   }
 }
