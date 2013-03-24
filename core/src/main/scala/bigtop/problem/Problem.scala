@@ -8,12 +8,14 @@ import bigtop.util.Writer
 import bigtop.json._
 import bigtop.json.JsonFormatters._
 import com.weiglewilczek.slf4s.Logger
+import org.joda.time._
 import scalaz._
 import scalaz.Scalaz._
 
 case class Problem(
   val id: String,
   val message: String,
+  val timestamp: DateTime = new DateTime,
   val logMessage: Option[String] = None,
   val cause: Option[Throwable] = None,
   val status: HttpStatusCode = HttpStatusCodes.BadRequest,
@@ -39,12 +41,21 @@ case class Problem(
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
   }
 
+  // Compose two problems. TODO: Find a good way of implementing this, and search-and-replace out this method name !!!!!
+  def andandand (that: Problem): Problem = this
+
   def print(print: (String) => Unit): Unit = {
     print("Problem: " + id + " (status " + status + ")")
+    print("  timestamp: " + timestamp)
     printMessage(print, "  message: ")
     printLogMessage(print, "  log: ")
     printData(print, "  data.")
-    data.foreach { case (name, value) => printLongString(value, print, "  data: ") }
+    print("  stackTrace:")
+    getStackTrace.foreach { item => print("    " + item) }
+    cause.foreach { cause =>
+      print("  causedBy: " + cause.getMessage)
+      cause.getStackTrace.foreach { item => print("    " + item) }
+    }
   }
 
   private def printMessage(print: String => Unit, prefix: String) =
@@ -77,11 +88,12 @@ object Problem {
 
   implicit object problemFormat extends JsonFormat[Problem, Problem] {
     def write(in: Problem): JValue =
-      ("typename" -> "problem") ~
-      ("subtype"  -> in.id) ~
-      ("message"  -> in.message) ~
-      ("status"   -> in.status.code.value) ~
-      ("data"     -> problemDataFormat.write(in.data))
+      ("typename"  -> "problem") ~
+      ("subtype"   -> in.id) ~
+      ("timestamp" -> in.timestamp.toJson) ~
+      ("message"   -> in.message) ~
+      ("status"    -> in.status.code.value) ~
+      ("data"      -> problemDataFormat.write(in.data))
 
     def read(in: JValue) =
       for {

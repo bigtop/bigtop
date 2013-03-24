@@ -3,6 +3,7 @@ package problem
 
 import org.specs2.mutable.Specification
 import bigtop.util.ValidationMatchers._
+import bigtop.json.JsonFormatters._
 import blueeyes.core.http.HttpStatusCodes
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
@@ -30,15 +31,18 @@ class ProblemSpec extends Specification {
   "Problem.print" should {
     "produce intelligable output" in {
       var ans = ""
-      Problems.Malformed("foo", "bar\nbaz").print(ans += _)
-      ans mustEqual {
+      var problem = Problems.Malformed("foo", "bar\nbaz")
+      problem.print(str => ans += str + "\n")
+      ans.substring(0, ans.indexOf("  stackTrace:")) mustEqual {
         """
-        |Problem: malformed (status 400)
+        |Problem: malformed (status BadRequest)
+        |  timestamp: %s
         |  message: Some required data was not in the expected format.
         |  data.field: foo
         |  data.description: bar
         |  data.description: baz
-        """.trim.stripMargin
+        |
+        """.trim.stripMargin.format(problem.timestamp)
       }
     }
   }
@@ -83,9 +87,11 @@ class ProblemSpec extends Specification {
 
   "Problem.toResponse" should {
     "do something" in {
-      Problems.Malformed("foo", "was a bar").toJson mustEqual {
+      val problem = Problems.Malformed("foo", "was a bar")
+      problem.toJson mustEqual {
         ("typename" -> "problem") ~
         ("subtype" -> "malformed") ~
+        ("timestamp" -> problem.timestamp.toJson) ~
         ("message" -> "Some required data was not in the expected format.") ~
         ("status" -> 400) ~
         ("data" -> {
@@ -102,9 +108,12 @@ class ProblemSpec extends Specification {
       // Database()                      must beLike({ case Database()                      => ok })
       Authentication("dave")          must beLike({ case Authentication("dave")          => ok })
       Authorization("dave", "stuff")  must beLike({ case Authorization("dave", "stuff")  => ok })
+      NotFound("foo")                 must beLike({ case NotFound("foo")                 => ok })
+      Exists("foo")                   must beLike({ case Exists("foo")                   => ok })
       Missing("foo")                  must beLike({ case Missing("foo")                  => ok })
       Malformed("foo", "bar")         must beLike({ case Malformed("foo", "bar")         => ok })
       EmptyRequest()                  must beLike({ case EmptyRequest()                  => ok })
+      Unknown()                       must beLike({ case Unknown()                       => ok })
     }
   }
 }

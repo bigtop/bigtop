@@ -42,7 +42,7 @@ case class SimpleUserActions[U <: User](
       )
 
     user map { u =>
-      u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _)
+      u.toSuccess(Problems.NotFound("user")).flatMap(internalFormat.read _)
     }
   }
 
@@ -55,7 +55,7 @@ case class SimpleUserActions[U <: User](
       )
 
     user map { u =>
-      u.toSuccess(Client.notFound("user")).flatMap(internalFormat.read _)
+      u.toSuccess(Problems.NotFound("user")).flatMap(internalFormat.read _)
     }
   }
 
@@ -63,7 +63,10 @@ case class SimpleUserActions[U <: User](
     for {
       data   <- internalFormat.write(user) match {
                   case obj: JObject => obj.success[Problem].fv
-                  case other        => Problems.unknown("could not save user: internalFormat didn't produce a JObject").fail[JObject].fv
+                  case other        => Problems.Unknown(
+                                         message    = "Could not save the user.",
+                                         logMessage = Some("Could not save the user: the internalFormat didn't produce a JObject.")
+                                       ).fail[JObject].fv
                 }
       result <- database(
                   upsert(collection).
@@ -89,7 +92,10 @@ case class SimpleUserActions[U <: User](
     f foreach { v => ans.success(mapper(v).success[Problem]) }
     f recover { case e =>
       ans.success {
-        ServerProblem(e.getMessage).fail[S]
+        Problems.Unknown(
+          logMessage = Some(e.getMessage),
+          cause      = Some(e)
+        ).fail[S]
       }
     }
 

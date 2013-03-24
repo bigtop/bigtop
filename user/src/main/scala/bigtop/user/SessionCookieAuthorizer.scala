@@ -6,7 +6,6 @@ import blueeyes.core.http.HttpHeaders._
 import bigtop.util.Uuid
 import bigtop.concurrent._
 import bigtop.problem._
-import bigtop.problem.Problems._
 import scalaz.Validation
 import scalaz.std.option.optionSyntax._
 import scalaz.syntax.validation._
@@ -28,7 +27,7 @@ case class SessionCookieAuthorizer[U <: User](val actions: SessionActions[U]) ex
       cookie =>
         for {
           uuid <- Uuid.parse(cookie.cookieValue).toSuccess(
-            Client.malformed("session", "Session cookie did not contain a valid UUID")
+            Problems.Malformed("session", "Session cookie did not contain a valid UUID")
           ).fv
           session <- actions.read(uuid)
         } yield (Some(session) : Option[Session[U]])

@@ -19,7 +19,6 @@ import scalaz.syntax.validation._
 
 class SimpleUserActionsSpec extends BlueEyesServiceSpecification with ConfigurableMongo {
   import MimeTypes._
-  import ProblemFormat._
 
   override def configuration = """
     services {

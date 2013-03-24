@@ -2,7 +2,7 @@ package bigtop
 package user
 
 import bigtop.concurrent.{FutureImplicits,FutureValidation}
-import bigtop.problem.{Problem,Problems}
+import bigtop.problem._
 import blueeyes.core.http.HttpRequest
 import scalaz.syntax.validation._
 
@@ -24,7 +24,7 @@ object SecurityCheck extends FutureImplicits {
         if(f(user))
           user.success[Problem].fv
         else
-          Problems.NotAuthorized(user.map(_.username).getOrElse("unknown"), operation).fail.fv
+          Problems.Authorization(user.map(_.username).getOrElse("unknown"), operation).fail.fv
     )
 
   def isAuthenticated[A,U <: User](operation: String): SecurityCheck[A,U] =

@@ -32,11 +32,13 @@ trait ResponseMatchers extends MustMatchers
         (status.code mustEqual OK)
     }
 
-  def beProblem(expected: Problem): Matcher[HttpResponse[JValue]] =
+  def beProblem(beExpected: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
     beLike {
       case HttpResponse(status, _, Some(content), _) =>
-        (jsonString(content) mustEqual jsonString(expected.toJson)) and
-        (status.code mustEqual expected.status.code)
+        content.as[Problem].fold(
+          succ = { problem => problem must beExpected },
+          fail = { problem => ko(problem.toString) }
+        )
     }
 
   def jsonDesc(json: JValue, prefix: String = "") =

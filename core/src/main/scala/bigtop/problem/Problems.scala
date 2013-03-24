@@ -56,6 +56,36 @@ trait Problems {
       } yield (credentials, operation)
   }
 
+  object NotFound {
+    def apply(item: String) =
+      Problem(
+        id      = "notFound",
+        message = "Some required data could not be found.",
+        data    = Map("item" -> item)
+      )
+
+    def unapply(in: Problem) =
+      for {
+        _      <- in.checkId("notFound")
+        item   <- in.data.get("item")
+      } yield item
+  }
+
+  object Exists {
+    def apply(item: String) =
+      Problem(
+        id      = "exists",
+        message = "Some data already exists.",
+        data    = Map("item" -> item)
+      )
+
+    def unapply(in: Problem) =
+      for {
+        _      <- in.checkId("exists")
+        item   <- in.data.get("item")
+      } yield item
+  }
+
   // object TypeError {
   //   def apply(expected: String, received: String) =
   //     Problem(
@@ -123,6 +153,22 @@ trait Problems {
 
     def unapply(in: Problem) =
       in.checkId("emptyRequest").isDefined
+  }
+
+  object Unknown {
+    def apply(
+      message: String = "An unknown error occurred.",
+      logMessage: Option[String] = None,
+      cause: Option[Throwable] = None
+    ) = Problem(
+      id         = "unknown",
+      message    = message,
+      logMessage = logMessage,
+      cause      = cause
+    )
+
+    def unapply(in: Problem) =
+      in.checkId("unknown").isDefined
   }
 
   //   case class NoResponse(

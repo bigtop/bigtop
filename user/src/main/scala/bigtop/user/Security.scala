@@ -3,7 +3,6 @@ package user
 
 import blueeyes.core.http.HttpRequest
 import bigtop.problem._
-import bigtop.problem.Problems._
 import bigtop.concurrent._
 import scalaz.Validation
 import scalaz.std.option.optionSyntax._
@@ -22,7 +21,7 @@ trait Authenticator[U <: User] {
   /** Return the user this request is authenticated as, returning a Problem if there is no user. A convenience function */
   def mandatory[A](request: HttpRequest[A], operation: String): FutureValidation[U] =
     effectiveUser(request).flatMap {
-      user => user.toSuccess(Client.notAuthorized("unknown", operation))
+      user => user.toSuccess(Problems.Authorization("unknown", operation))
     }
 
   /** Return the session, if one exists, this request is authenticated as */
@@ -30,7 +29,7 @@ trait Authenticator[U <: User] {
 
   def mandatorySession[A](request: HttpRequest[A], operation: String): FutureValidation[Session[U]] =
     session(request).flatMap {
-      sess => sess.toSuccess(Client.notAuthorized("unknown", operation))
+      sess => sess.toSuccess(Problems.Authorization("unknown", operation))
     }
 
 }

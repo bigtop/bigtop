@@ -7,8 +7,7 @@ import bigtop.http._
 import bigtop.json._
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
-import bigtop.problem.Problem
-import bigtop.problem.Problems._
+import bigtop.problem._
 import blueeyes.core.http._
 import blueeyes.core.service._
 import blueeyes.json.JsonAST._
@@ -142,7 +141,7 @@ case class SessionChangeIdentityService[U <: User](
             user     <- (userId, username) match {
                           case (Some(id),   _) => userActions.read(id)
                           case (_, Some(name)) => userActions.readByUsername(name)
-                          case (_, _) => (Problems.Missing("id") ++ Problems.Missing("username")).fail[U].fv
+                          case (_, _) => (Problems.Missing("id") andandand Problems.Missing("username")).fail[U].fv
                         }
             session  <- actions.changeIdentity(session.id, user)
           } yield session).toResponse(externalFormat, log)

@@ -22,11 +22,12 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
 
   def login(username: String, password: String): UserValidation =
     for {
-      user <- readByUsername(username).mapFailure(_ => Problems.LoginIncorrect())
-      ans  <- if(user.isPasswordOk(password))
+      user <- readByUsername(username).mapFailure(exn => Problems.Authentication(username).cause(exn))
+      ans  <- if(user.isPasswordOk(password)) {
                 user.success[Problem].fv
-              else
-                Problems.LoginIncorrect().fail.fv
+              } else {
+                Problems.Authentication(username).logMessage("Password incorrect.").fail.fv
+              }
     } yield ans
 
   def create(user: U): UserValidation = {
