@@ -24,7 +24,7 @@ object SecurityCheck extends FutureImplicits {
         if(f(user))
           user.success[Problem].fv
         else
-          Problems.Client.notAuthorized(user.map(_.username).getOrElse("unknown"), operation).fail.fv
+          Problems.NotAuthorized(user.map(_.username).getOrElse("unknown"), operation).fail.fv
     )
 
   def isAuthenticated[A,U <: User](operation: String): SecurityCheck[A,U] =

@@ -11,7 +11,7 @@ import blueeyes.json.JsonDSL._
 import bigtop.http.{JsonSyncService, SafeBijectionsChunkJson, SafeBijectionsChunkFutureJson}
 import bigtop.json.{JsonWriter, JsonFormatters}
 import bigtop.concurrent.{FutureImplicits, FutureValidation}
-import bigtop.problem.{Problem, Problems, ProblemFormat}
+import bigtop.problem.{Problem, Problems}
 import bigtop.util.Uuid
 import com.weiglewilczek.slf4s.Logging
 import scalaz.{Validation, Success, Failure}
@@ -24,7 +24,6 @@ object UserServiceHandler extends SafeBijectionsChunkJson
     with SafeBijectionsChunkFutureJson
     with FutureImplicits
     with HttpRequestHandlerCombinators
-    with ProblemFormat
     with JsonFormatters
     with Logging
 {

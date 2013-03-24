@@ -35,6 +35,6 @@
 //     if(isAuthorized(user))
 //       body
 //     else
-//       Problems.Client.notAuthorized.fail[T].fv
+//       Problems.NotAuthorized.fail[T].fv
 //
 // }

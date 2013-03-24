@@ -14,13 +14,12 @@ import com.weiglewilczek.slf4s.Logger
 /** A "wide" HttpRequest with JValue content */
 trait JsonHttpRequestW extends HttpRequestW[Future[JValue]] {
 
-  import Problems._
   import FutureImplicits._
 
   def json: FutureValidation[JValue] =
     request.content match {
       case Some(x) => x.map(_.success[Problem]).fv
-      case None    => Problems.Client.emptyRequest.fail.fv
+      case None    => Problems.EmptyRequest().fail.fv
     }
 
 }

@@ -5,91 +5,233 @@ import blueeyes.core.http.HttpStatusCodes._
 
 // Predefined problems
 
-object Problems extends ProblemImplicits {
-  import Problem._
+object Problems extends Problems
 
-  object Server {
-    val empty: Problem =
-      ServerProblem(Nil, Nil, InternalServerError)
-
-    val databaseError: Problem =
-      ServerProblem("databaseError")
-
-    def typeError(msg: String, expected: String, received: String) =
-      ServerProblem("typeError", "message" -> msg, "expected" -> expected, "received" -> received)
-
-    def missing(field: String): Problem =
-      ServerProblem("missing", "field" -> field)
-
-    def malformed(field: String, description: String): Problem =
-      ServerProblem("malformed", "field" -> field, "description" -> description)
-
-    val noResponse: Problem =
-      ServerProblem("noResponse")
-
-    val malformedResponse: Problem =
-      ServerProblem("malformedResponse")
-
-    def timeout(msg: String) =
-      ServerProblem("timeout", "message" -> msg)
-
-    def unknown(msg: String) =
-      ServerProblem("unknown", "message" -> msg)
+trait Problems {
+  // Generic extractor:
+  object ProblemWithId {
+    def unapply(in: Problem) =
+      Some(in.id)
   }
 
-  object Client {
-    val empty: Problem =
-      ClientProblem(Nil, Nil, BadRequest)
+  // object Database {
+  //   def apply() =
+  //     Problem(
+  //       id      = "databaseError",
+  //       message = "There was an error connecting to the database."
+  //     )
 
-    /** The client has no session. */
-    val noSession: Problem =
-      ClientProblem("noSession")
+  //   def unapply(in: Problem) =
+  //     in.checkId("databaseError").isDefined
+  // }
 
-    /** The client was not authorized to perform an operation. */
-    def notAuthorized(username: String, operation: String, args: (String, String)*): Problem =
-      ClientProblem("unauthorized", Seq("username" -> username, "operation" -> operation) ++ args : _*) status Unauthorized
+  object Authentication {
+    def apply(credentials: String) =
+      Problem(
+        id      = "authentication",
+        message = "The user could not be authenticated.",
+        data    = Map("credentials" -> credentials)
+      )
 
-    /** Some server functionality is not yet implemented. */
-    def notImplemented(what: String): Problem =
-      ClientProblem("notImplemented", "what" -> what)
-
-    /** A record was not found on the server. */
-    def notFound(item: String): Problem =
-      ClientProblem("notFound", "item" -> item)
-
-    /** A record already exists on the server. */
-    def exists(item: String): Problem =
-      ClientProblem("exists", "item" -> item)
-
-    /** The client supplied a bodiless request. */
-    val emptyRequest: Problem =
-      ClientProblem("emptyRequest")
-
-    /** The client supplied bad JSON. */
-    def malformedRequest: Problem =
-      ClientProblem("malformedRequest")
-
-    def malformedRequest(description: String): Problem =
-        ClientProblem("malformedRequest", "description" -> description)
-
-    /** The client supplied a request with a missing argument. */
-    def missing(field: String): Problem =
-      ClientProblem("missing", "field" -> field)
-
-    /** The client supplied a request with a malformed argument. */
-    def malformed(field: String, description: String): Problem =
-      ClientProblem("malformed", "field" -> field, "description" -> description)
-
-    /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
-    def loginUsernameIncorrect: Problem =
-      ClientProblem("loginIncorrect")
-
-    /** The login failed. We're not going to tell you too much about why because we don't want you to know if the username or password were incorrect */
-    def loginPasswordIncorrect: Problem =
-      ClientProblem("loginIncorrect")
-
-    def customProblem(messageType: String, args: (String, String) *): Problem =
-      ClientProblem(messageType, args : _*)
+    def unapply(in: Problem) =
+      for {
+        _           <- in.checkId("authentication")
+        credentials <- in.data.get("credentials")
+      } yield credentials
   }
+
+  object Authorization {
+    def apply(credentials: String, operation: String) =
+      Problem(
+        id      = "authentication",
+        message = "The user could not be authenticated.",
+        data    = Map("credentials" -> credentials, "operation" -> operation)
+      )
+
+    def unapply(in: Problem) =
+      for {
+        _           <- in.checkId("authentication")
+        credentials <- in.data.get("credentials")
+        operation   <- in.data.get("operation")
+      } yield (credentials, operation)
+  }
+
+  // object TypeError {
+  //   def apply(expected: String, received: String) =
+  //     Problem(
+  //       id      = "typeError",
+  //       message = "Some data was of the incorrect type.",
+  //       data    = Map("expected" -> expected, "received" -> received)
+  //     )
+
+  //   def unapply(in: Problem) =
+  //     for {
+  //       _        <- in.checkId("typeError")
+  //       expected <- in.data.get("expected")
+  //       received <- in.data.get("received")
+  //     } yield (expected, received)
+  // }
+
+  object Missing {
+    def apply(field: String) =
+      Problem(
+        id      = "missing",
+        message = "Some required data was missing.",
+        data    = Map("field" -> field)
+      )
+
+    def unapply(in: Problem) =
+      for {
+        _        <- in.checkId("missing")
+        field    <- in.data.get("field")
+      } yield field
+  }
+
+  object Malformed {
+    def apply(field: String, description: String) =
+      Problem(
+        id      = "malformed",
+        message = "Some required data was not in the expected format.",
+        data    = Map("field" -> field, "description" -> description)
+      )
+
+    def unapply(in: Problem) =
+      for {
+        _           <- in.checkId("malformed")
+        field       <- in.data.get("field")
+        description <- in.data.get("description")
+      } yield (field, description)
+  }
+
+  object MalformedRequest {
+    def apply() =
+      Problem(
+        id      = "malformedRequest",
+        message = "A request was incorrectly formatted."
+      )
+
+    def unapply(in: Problem) =
+      in.checkId("malformedRequest").isDefined
+  }
+
+  object EmptyRequest {
+    def apply() =
+      Problem(
+        id      = "emptyRequest",
+        message = "A request was empty."
+      )
+
+    def unapply(in: Problem) =
+      in.checkId("emptyRequest").isDefined
+  }
+
+  //   case class NoResponse(
+  //     val message: String = "An upstream service returned no response.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ServerProblem
+
+  //   case class MalformedResponse(
+  //     val message: String = "An upstream service returned a response in an unexpected format.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ServerProblem
+
+  //   case class Timeout(
+  //     val message: String = "A timeout occurred.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ServerProblem
+
+  //   case class Unknown(
+  //     val message: String = "An unknown error occurred.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ServerProblem
+
+  // object Client {
+  //   case class NoSession(
+  //     val message: String = "The user or client has no session.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem
+
+  //   case class NotAuthorized(
+  //     val username: String,
+  //     val operation: String,
+  //     val message: String = "The user or client is not authorized to perform a required action.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     override def data = ("username" -> username) ~ ("operation" -> operation)
+  //   }
+
+  //   case class NotImplemented(
+  //     val what: String,
+  //     val message: String = "A required service is currently unimplemented.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     override def data = ("what" -> what)
+  //   }
+
+  //   case class NotFound(
+  //     val item: String,
+  //     val message: String = "A required resource oculd not be found.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     override def data = ("item" -> item)
+  //   }
+
+  //   case class Exists(
+  //     val item: String,
+  //     val message: String = "A resource already exists.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     override def data = ("item" -> item)
+  //   }
+
+  //   case class EmptyRequest(
+  //     val message: String = "The client sent an empty request.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem
+
+  //   case class MalformedRequest(
+  //     val description: String,
+  //     val message: String = "The client sent an incorrectly formatted request.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     def data = ("description" -> description)
+  //   }
+
+  //   case class Missing(
+  //     val field: String,
+  //     val message: String = "The request was missing some required data.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     def data = ("field" -> field)
+  //   }
+
+  //   case class Malformed(
+  //     val field: String,
+  //     val description: String,
+  //     val message: String = "The request contained some incorrectly formatted data.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem {
+  //     def data = ("field" -> field) ~ ("description" -> description)
+  //   }
+
+  //   case class LoginIncorrect(
+  //     val message: String = "The client did not have valid authentication credentials.",
+  //     val logMessage: Option[String] = None,
+  //     val cause: Option[Throwable] = None
+  //   ) extends ClientProblem
+  // }
 
 }

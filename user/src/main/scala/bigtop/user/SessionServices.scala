@@ -100,11 +100,12 @@ case class SessionReadService[U <: User](
         for {
           id      <- req.mandatoryParam[Uuid]('id).fv
           session <- actions.read(id)
-          user    <- if(user.map(_ == session.effectiveUser).getOrElse(false))
+          user    <- if(user.map(_ == session.effectiveUser).getOrElse(false)) {
                        user.success[Problem].fv
-                     else
-                       Client.notAuthorized(user.map(_.username).getOrElse("unknown"),
-                                            "session.read").fail.fv
+                     } else Problems.Authorization(
+                       user.map(_.username).getOrElse("unknown"),
+                       "session.read"
+                     ).fail.fv
         } yield user
     )
 
@@ -141,7 +142,7 @@ case class SessionChangeIdentityService[U <: User](
             user     <- (userId, username) match {
                           case (Some(id),   _) => userActions.read(id)
                           case (_, Some(name)) => userActions.readByUsername(name)
-                          case (_, _) => (Client.missing("id") and Client.missing("username")).fail[U].fv
+                          case (_, _) => (Problems.Missing("id") ++ Problems.Missing("username")).fail[U].fv
                         }
             session  <- actions.changeIdentity(session.id, user)
           } yield session).toResponse(externalFormat, log)

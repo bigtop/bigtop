@@ -7,8 +7,7 @@ import akka.util.duration._
 import bigtop.util._
 import bigtop.http._
 import bigtop.concurrent._
-import bigtop.problem.{Problem, ProblemFormat}
-import bigtop.problem.Problems._
+import bigtop.problem._
 import blueeyes.core.data.ByteChunk
 import blueeyes.core.http._
 import blueeyes.core.service.HttpClient

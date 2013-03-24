@@ -16,7 +16,7 @@ case class LruMapSessionActions[U <: User](
   val map = new SynchronizedLruMap[Uuid, Session[U]](16384)
 
   def read(id: Uuid): SessionValidation = {
-    map.get(id).toSuccess(Problems.Client.noSession).fv
+    map.get(id).toSuccess(Problems.Authentication(id.toString).logMessage("No session found for user.")).fv
   }
 
   def save(session: Session[U]): SessionValidation = {

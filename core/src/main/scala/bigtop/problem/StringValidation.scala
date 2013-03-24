@@ -26,7 +26,7 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
       if(str.length > 0) {
         str.success[Problem]
       } else {
-        Problems.Client.missing(field).fail
+        Problems.Missing(field).fail
       }
     }
 
@@ -42,7 +42,7 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
         if(str.length < length)
           str.success[Problem]
         else
-          Problems.Client.malformed(field, "tooLong").fail
+          Problems.Malformed(field, "tooLong").fail
     )
 
   def longerThan(field: String, length: Int) =
@@ -51,7 +51,7 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
         if(str.length > length)
           str.success[Problem]
         else
-          Problems.Client.malformed(field, "tooShort").fail
+          Problems.Malformed(field, "tooShort").fail
     )
 
   def regex(rx: Regex, field: String, description: String) =
@@ -59,7 +59,7 @@ case class StringValidation(val inner: Validation[Problem,String]) extends AkkaD
       if(rx.findFirstIn(str).isDefined) {
         str.success[Problem]
       } else {
-        Problems.Client.malformed(field, description).fail
+        Problems.Malformed(field, description).fail
       }
     }
 

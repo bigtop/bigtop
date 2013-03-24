@@ -24,7 +24,7 @@ object Password {
     if(BCrypt.isHash(hash)) {
       Password(hash).success[Problem]
     } else {
-      Problems.Server.malformed("bcryptHash", "not.a.hash").fail[Password]
+      Problems.Malformed("bcryptHash", "not.a.hash").fail[Password]
     }
   }
 }

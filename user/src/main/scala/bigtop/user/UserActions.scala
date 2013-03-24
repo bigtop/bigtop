@@ -22,22 +22,22 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
 
   def login(username: String, password: String): UserValidation =
     for {
-      user <- readByUsername(username).mapFailure(_ => Problems.Client.loginUsernameIncorrect)
+      user <- readByUsername(username).mapFailure(_ => Problems.LoginIncorrect())
       ans  <- if(user.isPasswordOk(password))
                 user.success[Problem].fv
               else
-                Problems.Client.loginPasswordIncorrect.fail.fv
+                Problems.LoginIncorrect().fail.fv
     } yield ans
 
   def create(user: U): UserValidation = {
     for {
       _     <- read(user.id).fold(
                  fail = { prob => ().success },
-                 succ = { user => Problems.Client.exists("user").fail }
+                 succ = { user => Problems.Exists("user").fail }
                ).fv
       _     <- readByUsername(user.username).fold(
                  fail = { prob => ().success },
-                 succ = { user => Problems.Client.exists("user").fail }
+                 succ = { user => Problems.Exists("user").fail }
                ).fv
       saved <- save(user)
     } yield saved
@@ -47,7 +47,7 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
     def exists(user: User) =
       (for {
         _ <- read(user.id)
-      } yield ()).mapFailure(f => Problems.Client.notFound("user"))
+      } yield ()).mapFailure(f => Problems.NotFound("user"))
 
     for {
       _     <- exists(user)

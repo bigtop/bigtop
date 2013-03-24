@@ -63,7 +63,7 @@ case class SimpleUserActions[U <: User](
     for {
       data   <- internalFormat.write(user) match {
                   case obj: JObject => obj.success[Problem].fv
-                  case other        => Problems.Server.unknown("could not save user: internalFormat didn't produce a JObject").fail[JObject].fv
+                  case other        => Problems.unknown("could not save user: internalFormat didn't produce a JObject").fail[JObject].fv
                 }
       result <- database(
                   upsert(collection).

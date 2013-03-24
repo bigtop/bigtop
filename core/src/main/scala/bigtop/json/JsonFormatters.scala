@@ -7,19 +7,15 @@ import blueeyes.json.JsonAST._
 import blueeyes.json.Printer
 import java.net.URL
 import org.joda.time._
-import scalaz.{Failure,Success,Validation}
-import scalaz.syntax.validation._
-import scalaz.std.list._
-import scalaz.syntax.traverse._
-import scalaz.std.option.optionSyntax._
+import scalaz._
+import scalaz.Scalaz._
 
 /** A "wide" (i.e. pimped) JSON value */
 case class JValueW(json: JValue) {
-  import Problems._
   import JsonFormatters._
 
   def mandatory[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
-    (json \? name).toSuccess(Client.missing(name)).flatMap(reader.read _)
+    (json \? name).toSuccess(Problems.Missing(name)).flatMap(reader.read _)
 
   def optional[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,Option[T]] =
     (json \? name) match {
@@ -179,12 +175,12 @@ trait JsonFormatters {
     new JsonFormat[Problem,Seq[A]] {
       def write(in: Seq[A]) = JArray(in.map(format.write _).toList)
       def read(json: JValue) =
-        json -->? classOf[JArray] toSuccess (malformed("json", "array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem,A]})#l, A])
+        json -->? classOf[JArray] toSuccess (malformed("json", "array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem, A]})#l, A])
     }
 
   // Map -------------------------------
 
-  implicit def MapFormat[A,B](implicit keyFormat: Format[Problem, A, String], valFormat: JsonFormat[Problem, B]): JsonFormat[Problem, Map[A,B]] =
+  implicit def MapFormat[A, B](implicit keyFormat: Format[Problem, A, String], valFormat: JsonFormat[Problem, B]): JsonFormat[Problem, Map[A,B]] =
     new JsonFormat[Problem, Map[A,B]] {
       def write(in: Map[A,B]) =
         JObject(in.toIterable.foldLeft(Nil: List[JField]){
@@ -209,7 +205,7 @@ trait JsonFormatters {
 
   def malformed(name: String, `type`: String, json: JValue) = {
     import blueeyes.json.Printer._
-    Client.malformed(name, "expected %s, found %s".format(`type`, compact(render(json))))
+    Problems.Malformed(name, "expected %s, found %s".format(`type`, compact(render(json))))
   }
 
   case class JsonWritable[A](in: A) {
