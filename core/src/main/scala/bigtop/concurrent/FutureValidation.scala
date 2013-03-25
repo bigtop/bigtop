@@ -12,7 +12,13 @@ case class FutureValidation[S](val inner: Future[Validation[Problem, S]])
 {
 
   def map[T](fn: (S) => T): FutureValidation[T] =
-    FutureValidation(inner map { validation => validation map fn })
+    FutureValidation {
+      inner map { validation =>
+        validation map fn
+      } recover { case exn =>
+        Problems.Unknown(cause = Some(exn)).onServer.fail[T]
+      }
+    }
 
   def flatMap[T](fn: (S) => FutureValidation[T]): FutureValidation[T] =
     FutureValidation(
@@ -21,10 +27,17 @@ case class FutureValidation[S](val inner: Future[Validation[Problem, S]])
           fail = f => Promise.successful(f.fail[T]),
           succ = s => fn(s).inner
         )
-      })
+      } recover { case exn =>
+        Problems.Unknown(cause = Some(exn)).onServer.fail[T]
+      }
+    )
 
   def fold[T](fail: (Problem) => T = identity[Problem] _, succ: (S) => T = identity[S] _): Future[T] =
-    inner map { validation => validation fold (fail = fail, succ = succ) }
+    inner map { validation =>
+      validation fold (fail = fail, succ = succ)
+    } recover { case exn =>
+      fail(Problems.Unknown(cause = Some(exn)).onServer)
+    }
 
   def mapFailure[G](f: Problem => Problem): FutureValidation[S] =
     FutureValidation(

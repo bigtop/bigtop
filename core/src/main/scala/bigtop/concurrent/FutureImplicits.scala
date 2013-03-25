@@ -4,18 +4,28 @@ package concurrent
 import akka.actor.ActorSystem
 import akka.dispatch.{Await, Future, Promise}
 import akka.util.{Duration, Timeout}
+import akka.util.duration._
 import bigtop.problem._
 import blueeyes.bkka.AkkaDefaults
 import scalaz._
 import scalaz.Scalaz._
 
 trait FutureImplicits extends AkkaDefaults {
+
   class FutureW[A](inner: Future[A]) {
     implicit val defaultDuration = Duration("3s")
 
     def await: A = await()
 
+    def await(duration: Int): A =
+      awaitInternal(duration.milliseconds)
+
     def await(duration: Duration = defaultDuration): A =
+      awaitInternal(duration)
+
+    // This internal method exists so we can override it in Futurevalidation without creating
+    // syntax errors due to the ambiguity between the argumentless an argumented forms of "await".
+    def awaitInternal(duration: Duration): A =
       Await.result(inner, duration)
 
     def awaitOption: Option[A] = awaitOption()
@@ -47,6 +57,13 @@ trait FutureImplicits extends AkkaDefaults {
       await(duration) match {
         case Success(success) => success
         case Failure(failure) => throw new Exception("awaitSuccess received failure: " + failure)
+      }
+
+    override def awaitInternal(duration: Duration): Validation[Problem, S] =
+      try {
+        super.awaitInternal(duration)
+      } catch { case exn =>
+        Problems.Unknown(cause = Some(exn)).fail[S]
       }
   }
 
