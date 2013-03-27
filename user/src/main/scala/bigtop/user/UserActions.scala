@@ -22,7 +22,7 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
 
   def login(username: String, password: String): UserValidation =
     for {
-      user <- readByUsername(username).mapFailure(exn => Problems.Authentication(username).cause(exn))
+      user <- readByUsername(username).mapFailure(exn => Problems.Authentication(username, cause = Some(exn)))
       ans  <- if(user.isPasswordOk(password)) {
                 user.success[Problem].fv
               } else {

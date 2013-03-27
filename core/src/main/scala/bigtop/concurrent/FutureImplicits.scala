@@ -23,7 +23,7 @@ trait FutureImplicits extends AkkaDefaults {
     def await(duration: Duration = defaultDuration): A =
       awaitInternal(duration)
 
-    // This internal method exists so we can override it in Futurevalidation without creating
+    // This internal method exists so we can override it in FutureValidation without creating
     // syntax errors due to the ambiguity between the argumentless an argumented forms of "await".
     def awaitInternal(duration: Duration): A =
       Await.result(inner, duration)

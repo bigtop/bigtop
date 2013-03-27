@@ -26,10 +26,11 @@ trait Problems {
   // }
 
   object Authentication {
-    def apply(credentials: String) =
+    def apply(credentials: String, cause: Option[Throwable] = None) =
       Problem(
         id      = "authentication",
         message = "The user could not be authenticated.",
+        cause   = cause,
         data    = Map("credentials" -> credentials)
       )
 
@@ -41,10 +42,11 @@ trait Problems {
   }
 
   object Authorization {
-    def apply(credentials: String, operation: String) =
+    def apply(credentials: String, operation: String, cause: Option[Throwable] = None) =
       Problem(
         id      = "authentication",
         message = "The user could not be authenticated.",
+        cause   = cause,
         data    = Map("credentials" -> credentials, "operation" -> operation)
       )
 
@@ -57,10 +59,11 @@ trait Problems {
   }
 
   object NotFound {
-    def apply(item: String) =
+    def apply(item: String, cause: Option[Throwable] = None) =
       Problem(
         id      = "notFound",
         message = "Some required data could not be found.",
+        cause   = cause,
         data    = Map("item" -> item)
       )
 
@@ -72,10 +75,11 @@ trait Problems {
   }
 
   object Exists {
-    def apply(item: String) =
+    def apply(item: String, cause: Option[Throwable] = None) =
       Problem(
         id      = "exists",
         message = "Some data already exists.",
+        cause   = cause,
         data    = Map("item" -> item)
       )
 
@@ -103,10 +107,11 @@ trait Problems {
   // }
 
   object Missing {
-    def apply(field: String) =
+    def apply(field: String, cause: Option[Throwable] = None) =
       Problem(
         id      = "missing",
         message = "Some required data was missing.",
+        cause   = cause,
         data    = Map("field" -> field)
       )
 
@@ -118,10 +123,11 @@ trait Problems {
   }
 
   object Malformed {
-    def apply(field: String, description: String) =
+    def apply(field: String, description: String, cause: Option[Throwable] = None) =
       Problem(
         id      = "malformed",
         message = "Some required data was not in the expected format.",
+        cause   = cause,
         data    = Map("field" -> field, "description" -> description)
       )
 
@@ -134,10 +140,11 @@ trait Problems {
   }
 
   object MalformedRequest {
-    def apply() =
+    def apply(cause: Option[Throwable] = None) =
       Problem(
         id      = "malformedRequest",
-        message = "A request was incorrectly formatted."
+        message = "A request was incorrectly formatted.",
+        cause   = cause
       )
 
     def unapply(in: Problem) =
@@ -145,10 +152,11 @@ trait Problems {
   }
 
   object EmptyRequest {
-    def apply() =
+    def apply(cause: Option[Throwable] = None) =
       Problem(
         id      = "emptyRequest",
-        message = "A request was empty."
+        message = "A request was empty.",
+        cause   = cause
       )
 
     def unapply(in: Problem) =
@@ -158,8 +166,8 @@ trait Problems {
   object Unknown {
     def apply(
       message: String = "An unknown error occurred.",
-      logMessage: Option[String] = None,
-      cause: Option[Throwable] = None
+      cause: Option[Throwable] = None,
+      logMessage: Option[String] = None
     ) = Problem(
       id         = "unknown",
       message    = message,
@@ -170,114 +178,5 @@ trait Problems {
     def unapply(in: Problem) =
       in.checkId("unknown").isDefined
   }
-
-  //   case class NoResponse(
-  //     val message: String = "An upstream service returned no response.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ServerProblem
-
-  //   case class MalformedResponse(
-  //     val message: String = "An upstream service returned a response in an unexpected format.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ServerProblem
-
-  //   case class Timeout(
-  //     val message: String = "A timeout occurred.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ServerProblem
-
-  //   case class Unknown(
-  //     val message: String = "An unknown error occurred.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ServerProblem
-
-  // object Client {
-  //   case class NoSession(
-  //     val message: String = "The user or client has no session.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem
-
-  //   case class NotAuthorized(
-  //     val username: String,
-  //     val operation: String,
-  //     val message: String = "The user or client is not authorized to perform a required action.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     override def data = ("username" -> username) ~ ("operation" -> operation)
-  //   }
-
-  //   case class NotImplemented(
-  //     val what: String,
-  //     val message: String = "A required service is currently unimplemented.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     override def data = ("what" -> what)
-  //   }
-
-  //   case class NotFound(
-  //     val item: String,
-  //     val message: String = "A required resource oculd not be found.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     override def data = ("item" -> item)
-  //   }
-
-  //   case class Exists(
-  //     val item: String,
-  //     val message: String = "A resource already exists.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     override def data = ("item" -> item)
-  //   }
-
-  //   case class EmptyRequest(
-  //     val message: String = "The client sent an empty request.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem
-
-  //   case class MalformedRequest(
-  //     val description: String,
-  //     val message: String = "The client sent an incorrectly formatted request.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     def data = ("description" -> description)
-  //   }
-
-  //   case class Missing(
-  //     val field: String,
-  //     val message: String = "The request was missing some required data.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     def data = ("field" -> field)
-  //   }
-
-  //   case class Malformed(
-  //     val field: String,
-  //     val description: String,
-  //     val message: String = "The request contained some incorrectly formatted data.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem {
-  //     def data = ("field" -> field) ~ ("description" -> description)
-  //   }
-
-  //   case class LoginIncorrect(
-  //     val message: String = "The client did not have valid authentication credentials.",
-  //     val logMessage: Option[String] = None,
-  //     val cause: Option[Throwable] = None
-  //   ) extends ClientProblem
-  // }
 
 }

@@ -12,37 +12,66 @@ import org.joda.time._
 import scalaz._
 import scalaz.Scalaz._
 
-case class Problem(
-  val id: String,
-  val message: String,
-  val timestamp: DateTime = new DateTime,
-  val logMessage: Option[String] = None,
-  val cause: Option[Throwable] = None,
-  val status: HttpStatusCode = HttpStatusCodes.BadRequest,
-  val data: Map[String, String] = Map()
-) extends Throwable {
-  // Helper for use in custom extractors. See Problems:
+class Problem(
+  var id: String,
+  var message: String,
+  var cause: Option[Throwable] = None,
+  var timestamp: DateTime = new DateTime,
+  var logMessage: Option[String] = None,
+  var status: HttpStatusCode = HttpStatusCodes.BadRequest,
+  var data: Map[String, String] = Map()
+) extends Throwable(message, cause getOrElse null) {
+  // Helper for use in custom extractors. See Problems.scala:
   def checkId(expected: String): Option[Unit] =
     if(id == expected) Some(()) else None
 
-  // Simpler setters for optional fields:
-  def logMessage(in: String): Problem = this.copy(logMessage = Option(in))
-  def cause(in: Throwable): Problem = this.copy(cause = Option(in))
+  // Getters ------------------------------------
 
-  // Switch the HTTP status to 500:
-  def onServer = copy(status = HttpStatusCodes.InternalServerError)
+  def isClientProblem =
+    this.status.isInstanceOf[ClientError]
 
-  // Switch the HTTP status to 400:
-  def onClient = copy(status = HttpStatusCodes.BadRequest)
+  def isServerProblem =
+    this.status.isInstanceOf[ServerError]
+
+  // Setters ------------------------------------
+
+  // Restrictions in Throwable mean we can't have setters for message or cause.
+
+  def logMessage(in: String): Problem = {
+    this.logMessage = Option(in)
+    this
+  }
+
+  def status(in: HttpStatusCode): Problem = {
+    this.status = in
+    this
+  }
+
+  def status(in: Int): Problem = {
+    import HttpStatusCodeImplicits._
+    this.status(in : HttpStatusCode)
+  }
+
+  def data(in: Map[String, String]): Problem = {
+    this.data = in
+    this
+  }
+
+  def data(key: String, value: String): Problem = {
+    this.data = this.data + (key -> value)
+    this
+  }
+
+  // Composition with other problems ------------
+
+  // Compose two problems. TODO: Find a good way of implementing this, and search-and-replace out this method name !!!!!
+  def andandand (that: Problem): Problem = this
 
   // Convert to an HTTP response:
   def toResponse(implicit logger: Logger, format: JsonFormat[Problem, Problem]): HttpResponse[JValue] = {
     print(msg => logger.error(msg))
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
   }
-
-  // Compose two problems. TODO: Find a good way of implementing this, and search-and-replace out this method name !!!!!
-  def andandand (that: Problem): Problem = this
 
   def print(print: (String) => Unit): Unit = {
     print("Problem: " + id + " (status " + status + ")")
@@ -72,6 +101,35 @@ case class Problem(
 }
 
 object Problem {
+
+  def apply(
+    id: String,
+    message: String,
+    cause: Option[Throwable]   = None,
+    timestamp: DateTime        = new DateTime,
+    logMessage: Option[String] = None,
+    status: HttpStatusCode     = HttpStatusCodes.BadRequest,
+    data: Map[String, String]  = Map()
+  ) = new Problem(
+    id         = id,
+    message    = message,
+    cause      = cause,
+    timestamp  = timestamp,
+    logMessage = logMessage,
+    status     = status,
+    data       = data
+  )
+
+  def unapply(in: Problem) = Some((
+    in.id,
+    in.message,
+    in.cause,
+    in.timestamp,
+    in.logMessage,
+    in.status,
+    in.data
+  ))
+
   implicit object problemDataFormat extends JsonFormat[Problem, Map[String, String]] {
     def read(in: JValue) =
       in match {

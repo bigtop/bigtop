@@ -17,13 +17,13 @@ class ProblemSpec extends Specification {
     }
 
     "be changeable to InternalServerError" in {
-      Problems.Missing("foo").onServer.status mustEqual HttpStatusCodes.InternalServerError
+      Problems.Missing("foo").status(500).status mustEqual HttpStatusCodes.InternalServerError
     }
   }
 
   "Problem.getStackTrace" should {
     "contain reference to the location in which the problem was created" in {
-      val elem = Problems.Missing("foo").getStackTrace.apply(1)
+      val elem = Problems.Missing("foo").getStackTrace.apply(2)
       elem.getFileName mustEqual "ProblemSpec.scala"
     }
   }
