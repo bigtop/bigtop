@@ -14,6 +14,12 @@ import scalaz.Scalaz._
 case class JValueW(json: JValue) {
   import JsonFormatters._
 
+  // def mandatory[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
+  //   (json get name) match {
+  //     case JNothing => Problems.Missing(name).fail[T]
+  //     case other    => reader.read(other)
+  //   }
+
   def mandatory[T](name: String)(implicit reader: JsonReader[Problem,T]): Validation[Problem,T] =
     (json \? name).toSuccess(Problems.Missing(name)).flatMap(reader.read _)
 
@@ -73,12 +79,14 @@ trait JsonFormatters {
   // Atomic Values ---------------------
 
   implicit val UuidJsonFormat: JsonFormat[Problem,Uuid] = new JsonFormat[Problem,Uuid] {
+    val valueManifest = manifest[Uuid]
     def write(in: Uuid) = JString(in.toString)
     def read(json: JValue) =
       json -->? classOf[JString] map (_.value) flatMap (Uuid.parse _) toSuccess (malformed("json", "uuid", json))
   }
 
   implicit val EmailJsonFormat: JsonFormat[Problem,Email] = new JsonFormat[Problem,Email] {
+    val valueManifest = manifest[Email]
     def write(in: Email) = JString(in.address)
     def read(json: JValue) =
       (json -->? classOf[JString]).
@@ -88,6 +96,7 @@ trait JsonFormatters {
   }
 
   implicit val PasswordJsonFormat: JsonFormat[Problem,Password] = new JsonFormat[Problem,Password] {
+    val valueManifest = manifest[Password]
     def write(in: Password) = JString(in.hash)
     def read(json: JValue) = {
       (json -->? classOf[JString]).
@@ -98,18 +107,22 @@ trait JsonFormatters {
   }
 
   implicit val StringJsonFormat: JsonFormat[Problem,String] = new JsonFormat[Problem,String] {
+    val valueManifest = manifest[String]
     def write(in: String) = JString(in)
     def read(json: JValue) =
       json -->? classOf[JString] map (_.value) toSuccess (malformed("json", "string", json))
   }
 
   implicit val BooleanJsonFormat: JsonFormat[Problem,Boolean] = new JsonFormat[Problem,Boolean] {
+    val valueManifest = manifest[Boolean]
     def write(in: Boolean) = JBool(in)
     def read(json: JValue) =
       json -->? classOf[JBool] map (_.value) toSuccess (malformed("json", "boolean", json))
   }
 
   implicit val DateTimeJsonFormat: JsonFormat[Problem,DateTime] = new JsonFormat[Problem,DateTime] {
+    val valueManifest = manifest[DateTime]
+
     def write(in: DateTime) = {
       // JInt(in.getMillis)
       JString(Iso8601Format.write(in))
@@ -136,6 +149,8 @@ trait JsonFormatters {
   }
 
   implicit val IntJsonFormat: JsonFormat[Problem,Int] = new JsonFormat[Problem,Int] {
+    val valueManifest = manifest[Int]
+
     def isWholeNumber(num: Double) = {
       math.abs(num - math.round(num)) < 0.01
     }
@@ -148,16 +163,25 @@ trait JsonFormatters {
   }
 
   implicit val DoubleJsonFormat: JsonFormat[Problem,Double] = new JsonFormat[Problem,Double] {
+    val valueManifest = manifest[Double]
     def write(in: Double) = JDouble(in)
     def read(json: JValue) =
       json -->? classOf[JDouble] map (_.value) toSuccess (malformed("json", "double", json))
   }
 
   implicit val URLJsonWriter: JsonWriter[URL] = new JsonWriter[URL] {
+    val valueManifest = manifest[URL]
     def write(in: URL) = JString(in.toString)
   }
 
+  implicit val JsonConfigJsonFormat = new JsonFormat[Problem, JsonConfig] {
+    val valueManifest = manifest[JsonConfig]
+    def write(in: JsonConfig) = in.data
+    def read(json: JValue) = JsonConfig(json).success[Problem]
+  }
+
   implicit val JValueJsonFormat: JsonFormat[Problem,JValue] = new JsonFormat[Problem,JValue] {
+    val valueManifest = manifest[JValue]
     def write(in: JValue) = in
     def read(json: JValue) = json.success[Problem]
   }
@@ -171,8 +195,9 @@ trait JsonFormatters {
   // implicit val SeqIntJsonFormat: JsonFormat[Problem,Seq[Int]] = buildSeqFormat(IntJsonFormat)
   // implicit val SeqDoubleJsonFormat: JsonFormat[Problem,Seq[Double]] = buildSeqFormat(DoubleJsonFormat)
 
-  implicit def buildSeqFormat[A](implicit format: JsonFormat[Problem,A]): JsonFormat[Problem,Seq[A]] =
+  implicit def buildSeqFormat[A](implicit format: JsonFormat[Problem,A], manifest: Manifest[Seq[A]]): JsonFormat[Problem,Seq[A]] =
     new JsonFormat[Problem,Seq[A]] {
+      val valueManifest = manifest
       def write(in: Seq[A]) = JArray(in.map(format.write _).toList)
       def read(json: JValue) =
         json -->? classOf[JArray] toSuccess (malformed("json", "array", json)) flatMap (_.elements.map(format.read _).sequence[({type l[A] = Validation[Problem, A]})#l, A])
@@ -180,8 +205,9 @@ trait JsonFormatters {
 
   // Map -------------------------------
 
-  implicit def MapFormat[A, B](implicit keyFormat: Format[Problem, A, String], valFormat: JsonFormat[Problem, B]): JsonFormat[Problem, Map[A,B]] =
+  implicit def MapFormat[A, B](implicit keyFormat: Format[Problem, A, String], valFormat: JsonFormat[Problem, B], manifest: Manifest[Map[A, B]]): JsonFormat[Problem, Map[A,B]] =
     new JsonFormat[Problem, Map[A,B]] {
+      val valueManifest = manifest
       def write(in: Map[A,B]) =
         JObject(in.toIterable.foldLeft(Nil: List[JField]){
           (accum, pair) => JField(keyFormat.write(pair._1), valFormat.write(pair._2)) :: accum

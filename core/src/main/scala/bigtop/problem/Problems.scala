@@ -1,7 +1,9 @@
 package bigtop
 package problem
 
+import bigtop.json.JsonFormatters._
 import blueeyes.core.http.HttpStatusCodes._
+import blueeyes.json.JsonDSL._
 
 // Predefined problems
 
@@ -31,13 +33,13 @@ trait Problems {
         id      = "authentication",
         message = "The user could not be authenticated.",
         cause   = cause,
-        data    = Map("credentials" -> credentials)
+        data    = ("credentials" -> credentials)
       )
 
     def unapply(in: Problem) =
       for {
         _           <- in.checkId("authentication")
-        credentials <- in.data.get("credentials")
+        credentials <- in.data.get[String]("credentials").toOption
       } yield credentials
   }
 
@@ -47,14 +49,14 @@ trait Problems {
         id      = "authentication",
         message = "The user could not be authenticated.",
         cause   = cause,
-        data    = Map("credentials" -> credentials, "operation" -> operation)
+        data    = ("credentials" -> credentials) ~ ("operation" -> operation)
       )
 
     def unapply(in: Problem) =
       for {
         _           <- in.checkId("authentication")
-        credentials <- in.data.get("credentials")
-        operation   <- in.data.get("operation")
+        credentials <- in.data.get[String]("credentials").toOption
+        operation   <- in.data.get[String]("operation").toOption
       } yield (credentials, operation)
   }
 
@@ -64,13 +66,13 @@ trait Problems {
         id      = "notFound",
         message = "Some required data could not be found.",
         cause   = cause,
-        data    = Map("item" -> item)
+        data    = ("item" -> item)
       )
 
     def unapply(in: Problem) =
       for {
         _      <- in.checkId("notFound")
-        item   <- in.data.get("item")
+        item   <- in.data.get[String]("item").toOption
       } yield item
   }
 
@@ -80,13 +82,13 @@ trait Problems {
         id      = "exists",
         message = "Some data already exists.",
         cause   = cause,
-        data    = Map("item" -> item)
+        data    = ("item" -> item)
       )
 
     def unapply(in: Problem) =
       for {
         _      <- in.checkId("exists")
-        item   <- in.data.get("item")
+        item   <- in.data.get[String]("item").toOption
       } yield item
   }
 
@@ -101,8 +103,8 @@ trait Problems {
   //   def unapply(in: Problem) =
   //     for {
   //       _        <- in.checkId("typeError")
-  //       expected <- in.data.get("expected")
-  //       received <- in.data.get("received")
+  //       expected <- in.data.get[String]("expected").toOption
+  //       received <- in.data.get[String]("received").toOption
   //     } yield (expected, received)
   // }
 
@@ -112,13 +114,13 @@ trait Problems {
         id      = "missing",
         message = "Some required data was missing.",
         cause   = cause,
-        data    = Map("field" -> field)
+        data    = ("field" -> field)
       )
 
     def unapply(in: Problem) =
       for {
         _        <- in.checkId("missing")
-        field    <- in.data.get("field")
+        field    <- in.data.get[String]("field").toOption
       } yield field
   }
 
@@ -128,14 +130,14 @@ trait Problems {
         id      = "malformed",
         message = "Some required data was not in the expected format.",
         cause   = cause,
-        data    = Map("field" -> field, "description" -> description)
+        data    = ("field" -> field) ~ ("description" -> description)
       )
 
     def unapply(in: Problem) =
       for {
         _           <- in.checkId("malformed")
-        field       <- in.data.get("field")
-        description <- in.data.get("description")
+        field       <- in.data.get[String]("field").toOption
+        description <- in.data.get[String]("description").toOption
       } yield (field, description)
   }
 

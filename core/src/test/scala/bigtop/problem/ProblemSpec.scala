@@ -38,9 +38,10 @@ class ProblemSpec extends Specification {
         |Problem: malformed (status BadRequest)
         |  timestamp: %s
         |  message: Some required data was not in the expected format.
-        |  data.field: foo
-        |  data.description: bar
-        |  data.description: baz
+        |  data: {
+        |  data:   "field":"foo",
+        |  data:   "description":"bar\nbaz"
+        |  data: }
         |
         """.trim.stripMargin.format(problem.timestamp)
       }

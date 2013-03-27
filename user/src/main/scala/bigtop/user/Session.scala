@@ -47,15 +47,17 @@ object Session {
     }
   }
 
-  def internalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U]) = {
+  def internalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U], uManifest: Manifest[U]) = {
     new SessionFormat[U] {
       implicit val userFormat = uFormat
+      implicit val valueManifest: Manifest[Session[U]] = manifest[Session[U]]
     }
   }
 
-  def externalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U]) = {
+  def externalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U], uManifest: Manifest[U]) = {
     new SessionFormat[U] {
       implicit val userFormat = uFormat
+      implicit val valueManifest: Manifest[Session[U]] = manifest[Session[U]]
     }
   }
 }

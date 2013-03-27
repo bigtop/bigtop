@@ -40,7 +40,7 @@ object SimpleUserService {
       userActions,
       canChange,
       authorizer,
-      Session.externalFormat(SimpleUser.externalFormat)
+      Session.externalFormat(SimpleUser.externalFormat, manifest[SimpleUser])
     )
 
     (sessionServices.service ~ userServices.service, authorizer, userActions, sessionActions)

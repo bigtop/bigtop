@@ -19,7 +19,7 @@ class Problem(
   var timestamp: DateTime = new DateTime,
   var logMessage: Option[String] = None,
   var status: HttpStatusCode = HttpStatusCodes.BadRequest,
-  var data: Map[String, String] = Map()
+  var data: JsonConfig = JsonConfig()
 ) extends Throwable(message, cause getOrElse null) {
   // Helper for use in custom extractors. See Problems.scala:
   def checkId(expected: String): Option[Unit] =
@@ -52,13 +52,8 @@ class Problem(
     this.status(in : HttpStatusCode)
   }
 
-  def data(in: Map[String, String]): Problem = {
-    this.data = in
-    this
-  }
-
-  def data(key: String, value: String): Problem = {
-    this.data = this.data + (key -> value)
+  def data[T](key: String, value: T)(implicit writer: JsonWriter[T]): Problem = {
+    this.data = this.data.set(key, value)
     this
   }
 
@@ -78,7 +73,7 @@ class Problem(
     print("  timestamp: " + timestamp)
     printMessage(print, "  message: ")
     printLogMessage(print, "  log: ")
-    printData(print, "  data.")
+    printData(print, "  data: ")
     print("  stackTrace:")
     getStackTrace.foreach { item => print("    " + item) }
     cause.foreach { cause =>
@@ -94,10 +89,13 @@ class Problem(
     logMessage.foreach(printLongString(_, print, prefix))
 
   private def printData(print: String => Unit, prefix: String) =
-    data.foreach { case (name, value) => printLongString(value, print, prefix + name + ": ") }
+    printLongString(data.data.toString, print, prefix)
 
   private def printLongString(str: String, print: String => Unit, prefix: String) =
     str.split("[\r\n]").foreach(line => print(prefix + line))
+
+  override def toString =
+    "Problem(" + id + "," + message + "," + cause + "," + timestamp + "," + logMessage + "," + status + "," + data + ")"
 }
 
 object Problem {
@@ -109,7 +107,7 @@ object Problem {
     timestamp: DateTime        = new DateTime,
     logMessage: Option[String] = None,
     status: HttpStatusCode     = HttpStatusCodes.BadRequest,
-    data: Map[String, String]  = Map()
+    data: JValue               = JObject.empty
   ) = new Problem(
     id         = id,
     message    = message,
@@ -117,7 +115,7 @@ object Problem {
     timestamp  = timestamp,
     logMessage = logMessage,
     status     = status,
-    data       = data
+    data       = JsonConfig(data)
   )
 
   def unapply(in: Problem) = Some((
@@ -130,28 +128,16 @@ object Problem {
     in.data
   ))
 
-  implicit object problemDataFormat extends JsonFormat[Problem, Map[String, String]] {
-    def read(in: JValue) =
-      in match {
-        case JObject(fields) =>
-          Map(fields collect { case JField(name, JString(value)) => (name -> value) } : _*).success[Problem]
-
-        case _ =>
-          Problems.Malformed("data", "Expected a dictionary of strings.").fail[Map[String, String]]
-      }
-
-    def write(in: Map[String, String]) =
-      JObject(in.toList map { case (name, value) => JField(name, JString(value))})
-  }
-
   implicit object problemFormat extends JsonFormat[Problem, Problem] {
+    val valueManifest = manifest[Problem]
+
     def write(in: Problem): JValue =
       ("typename"  -> "problem") ~
       ("subtype"   -> in.id) ~
       ("timestamp" -> in.timestamp.toJson) ~
       ("message"   -> in.message) ~
       ("status"    -> in.status.code.value) ~
-      ("data"      -> problemDataFormat.write(in.data))
+      ("data"      -> in.data.data)
 
     def read(in: JValue) =
       for {
@@ -159,7 +145,7 @@ object Problem {
         message    <- in.optional[String]("message", "No message provided.")
         logMessage <- in.optional[String]("logMessage")
         status     <- in.optional[Int]("status", 500).map(HttpStatusCodeImplicits.int2HttpStatusCode _)
-        data       <- in.optional[Map[String, String]]("data", Map.empty[String, String])
+        data       <- in.optional[JValue]("data", JObject.empty)
       } yield Problem(
         id          = id,
         message     = message,
