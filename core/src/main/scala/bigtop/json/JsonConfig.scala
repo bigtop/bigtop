@@ -23,7 +23,7 @@ case class JsonConfig(val data: JValue = JObject.empty) {
                          fail = { problem =>
                            Problems.Malformed(
                              field       = key,
-                             description = "expected " + reader.valueTypeName + ", found " + json,
+                             description = "The value was in the wrong format.",
                              cause       = Some(problem)
                            ).fail[T]
                          }

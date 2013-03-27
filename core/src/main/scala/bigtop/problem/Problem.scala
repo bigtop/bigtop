@@ -129,8 +129,6 @@ object Problem {
   ))
 
   implicit object problemFormat extends JsonFormat[Problem, Problem] {
-    val valueManifest = manifest[Problem]
-
     def write(in: Problem): JValue =
       ("typename"  -> "problem") ~
       ("subtype"   -> in.id) ~

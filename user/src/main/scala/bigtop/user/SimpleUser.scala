@@ -42,8 +42,6 @@ object SimpleUser {
   import JsonFormatters._
 
   object internalFormat extends JsonFormat[Problem, SimpleUser] with JsonFormatters {
-    val valueManifest = manifest[SimpleUser]
-
     def read(data: JValue) =
       for {
         id        <- data.mandatory[Uuid]("id")
@@ -65,8 +63,6 @@ object SimpleUser {
   }
 
   object externalFormat extends JsonUpdater[Problem, SimpleUser] with JsonFormatters {
-    val valueManifest = manifest[SimpleUser]
-
     def read(data: JValue) =
       for {
         username  <- data.mandatory[String]("username")
