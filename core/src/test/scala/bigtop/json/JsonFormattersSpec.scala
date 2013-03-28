@@ -15,7 +15,8 @@ class JsonFormattersSpec extends Specification {
     ("num" -> 123) ~
     ("str" -> "abc") ~
     ("obj" -> ("a" -> ("b" -> ("c" -> 123)))) ~
-    ("arr" -> List(1, 2, 3))
+    ("arr" -> List(1, 2, 3)) ~
+    ("bool" -> true)
 
   "json.as" should {
     "succeed in normal circumstances" in {
@@ -100,4 +101,23 @@ class JsonFormattersSpec extends Specification {
     }
   }
 
+  "tuple" should {
+    "succeed with 2 arguments" in {
+      (data.mandatory[Int]("num") tuple data.mandatory[String]("str")) mustEqual Success((123, "abc"))
+      (data.mandatory[Int]("foo") tuple data.mandatory[String]("str")) mustEqual Failure(JsonErrors(JsonError.Missing("foo")))
+      (data.mandatory[Int]("num") tuple data.mandatory[String]("bar")) mustEqual Failure(JsonErrors(JsonError.Missing("bar")))
+      (data.mandatory[Int]("foo") tuple data.mandatory[String]("bar")) mustEqual Failure(JsonErrors(JsonError.Missing("foo"), JsonError.Missing("bar")))
+    }
+
+    "succeed with 3 arguments" in {
+      tuple(data.mandatory[Int]("num"), data.mandatory[String]("str"), data.mandatory[Boolean]("bool")) mustEqual Success((123, "abc", true))
+      tuple(data.mandatory[Int]("foo"), data.mandatory[String]("bar"), data.mandatory[Boolean]("baz")) mustEqual Failure(
+        JsonErrors(
+          JsonError.Missing("foo"),
+          JsonError.Missing("bar"),
+          JsonError.Missing("baz")
+        )
+      )
+    }
+  }
 }

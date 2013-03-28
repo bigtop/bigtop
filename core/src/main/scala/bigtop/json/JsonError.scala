@@ -18,7 +18,7 @@ case class JsonError(
 
 object JsonError {
   object Missing {
-    def apply(path: JPath, message: String, data: JValue = JNothing) =
+    def apply(path: JPath, message: String = "This value is required.", data: JValue = JNothing) =
       JsonError("missing", path, message, data)
 
     def unapply(in: JsonError) =

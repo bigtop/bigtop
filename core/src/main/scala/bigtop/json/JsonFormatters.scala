@@ -204,7 +204,29 @@ trait JsonFormatters {
     def read(json: JValue) = json.success[JsonErrors]
   }
 
-  // Seq Values ------------------------
+  // Tuples ---------------------------
+
+  private type JV[T] = JsonValidation[T]
+
+  def tuple[A, B](a: => JV[A], b: => JV[B]) =
+    (a |@| b).tupled
+
+  def tuple[A, B, C](a: => JV[A], b: => JV[B], c: => JV[C]) =
+    (a |@| b |@| c).tupled
+
+  def tuple[A, B, C, D](a: => JV[A], b: => JV[B], c: => JV[C], d: => JV[D]) =
+    (a |@| b |@| c |@| d).tupled
+
+  def tuple[A, B, C, D, E](a: => JV[A], b: => JV[B], c: => JV[C], d: => JV[D], e: => JV[E]) =
+    (a |@| b |@| c |@| d |@| e).tupled
+
+  def tuple[A, B, C, D, E, F](a: => JV[A], b: => JV[B], c: => JV[C], d: => JV[D], e: => JV[E], f: => JV[F]) =
+    (a |@| b |@| c |@| d |@| e |@| f).tupled
+
+  def tuple[A, B, C, D, E, F, G](a: => JV[A], b: => JV[B], c: => JV[C], d: => JV[D], e: => JV[E], f: => JV[F], g: => JV[G]) =
+    (a |@| b |@| c |@| d |@| e |@| f |@| g).tupled
+
+  // Seqs -----------------------------
 
   implicit def buildSeqFormat[A](implicit format: JsonFormat[A], manifest: Manifest[Seq[A]]): JsonFormat[Seq[A]] =
     new JsonFormat[Seq[A]] {
@@ -213,7 +235,7 @@ trait JsonFormatters {
         json -->? classOf[JArray] toSuccess (malformed(JPath.Identity, "array", json)) flatMap (_.elements.map(format.read _).sequence[JsonValidation, A])
     }
 
-  // Map -------------------------------
+  // Maps ------------------------------
 
   implicit def MapFormat[A, B](implicit keyFormat: Format[JsonErrors, A, String], valFormat: JsonFormat[B], manifest: Manifest[Map[A, B]]): JsonFormat[Map[A,B]] =
     new JsonFormat[Map[A,B]] {
