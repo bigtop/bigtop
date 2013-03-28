@@ -4,6 +4,7 @@ package user
 import akka.dispatch.{Await, Future}
 import akka.util.Duration
 import akka.util.duration._
+import bigtop.json._
 import bigtop.util._
 import bigtop.http._
 import bigtop.concurrent._
@@ -11,8 +12,9 @@ import bigtop.problem._
 import blueeyes.core.data.ByteChunk
 import blueeyes.core.http._
 import blueeyes.core.service.HttpClient
-import blueeyes.json.JsonDSL._
+import blueeyes.json._
 import blueeyes.json.JsonAST._
+import blueeyes.json.JsonDSL._
 import blueeyes.persistence.mongo.ConfigurableMongo
 // import scalaz.syntax.validation._
 
@@ -123,7 +125,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
         ("froobarname" -> "noel") ~
         ("password" -> "secret")
       } must beProblem(beLike {
-        case Problems.Missing("username") => ok
+        case Problems.ClientValidation(errors) if errors.get("username").isDefined => ok
       })
     }
 
@@ -193,7 +195,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       doPost("/api/session/v1") {
         ("password" -> "secret")
       } must beProblem(beLike {
-        case Problems.Missing("username") => ok
+        case Problems.ClientValidation(errors) if errors.get("username").isDefined => ok
       })
     }
 
@@ -201,7 +203,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       doPost("/api/session/v1") {
         ("username" -> "test")
       } must beProblem(beLike {
-        case Problems.Missing("password") => ok
+        case Problems.ClientValidation(errors) if errors.get("password").isDefined => ok
       })
     }
   }
@@ -214,9 +216,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
         ("typename" -> "session") ~
         ("id" -> sessionId.toString) ~
         ("session" -> JObject.empty) ~
-        ("user" -> {
-          test.toJson(SimpleUser.externalFormat)
-        })
+        ("user" -> test.toJson(SimpleUser.externalFormat))
       }
     }
   }

@@ -3,6 +3,7 @@ package user
 
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
+import bigtop.concurrent.FutureValidation
 import bigtop.json._
 import bigtop.json.JsonFormatters._
 import bigtop.problem._
@@ -30,14 +31,16 @@ object Session {
       ("realUser" -> (if(in.realUser.id == in.effectiveUser.id) JNothing else in.realUser.toJson))
     }
 
-    def read(in: JValue): Validation[Problem, Session[U]] = {
+    def read(in: JValue): Validation[JsonErrors, Session[U]] = {
       for {
-        id            <- in.mandatory[Uuid]("id")
-        session       <- in.mandatoryMap[JValue]("session").map { map =>
-                           mutable.HashMap(map.toList : _*)
-                         }
-        effectiveUser <- in.mandatory[U]("user")
-        realUser      <- in.optional[U]("realUser").map(_.getOrElse(effectiveUser))
+        (id, session, effectiveUser) <- tuple(
+                                          in.mandatory[Uuid]("id"),
+                                          in.mandatoryMap[JValue]("session").map { map =>
+                                            mutable.HashMap(map.toList : _*)
+                                          },
+                                          in.mandatory[U]("user")
+                                        )
+        realUser                     <- in.optional[U]("realUser").map(_.getOrElse(effectiveUser))
       } yield Session(
         id             = id,
         realUser       = realUser,

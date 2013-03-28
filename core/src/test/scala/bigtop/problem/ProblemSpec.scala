@@ -9,21 +9,19 @@ import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 
 class ProblemSpec extends Specification {
-  import Problem._
-
   "Problem.status" should {
-    "be BadRequest by default" in {
-      Problems.Missing("foo").status mustEqual HttpStatusCodes.BadRequest
+    "be set to something sensible by default" in {
+      Problems.Authentication("foo").status mustEqual HttpStatusCodes.Forbidden
     }
 
     "be changeable to InternalServerError" in {
-      Problems.Missing("foo").status(500).status mustEqual HttpStatusCodes.InternalServerError
+      Problems.Authentication("foo").status(500).status mustEqual HttpStatusCodes.InternalServerError
     }
   }
 
   "Problem.getStackTrace" should {
     "contain reference to the location in which the problem was created" in {
-      val elem = Problems.Missing("foo").getStackTrace.apply(2)
+      val elem = Problems.Authentication("foo").getStackTrace.apply(2)
       elem.getFileName mustEqual "ProblemSpec.scala"
     }
   }
@@ -31,16 +29,15 @@ class ProblemSpec extends Specification {
   "Problem.print" should {
     "produce intelligable output" in {
       var ans = ""
-      var problem = Problems.Malformed("foo", "bar\nbaz")
+      var problem = Problems.Authentication("foo")
       problem.print(str => ans += str + "\n")
       ans.substring(0, ans.indexOf("  stackTrace:")) mustEqual {
         """
-        |Problem: malformed (status BadRequest)
+        |Problem: authentication (status Forbidden)
         |  timestamp: %s
-        |  message: Some required data was not in the expected format.
+        |  message: The user could not be authenticated.
         |  data: {
-        |  data:   "field":"foo",
-        |  data:   "description":"bar\nbaz"
+        |  data:   "credentials":"foo"
         |  data: }
         |
         """.trim.stripMargin.format(problem.timestamp)
@@ -88,17 +85,14 @@ class ProblemSpec extends Specification {
 
   "Problem.toResponse" should {
     "do something" in {
-      val problem = Problems.Malformed("foo", "was a bar")
+      val problem = Problems.Authentication("foo")
       problem.toJson mustEqual {
         ("typename" -> "problem") ~
-        ("subtype" -> "malformed") ~
+        ("subtype" -> "authentication") ~
         ("timestamp" -> problem.timestamp.toJson) ~
-        ("message" -> "Some required data was not in the expected format.") ~
-        ("status" -> 400) ~
-        ("data" -> {
-          ("field" -> "foo") ~
-          ("description" -> "was a bar")
-        })
+        ("message" -> "The user could not be authenticated.") ~
+        ("status" -> 403) ~
+        ("data" -> ("credentials" -> "foo"))
       }
     }
   }
@@ -111,8 +105,8 @@ class ProblemSpec extends Specification {
       Authorization("dave", "stuff")  must beLike({ case Authorization("dave", "stuff")  => ok })
       NotFound("foo")                 must beLike({ case NotFound("foo")                 => ok })
       Exists("foo")                   must beLike({ case Exists("foo")                   => ok })
-      Missing("foo")                  must beLike({ case Missing("foo")                  => ok })
-      Malformed("foo", "bar")         must beLike({ case Malformed("foo", "bar")         => ok })
+      // Missing("foo")                  must beLike({ case Missing("foo")                  => ok })
+      // Malformed("foo", "bar")         must beLike({ case Malformed("foo", "bar")         => ok })
       EmptyRequest()                  must beLike({ case EmptyRequest()                  => ok })
       Unknown()                       must beLike({ case Unknown()                       => ok })
     }

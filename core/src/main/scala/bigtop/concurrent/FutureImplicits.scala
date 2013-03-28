@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.dispatch.{Await, Future, Promise}
 import akka.util.{Duration, Timeout}
 import akka.util.duration._
+import bigtop.json.JsonValidation
 import bigtop.problem._
 import blueeyes.bkka.AkkaDefaults
 import scalaz._

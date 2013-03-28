@@ -62,7 +62,7 @@ object SimpleUser {
       ("admin"     -> user.admin)
   }
 
-  object externalFormat extends JsonUpdater[Problem, SimpleUser] with JsonFormatters {
+  object externalFormat extends JsonUpdater[SimpleUser] with JsonFormatters {
     def read(data: JValue) =
       for {
         username  <- data.mandatory[String]("username")

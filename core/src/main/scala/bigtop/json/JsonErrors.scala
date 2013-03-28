@@ -35,6 +35,8 @@ object JsonErrors {
   def apply(errors: JsonError *): JsonErrors =
     JsonErrors(errors.toList)
 
+  val Empty = JsonErrors(Nil)
+
   object Missing {
     def apply(path: JPath, message: String = "This value is required.", data: JValue = JNothing): JsonErrors =
       JsonErrors(JsonError("missing", path, message, data))
@@ -49,16 +51,14 @@ object JsonErrors {
     implicit val errorsFormat = buildSeqFormat[JsonError]
 
     def read(in: JValue) =
-      for {
-        errors <- in.as[Seq[JsonError]]
-      } yield JsonErrors(errors.toList)
+      in.asSeq[JsonError].map(errors => JsonErrors(errors.toList))
 
     def write(in: JsonErrors) =
       JArray(in.errors.map(_.toJson))
   }
 
-  implicit val semigroup =
-     new Semigroup[JsonErrors] {
-       def append(a: JsonErrors, b: => JsonErrors): JsonErrors = a ++ b
-     }
+  implicit object monoid extends Monoid[JsonErrors] {
+    val zero = JsonErrors.Empty
+    def append(a: JsonErrors, b: => JsonErrors): JsonErrors = a ++ b
+  }
 }

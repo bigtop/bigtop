@@ -26,9 +26,10 @@ case class SessionCookieAuthorizer[U <: User](val actions: SessionActions[U]) ex
     SessionCookie.get(request) map {
       cookie =>
         for {
-          uuid <- Uuid.parse(cookie.cookieValue).toSuccess(
-            Problems.Malformed("session", "Session cookie did not contain a valid UUID")
-          ).fv
+          uuid    <- Uuid.parse(cookie.cookieValue).toSuccess(Problems.Authentication(
+                       credentials = "unknown",
+                       message     = "The session cookie did not contain a valid ID."
+                     )).fv
           session <- actions.read(uuid)
         } yield (Some(session) : Option[Session[U]])
     } getOrElse (None : Option[Session[U]]).success[Problem].fv

@@ -22,8 +22,8 @@ class FutureValidationSpec extends Specification with AkkaDefaults {
     }
 
     "return a failure" in {
-      Future { Problems.Missing("foo").fail }.fv.await() must beLike {
-        case Failure(Problems.Missing("foo")) => ok
+      Future { Problems.Authentication("foo").fail }.fv.await() must beLike {
+        case Failure(Problems.Authentication("foo")) => ok
       }
     }
 
@@ -66,8 +66,8 @@ class FutureValidationSpec extends Specification with AkkaDefaults {
     }
 
     "return a failure" in {
-      Future(data).fv.flatMap { num => Problems.Missing("foo").fail[Int].fv }.await must beLike {
-        case Failure(Problems.Missing("foo")) => ok
+      Future(data).fv.flatMap { num => Problems.Authentication("foo").fail[Int].fv }.await must beLike {
+        case Failure(Problems.Authentication("foo")) => ok
       }
     }
 
@@ -95,7 +95,7 @@ class FutureValidationSpec extends Specification with AkkaDefaults {
     }
 
     "return a failure" in {
-      Future(Problems.Missing("foo").fail[Int]).fv.fold(
+      Future(Problems.Authentication("foo").fail[Int]).fv.fold(
         succ = { num => true },
         fail = { prob => false }
       ).await mustEqual false

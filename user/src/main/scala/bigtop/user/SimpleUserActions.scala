@@ -34,29 +34,25 @@ case class SimpleUserActions[U <: User](
   implicit def queryTimeout = Timeout(3.seconds)
 
   def read(id: Uuid): UserValidation = {
-    val user: Future[Option[JObject]] =
-      database(
-        selectOne().
-        from(collection).
-        where("id" === id.toJson)
-      )
-
-    user map { u =>
-      u.toSuccess(Problems.NotFound("user")).flatMap(internalFormat.read _)
-    }
+    for {
+      json <- database(
+                selectOne().
+                from(collection).
+                where("id" === id.toJson)
+              ).map(_.toSuccess(Problems.NotFound("user"))).fv
+      user <- problemsToServer(internalFormat.read(json))
+    } yield user
   }
 
   def readByUsername(username: String): UserValidation = {
-    val user: Future[Option[JObject]] =
-      database(
-        selectOne().
-        from(collection).
-        where("username" === username.toJson)
-      )
-
-    user map { u =>
-      u.toSuccess(Problems.NotFound("user")).flatMap(internalFormat.read _)
-    }
+    for {
+      json <- database(
+                selectOne().
+                from(collection).
+                where("username" === username.toJson)
+              ).map(_.toSuccess(Problems.NotFound("user"))).fv
+      user <- problemsToServer(internalFormat.read(json))
+    } yield user
   }
 
   def save(user: U): UserValidation = {

@@ -79,10 +79,12 @@ case class SessionCreateService[U <: User](
     service {
       (req: HttpRequest[Future[JValue]]) =>
         (for {
-          json     <- req.json
-          username <- json.mandatory[String]("username").fv
-          password <- json.mandatory[String]("password").fv
-          result   <- actions.create(username, password)
+          json                 <- req.json
+          (username, password) <- problemsToClient(tuple(
+                                    json.mandatory[String]("username"),
+                                    json.mandatory[String]("password")
+                                  ))
+          result               <- actions.create(username, password)
         } yield result).toResponse(externalFormat, log)
     }
 }
@@ -97,7 +99,9 @@ case class SessionReadService[U <: User](
     SecurityCheck(
       (req: HttpRequest[Future[JValue]], user: Option[U]) =>
         for {
-          id      <- req.mandatoryParam[Uuid]('id).fv
+          id      <- problemsToClient {
+                       req.mandatoryParam[Uuid]('id)
+                     }
           session <- actions.read(id)
           user    <- if(user.map(_ == session.effectiveUser).getOrElse(false)) {
                        user.success[Problem].fv
@@ -113,7 +117,9 @@ case class SessionReadService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user    <- auth.authorize(req, canRead)
-          id      <- req.mandatoryParam[Uuid]('id).fv
+          id      <- problemsToClient {
+                       req.mandatoryParam[Uuid]('id)
+                     }
           session <- actions.read(id)
         } yield session).toResponse(externalFormat, log)
     }
@@ -133,17 +139,22 @@ case class SessionChangeIdentityService[U <: User](
       service {
         (req: HttpRequest[Future[JValue]]) =>
           (for {
-            session  <- auth.mandatorySession(req, "session.changeIdentity")
-            user     <- canChange(req, Some(session.realUser))
-            json     <- req.json
-            userId   <- json.optional[Uuid]("id").fv
-            username <- json.optional[String]("username").fv
-            user     <- (userId, username) match {
-                          case (Some(id),   _) => userActions.read(id)
-                          case (_, Some(name)) => userActions.readByUsername(name)
-                          case (_, _) => (Problems.Missing("id") andandand Problems.Missing("username")).fail[U].fv
-                        }
-            session  <- actions.changeIdentity(session.id, user)
+            session            <- auth.mandatorySession(req, "session.changeIdentity")
+            user               <- canChange(req, Some(session.realUser))
+            json               <- req.json : FutureValidation[JValue]
+            (userId, username) <- problemsToClient(tuple(
+                                    json.optional[Uuid]("id"),
+                                    json.optional[String]("username")
+                                  )) : FutureValidation[(Option[Uuid], Option[String])]
+            user               <- (userId, username) match {
+                                    case (Some(id),   _) => userActions.read(id)
+                                    case (_, Some(name)) => userActions.readByUsername(name)
+                                    case (_, _)          => problemsToClient(JsonErrors(
+                                                              JsonError.Missing("id"),
+                                                              JsonError.Missing("username")
+                                                            ).fail[U])
+                                  }
+            session            <- actions.changeIdentity(session.id, user)
           } yield session).toResponse(externalFormat, log)
       }
     }
