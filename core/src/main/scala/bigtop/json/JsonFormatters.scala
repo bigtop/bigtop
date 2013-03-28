@@ -19,21 +19,19 @@ case class JValueW(json: JValue) {
   def as[T](implicit reader: JsonReader[T]): JsonValidation[T] =
     reader.read(json)
 
-  def asSeq[T](implicit reader: JsonReader[T]): JsonValidation[Seq[T]] = {
+  def asSeq[T](implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
     for {
       arr <- (json -->? classOf[JArray]).toSuccess(malformed("array", json))
       ans <- arr.elements.map(reader.read _).sequence[JsonValidation, T]
     } yield ans
-  }
 
-  def asMap[T](implicit reader: JsonReader[T]): JsonValidation[Map[String,T]] = {
+  def asMap[T](implicit reader: JsonReader[T]): JsonValidation[Map[String,T]] =
     for {
       obj <- (json -->? classOf[JObject]).toSuccess(malformed("array", json))
       ans <- obj.fields.map { case JField(name, value) =>
                reader.read(value).map(value => name -> value)
              }.sequence[JsonValidation, (String, T)]
     } yield Map(ans : _*)
-  }
 
   def mandatory[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[T] =
     (json get path) match {

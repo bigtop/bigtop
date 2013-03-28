@@ -80,7 +80,7 @@ case class SessionCreateService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           json                 <- req.json
-          (username, password) <- problemsToClient(tuple(
+          (username, password) <- toClientProblem(tuple(
                                     json.mandatory[String]("username"),
                                     json.mandatory[String]("password")
                                   ))
@@ -99,7 +99,7 @@ case class SessionReadService[U <: User](
     SecurityCheck(
       (req: HttpRequest[Future[JValue]], user: Option[U]) =>
         for {
-          id      <- problemsToClient {
+          id      <- toClientProblem {
                        req.mandatoryParam[Uuid]('id)
                      }
           session <- actions.read(id)
@@ -117,7 +117,7 @@ case class SessionReadService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user    <- auth.authorize(req, canRead)
-          id      <- problemsToClient {
+          id      <- toClientProblem {
                        req.mandatoryParam[Uuid]('id)
                      }
           session <- actions.read(id)
@@ -142,14 +142,14 @@ case class SessionChangeIdentityService[U <: User](
             session            <- auth.mandatorySession(req, "session.changeIdentity")
             user               <- canChange(req, Some(session.realUser))
             json               <- req.json : FutureValidation[JValue]
-            (userId, username) <- problemsToClient(tuple(
+            (userId, username) <- toClientProblem(tuple(
                                     json.optional[Uuid]("id"),
                                     json.optional[String]("username")
                                   )) : FutureValidation[(Option[Uuid], Option[String])]
             user               <- (userId, username) match {
                                     case (Some(id),   _) => userActions.read(id)
                                     case (_, Some(name)) => userActions.readByUsername(name)
-                                    case (_, _)          => problemsToClient(JsonErrors(
+                                    case (_, _)          => toClientProblem(JsonErrors(
                                                               JsonError.Missing("id"),
                                                               JsonError.Missing("username")
                                                             ).fail[U])

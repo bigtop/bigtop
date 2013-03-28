@@ -32,13 +32,13 @@ trait JsonValidationCombinators {
 
   // Conversion to problems ------------
 
-  def problemsToClient[T](inner: JsonValidation[T]): FutureValidation[T] =
+  def toClientProblem[T](inner: JsonValidation[T]): FutureValidation[T] =
     inner.fold(
       succ = { value => value.success[Problem] },
       fail = { errors => Problems.ClientValidation(errors).fail[T] }
     )
 
-  def problemsToServer[T](inner: JsonValidation[T]): FutureValidation[T] =
+  def toServerProblem[T](inner: JsonValidation[T]): FutureValidation[T] =
     inner.fold(
       succ = { value => value.success[Problem] },
       fail = { errors => Problems.ServerValidation(errors).fail[T] }

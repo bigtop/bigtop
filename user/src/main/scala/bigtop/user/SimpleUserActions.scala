@@ -40,7 +40,7 @@ case class SimpleUserActions[U <: User](
                 from(collection).
                 where("id" === id.toJson)
               ).map(_.toSuccess(Problems.NotFound("user"))).fv
-      user <- problemsToServer(internalFormat.read(json))
+      user <- toServerProblem(internalFormat.read(json))
     } yield user
   }
 
@@ -51,7 +51,7 @@ case class SimpleUserActions[U <: User](
                 from(collection).
                 where("username" === username.toJson)
               ).map(_.toSuccess(Problems.NotFound("user"))).fv
-      user <- problemsToServer(internalFormat.read(json))
+      user <- toServerProblem(internalFormat.read(json))
     } yield user
   }
 

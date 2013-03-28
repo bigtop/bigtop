@@ -82,7 +82,7 @@ case class UserCreateService[U <: User](
         (for {
           _       <- auth.authorize(req, canCreate).fv
           json    <- req.json.fv
-          unsaved <- problemsToClient {
+          unsaved <- toClientProblem {
                        externalFormat.read(json)
                      }
           saved   <- actions.create(unsaved)
@@ -101,7 +101,7 @@ case class UserReadService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user <- auth.authorize(req, canRead)
-          id   <- problemsToClient {
+          id   <- toClientProblem {
                     req.mandatoryParam[Uuid]('id)
                   }
           user <- actions.read(id)
@@ -120,12 +120,12 @@ case class UserUpdateService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user    <- auth.authorize(req, canUpdate).fv
-          id      <- problemsToClient {
+          id      <- toClientProblem {
                        req.mandatoryParam[Uuid]('id)
                      }
           json    <- req.json.fv
           unsaved <- actions.read(id)
-          updated <- problemsToClient {
+          updated <- toClientProblem {
                        externalFormat.update(unsaved, json)
                      }
           saved   <- actions.update(updated)
@@ -143,7 +143,7 @@ case class UserDeleteService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user <- auth.authorize(req, canDelete)
-          id   <- problemsToClient {
+          id   <- toClientProblem {
                     req.mandatoryParam[Uuid]('id)
                   }
           _    <- actions.delete(id)
