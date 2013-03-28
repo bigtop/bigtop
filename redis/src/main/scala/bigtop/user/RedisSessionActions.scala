@@ -18,7 +18,7 @@ import scalaz.std.option.optionSyntax._
 trait RedisSessionActions[U <: User] extends SessionActions[U] {
 
   def userActions: UserActions[U]
-  def sessionFormat: JsonFormat[Problem, Session[U]]
+  def sessionFormat: JsonFormat[Session[U]]
 
   def autoLogoutMillis: Option[Int] = None
 

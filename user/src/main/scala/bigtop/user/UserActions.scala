@@ -10,7 +10,7 @@ import scalaz._
 import scalaz.syntax.validation._
 
 trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
-  implicit def internalFormat: JsonFormat[Problem,U]
+  implicit def internalFormat: JsonFormat[U]
 
   def read(id: Uuid): UserValidation
 

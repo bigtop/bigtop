@@ -19,8 +19,8 @@ case class Session[U <: User](
 )
 
 object Session {
-  trait SessionFormat[U <: User] extends JsonFormat[Problem, Session[U]] {
-    implicit def userFormat: JsonFormat[Problem, U]
+  trait SessionFormat[U <: User] extends JsonFormat[Session[U]] {
+    implicit def userFormat: JsonFormat[U]
 
     def write(in: Session[U]): JValue = {
       ("typename" -> "session") ~
@@ -47,13 +47,13 @@ object Session {
     }
   }
 
-  def internalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U], uManifest: Manifest[U]) = {
+  def internalFormat[U <: User](implicit uFormat: JsonFormat[U], uManifest: Manifest[U]) = {
     new SessionFormat[U] {
       implicit val userFormat = uFormat
     }
   }
 
-  def externalFormat[U <: User](implicit uFormat: JsonFormat[Problem, U], uManifest: Manifest[U]) = {
+  def externalFormat[U <: User](implicit uFormat: JsonFormat[U], uManifest: Manifest[U]) = {
     new SessionFormat[U] {
       implicit val userFormat = uFormat
     }

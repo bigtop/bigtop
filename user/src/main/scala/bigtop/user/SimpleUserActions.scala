@@ -19,7 +19,7 @@ import scalaz.syntax.validation._
 
 case class SimpleUserActions[U <: User](
   val config: Configuration,
-  val internalFormat: JsonFormat[Problem, U]
+  val internalFormat: JsonFormat[U]
 ) extends UserActions[U]
   with ConfigurableMongo
   with JsonFormatters

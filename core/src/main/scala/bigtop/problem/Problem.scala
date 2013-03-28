@@ -63,7 +63,7 @@ class Problem(
   def andandand (that: Problem): Problem = this
 
   // Convert to an HTTP response:
-  def toResponse(implicit logger: Logger, format: JsonFormat[Problem, Problem]): HttpResponse[JValue] = {
+  def toResponse(implicit logger: Logger, format: JsonFormat[Problem]): HttpResponse[JValue] = {
     print(msg => logger.error(msg))
     HttpResponse[JValue](status = this.status, content = Some(this.toJson))
   }
@@ -94,11 +94,16 @@ class Problem(
   private def printLongString(str: String, print: String => Unit, prefix: String) =
     str.split("[\r\n]").foreach(line => print(prefix + line))
 
+  def toProblem = this
+
   override def toString =
     "Problem(" + id + "," + message + "," + cause + "," + timestamp + "," + logMessage + "," + status + "," + data + ")"
 }
 
 object Problem {
+
+  implicit def apply(in: JsonErrors): Problem =
+    Problems.Validation(in)
 
   def apply(
     id: String,
@@ -128,7 +133,7 @@ object Problem {
     in.data
   ))
 
-  implicit object problemFormat extends JsonFormat[Problem, Problem] {
+  implicit object problemFormat extends JsonFormat[Problem] {
     def write(in: Problem): JValue =
       ("typename"  -> "problem") ~
       ("subtype"   -> in.id) ~

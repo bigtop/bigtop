@@ -1,32 +1,25 @@
 package bigtop.json
 
 import bigtop.problem._
+import blueeyes.json._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import scalaz._
 import scalaz.Scalaz._
 
 case class JsonConfig(val data: JValue = JObject.empty) {
-  def apply[T](key: String)(implicit reader: JsonReader[Problem, T]): T =
+  def apply[T](key: String)(implicit reader: JsonReader[T]): T =
     get(key) match {
-      case Success(value)   => value
-      case Failure(problem) => throw problem
+      case Success(value)  => value
+      case Failure(errors) => throw JsonException(errors)
     }
 
-  def get[T](key: String)(implicit reader: JsonReader[Problem, T]): Validation[Problem, T] =
+  def get[T](key: String)(implicit reader: JsonReader[T]): JsonValidation[T] =
     data.get(key) match {
-      case JNothing => Problems.Missing(key).fail[T]
+      case JNothing => JsonErrors.Missing(key).fail[T]
       case json     => reader.read(json).fold(
-                         succ = { value =>
-                           value.success[Problem]
-                         },
-                         fail = { problem =>
-                           Problems.Malformed(
-                             field       = key,
-                             description = "The value was in the wrong format.",
-                             cause       = Some(problem)
-                           ).fail[T]
-                         }
+                         succ = value => value.success[JsonErrors],
+                         fail = errors => errors.prefix(key).fail[T]
                        )
     }
 

@@ -74,7 +74,7 @@ case class UserCreateService[U <: User](
   val actions: UserActions[U],
   val canCreate: SecurityCheck[Future[JValue],U],
   val auth: Authorizer[U],
-  val externalFormat: JsonFormat[Problem,U]
+  val externalFormat: JsonFormat[U]
 ) extends UserService[U] {
   val create =
     service {

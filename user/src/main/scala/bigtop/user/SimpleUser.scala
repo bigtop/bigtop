@@ -41,7 +41,7 @@ case class SimpleUser(
 object SimpleUser {
   import JsonFormatters._
 
-  object internalFormat extends JsonFormat[Problem, SimpleUser] with JsonFormatters {
+  object internalFormat extends JsonFormat[SimpleUser] with JsonFormatters {
     def read(data: JValue) =
       for {
         id        <- data.mandatory[Uuid]("id")

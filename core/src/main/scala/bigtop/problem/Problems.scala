@@ -1,8 +1,9 @@
 package bigtop
 package problem
 
+import bigtop.json._
 import bigtop.json.JsonFormatters._
-import blueeyes.core.http.HttpStatusCodes._
+import blueeyes.core.http.HttpStatusCodes
 import blueeyes.json.JsonDSL._
 
 // Predefined problems
@@ -26,6 +27,17 @@ trait Problems {
   //   def unapply(in: Problem) =
   //     in.checkId("databaseError").isDefined
   // }
+
+  object Validation {
+    def apply(errors: JsonErrors, cause: Option[Throwable] = None) =
+      Problem(
+        id = "validation",
+        message = "Some required data was in an incorrect format.",
+        cause = cause,
+        status = HttpStatusCodes.BadRequest,
+        data = errors.toJson
+      )
+  }
 
   object Authentication {
     def apply(credentials: String, cause: Option[Throwable] = None) =
@@ -66,6 +78,7 @@ trait Problems {
         id      = "notFound",
         message = "Some required data could not be found.",
         cause   = cause,
+        status  = HttpStatusCodes.NotFound,
         data    = ("item" -> item)
       )
 

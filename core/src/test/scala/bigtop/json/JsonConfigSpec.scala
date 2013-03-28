@@ -42,11 +42,11 @@ class JsonConfigSpec extends Specification {
     }
 
     "fail if no value is found" in {
-      config[Int]("foo.noexist") must throwA[Problem]
+      config[Int]("foo.noexist") must throwA[JsonException]
     }
 
     "fail if the value is of the wrong type" in {
-      config[String]("foo.num") must throwA[Problem]
+      config[String]("foo.num") must throwA[JsonException]
     }
   }
 
@@ -59,13 +59,13 @@ class JsonConfigSpec extends Specification {
 
     "fail if no value is found" in {
       config.get[Int]("foo.noexist") must beLike({
-        case Failure(Problems.Missing("foo.noexist")) => ok
+        case Failure(errors) if errors.get("foo.noexist").isDefined => ok
       })
     }
 
     "fail if the value is of the wrong type" in {
       config.get[String]("foo.num") must beLike({
-        case Failure(Problems.Malformed("foo.num", "expected String, found 123")) => ok
+        case Failure(errors) if errors.get("foo.num").isDefined => ok
       })
     }
   }
