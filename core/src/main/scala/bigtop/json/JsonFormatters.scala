@@ -209,7 +209,7 @@ trait JsonFormatters extends JsonValidationCombinators {
 
   // Seqs -----------------------------
 
-  implicit def buildSeqFormat[A](implicit format: JsonFormat[A], manifest: Manifest[Seq[A]]): JsonFormat[Seq[A]] =
+  implicit def buildSeqFormat[A](implicit format: JsonFormat[A]): JsonFormat[Seq[A]] =
     new JsonFormat[Seq[A]] {
       def write(in: Seq[A]) = JArray(in.map(format.write _).toList)
       def read(json: JValue) =
@@ -220,7 +220,7 @@ trait JsonFormatters extends JsonValidationCombinators {
 
   // Maps ------------------------------
 
-  implicit def MapFormat[A, B](implicit keyFormat: Format[JsonErrors, A, String], valFormat: JsonFormat[B], manifest: Manifest[Map[A, B]]): JsonFormat[Map[A,B]] =
+  implicit def MapFormat[A, B](implicit keyFormat: Format[JsonErrors, A, String], valFormat: JsonFormat[B]): JsonFormat[Map[A,B]] =
     new JsonFormat[Map[A,B]] {
       def write(in: Map[A,B]) =
         JObject(in.toIterable.foldLeft(Nil: List[JField]){
