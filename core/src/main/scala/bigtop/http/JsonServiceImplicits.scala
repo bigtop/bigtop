@@ -49,8 +49,11 @@ trait FutureJsonHttpResponseSeqW[A] {
 
 }
 
+object JsonServiceImplicits extends JsonServiceImplicits
+
 /** Useful functions if you're writing services that take and return JSON */
-trait JsonServiceImplicits extends RequestParameterImplicits {
+trait JsonServiceImplicits {
+  import RequestParameterImplicits._
 
   implicit def httpRequestToHttp(req: HttpRequest[Future[JValue]]): JsonHttpRequestW =
     new JsonHttpRequestW {
@@ -69,4 +72,3 @@ trait JsonServiceImplicits extends RequestParameterImplicits {
 
 }
 
-object JsonServiceImplicits extends JsonServiceImplicits
