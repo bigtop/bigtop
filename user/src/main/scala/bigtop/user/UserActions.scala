@@ -2,7 +2,7 @@ package bigtop
 package user
 
 import blueeyes.json.JsonAST.JValue
-import bigtop.concurrent.FutureImplicits
+import bigtop.concurrent._
 import bigtop.json._
 import bigtop.problem._
 import bigtop.util.Uuid
@@ -18,7 +18,7 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
 
   def save(user: U): UserValidation
 
-  def delete(id: Uuid): UnitValidation
+  def delete(id: Uuid): FutureValidation[Unit]
 
   def login(username: String, password: String): UserValidation =
     for {

@@ -7,9 +7,7 @@ import bigtop.problem._
 import scalaz._
 import scalaz.Scalaz._
 
-case class FutureValidation[S](val inner: Future[Validation[Problem, S]])
-    extends FutureImplicits with AkkaDefaults
-{
+case class FutureValidation[S](val inner: Future[Validation[Problem, S]]) extends FutureImplicits with AkkaDefaults {
 
   def map[T](fn: (S) => T): FutureValidation[T] =
     FutureValidation {
@@ -20,15 +18,13 @@ case class FutureValidation[S](val inner: Future[Validation[Problem, S]])
       }
     }
 
-  // Needed for pattern matching in for loops in Scala 2.9.
+  // Needed for pattern matching in for-loops in Scala 2.9 (due to a compiler bug).
   // Don't actually use this - it's non-sensical.
   def filter(fn: S => Boolean): FutureValidation[S] =
     inner.map(value => value flatMap { value =>
       if(fn(value)) {
         value.success[Problem]
-      } else {
-        Problems.Unknown(logMessage = Some("FutureValidation.filter failed.")).fail[S]
-      }
+      } else Problems.Unknown(logMessage = Some("FutureValidation.filter failed.")).fail[S]
     }).fv
 
   def flatMap[T](fn: (S) => FutureValidation[T]): FutureValidation[T] =

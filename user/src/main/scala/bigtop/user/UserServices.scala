@@ -8,6 +8,7 @@ import blueeyes.json.JsonAST.JValue
 import blueeyes.json.JsonDSL._
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
+import bigtop.http.RequestParameterImplicits._
 import bigtop.json._
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
@@ -82,9 +83,7 @@ case class UserCreateService[U <: User](
         (for {
           _       <- auth.authorize(req, canCreate).fv
           json    <- req.json.fv
-          unsaved <- toClientProblem {
-                       externalFormat.read(json)
-                     }
+          unsaved <- externalFormat.read(json).toClientProblem.fv
           saved   <- actions.create(unsaved)
         } yield saved).toResponse(externalFormat, log)
     }
@@ -101,9 +100,7 @@ case class UserReadService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user <- auth.authorize(req, canRead)
-          id   <- toClientProblem {
-                    req.mandatoryParam[Uuid]('id)
-                  }
+          id   <- req.mandatoryParam[Uuid]('id).toClientProblem.fv
           user <- actions.read(id)
         } yield user).toResponse(externalFormat, log)
     }
@@ -120,14 +117,10 @@ case class UserUpdateService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user    <- auth.authorize(req, canUpdate).fv
-          id      <- toClientProblem {
-                       req.mandatoryParam[Uuid]('id)
-                     }
+          id      <- req.mandatoryParam[Uuid]('id).toClientProblem.fv
           json    <- req.json.fv
           unsaved <- actions.read(id)
-          updated <- toClientProblem {
-                       externalFormat.update(unsaved, json)
-                     }
+          updated <- externalFormat.update(unsaved, json).toClientProblem.fv
           saved   <- actions.update(updated)
         } yield saved).toResponse(externalFormat, log)
     }
@@ -143,9 +136,7 @@ case class UserDeleteService[U <: User](
       (req: HttpRequest[Future[JValue]]) =>
         (for {
           user <- auth.authorize(req, canDelete)
-          id   <- toClientProblem {
-                    req.mandatoryParam[Uuid]('id)
-                  }
+          id   <- req.mandatoryParam[Uuid]('id).toClientProblem.fv
           _    <- actions.delete(id)
         } yield ("status" -> "ok"): JValue).toResponse
     }

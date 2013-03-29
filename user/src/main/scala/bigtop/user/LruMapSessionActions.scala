@@ -24,7 +24,7 @@ case class LruMapSessionActions[U <: User](
     session.success[Problem].fv
   }
 
-  def delete(id: Uuid): UnitValidation = {
+  def delete(id: Uuid): FutureValidation[Unit] = {
     map.remove(id)
     ().success[Problem].fv
   }

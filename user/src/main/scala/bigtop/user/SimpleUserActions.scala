@@ -40,7 +40,7 @@ case class SimpleUserActions[U <: User](
                 from(collection).
                 where("id" === id.toJson)
               ).map(_.toSuccess(Problems.NotFound("user"))).fv
-      user <- toServerProblem(internalFormat.read(json))
+      user <- internalFormat.read(json).toServerProblem.fv
     } yield user
   }
 
@@ -51,7 +51,7 @@ case class SimpleUserActions[U <: User](
                 from(collection).
                 where("username" === username.toJson)
               ).map(_.toSuccess(Problems.NotFound("user"))).fv
-      user <- toServerProblem(internalFormat.read(json))
+      user <- internalFormat.read(json).toServerProblem.fv
     } yield user
   }
 
@@ -72,7 +72,7 @@ case class SimpleUserActions[U <: User](
     } yield result
   }
 
-  def delete(id: Uuid): UnitValidation = {
+  def delete(id: Uuid): FutureValidation[Unit] = {
     val result: Future[Unit] =
       database(
         remove.
