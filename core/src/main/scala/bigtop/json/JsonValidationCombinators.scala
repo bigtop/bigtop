@@ -7,6 +7,20 @@ import bigtop.problem._
 import scalaz._
 import scalaz.Scalaz._
 
+case class JsonValidationW[T](val inner: JsonValidation[T]) {
+  def toClientProblem: ProblemValidation[T] =
+    inner.fold(
+      succ = { value  => value.success[Problem] },
+      fail = { errors => Problems.ClientValidation(errors).fail[T] }
+    )
+
+  def toServerProblem: ProblemValidation[T] =
+    inner.fold(
+      succ = { value  => value.success[Problem] },
+      fail = { errors => Problems.ServerValidation(errors).fail[T] }
+    )
+}
+
 /**
  * Methods used in JsonFormatters and RequestParameterImplicits
  */
@@ -32,17 +46,8 @@ trait JsonValidationCombinators {
 
   // Conversion to problems ------------
 
-  def toClientProblem[T](inner: JsonValidation[T]): FutureValidation[T] =
-    inner.fold(
-      succ = { value => value.success[Problem] },
-      fail = { errors => Problems.ClientValidation(errors).fail[T] }
-    )
-
-  def toServerProblem[T](inner: JsonValidation[T]): FutureValidation[T] =
-    inner.fold(
-      succ = { value => value.success[Problem] },
-      fail = { errors => Problems.ServerValidation(errors).fail[T] }
-    )
+  implicit def jsonValidationToJsonValidationW[T](in: JsonValidation[T]): JsonValidationW[T] =
+    JsonValidationW(in)
 
   // Other -----------------------------
 
