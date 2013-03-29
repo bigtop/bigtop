@@ -27,17 +27,17 @@ trait RedisSessionActions[U <: User] extends SessionActions[U] {
   def redisPool: RedisClientPool = new RedisClientPool("localhost", 6379)
 
   def read(id: Uuid): FutureValidation[Session[U]] = {
-    cache.get(id.toString).toSuccess(Problems.NoSession).fv
+    cache.get(id.toString).toSuccess(Problems.Authentication(id.toString)).fv
   }
 
   def save(session: Session[U]): FutureValidation[Session[U]] = {
     cache.set(session.id.toString, session)
-    session.success.fv
+    session.success[Problem].fv
   }
 
   def delete(id: Uuid): FutureValidation[Unit] = {
     cache.delete(id.toString)
-    ().success.fv
+    ().success[Problem].fv
   }
 
   object cache extends SimpleRedisCache[Session[U]] {
