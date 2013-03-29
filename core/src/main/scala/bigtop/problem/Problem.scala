@@ -2,6 +2,7 @@ package bigtop
 package problem
 
 import blueeyes.core.http._
+import blueeyes.json._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import bigtop.util.Writer
@@ -52,8 +53,17 @@ class Problem(
     this.status(in : HttpStatusCode)
   }
 
-  def data[T](key: String, value: T)(implicit writer: JsonWriter[T]): Problem = {
-    this.data = this.data.set(key, value)
+  def data[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[T] = {
+    this.data.get(path)
+  }
+
+  def setData[T](path: JPath, value: T)(implicit writer: JsonWriter[T]): Problem = {
+    this.data = this.data.set(path, value)
+    this
+  }
+
+  def removeData[T](path: JPath): Problem = {
+    this.data = this.data.remove(path)
     this
   }
 
