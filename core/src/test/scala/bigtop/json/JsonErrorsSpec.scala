@@ -14,9 +14,13 @@ class JsonErrorsSpec extends Specification {
 
   "JsonError.format.read" should {
     "succeed given valid JSON" in {
-      JsonParser.parse(
-        """{"type":"missing","path":".username","message":"This value is required."}"""
-      ).as[JsonError] mustEqual Success(JsonError.Missing("username"))
+      JsonParser.parse("""
+        {
+          "typename":"missing",
+          "path":".username",
+          "message":"This value is required."
+        }
+      """).as[JsonError] mustEqual Success(JsonError.Missing("username"))
     }
   }
 
@@ -24,7 +28,7 @@ class JsonErrorsSpec extends Specification {
     "succeed given valid JSON" in {
       JsonParser.parse("""
         [{
-          "type":"missing",
+          "typename":"missing",
           "path":".username",
           "message":"This value is required."
         }]

@@ -40,7 +40,7 @@ object JsonError {
     def read(in: JValue) = {
       for {
         errorType <- in.mandatory[String]("typename")
-        path      <- in.mandatory[String]("path")
+        path      <- in.optional[String]("path", "")
         message   <- in.mandatory[String]("message")
         data      <- in.optional[JValue]("data", JNothing)
       } yield JsonError(errorType, path, message, data)

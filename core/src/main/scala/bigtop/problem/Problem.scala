@@ -146,7 +146,7 @@ object Problem {
     in.jsonErrors
   ))
 
-  implicit object problemFormat extends JsonFormat[Problem] {
+  implicit object format extends JsonFormat[Problem] {
     def write(in: Problem): JValue =
       ("typename"  -> "problem") ~
       ("timestamp" -> in.timestamp.toJson) ~

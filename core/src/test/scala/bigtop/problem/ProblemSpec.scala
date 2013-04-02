@@ -45,6 +45,30 @@ class ProblemSpec extends Specification {
     }
   }
 
+  "Problem.format" should {
+    val problem = Problems.Authentication("username")
+
+    val json =
+      ("typename"   -> "problem") ~
+       ("timestamp"  -> problem.timestamp.toJson) ~
+       ("status"     -> 403) ~
+       ("messages"   -> List(
+         ("typename" -> "authentication") ~
+         ("message"  -> "The user could not be authenticated.") ~
+         ("data"     -> ("credentials" -> "username"))
+       ))
+
+    "write correct json" in {
+      Problem.format.write(problem) mustEqual (json)
+    }
+
+    "read correct json" in {
+      Problem.format.read(json) must beSuccess(beLike({
+        case Problems.Authentication("username") => ok
+      }))
+    }
+  }
+
   // "Problem.and" should {
   //   "work with a string" in {
   //     val problem0 = Problems.Empty
@@ -88,11 +112,15 @@ class ProblemSpec extends Specification {
       val problem = Problems.Authentication("foo")
       problem.toJson mustEqual {
         ("typename" -> "problem") ~
-        ("subtype" -> "authentication") ~
         ("timestamp" -> problem.timestamp.toJson) ~
-        ("message" -> "The user could not be authenticated.") ~
         ("status" -> 403) ~
-        ("data" -> ("credentials" -> "foo"))
+        ("messages" -> List(
+          {
+            ("typename" -> "authentication") ~
+            ("message" -> "The user could not be authenticated.") ~
+            ("data" -> ("credentials" -> "foo"))
+          }
+        ))
       }
     }
   }

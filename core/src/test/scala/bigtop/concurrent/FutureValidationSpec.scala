@@ -28,7 +28,7 @@ class FutureValidationSpec extends Specification with AkkaDefaults {
     }
 
     "yield a failure on timeout" in {
-      Future { Thread.sleep(100); data }.fv.await(50) must beLike {
+      Future { Thread.sleep(250); data }.fv.await(50) must beLike {
         case Failure(Problems.Unknown()) => ok
       }
     }
