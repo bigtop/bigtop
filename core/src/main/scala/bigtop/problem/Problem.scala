@@ -24,7 +24,7 @@ class Problem(
   var jsonErrors: JsonErrors = JsonErrors()
 ) extends Throwable(message, cause getOrElse null) {
   // Helper for use in custom extractors. See Problems.scala:
-  def checkId(expected: String): Option[Unit] =
+  def checkType(expected: String): Option[Unit] =
     if(problemType == expected) Some(()) else None
 
   // Getters ------------------------------------
@@ -122,7 +122,8 @@ object Problem {
     timestamp: DateTime        = new DateTime,
     logMessage: Option[String] = None,
     status: HttpStatusCode     = HttpStatusCodes.BadRequest,
-    data: JValue               = JObject.empty
+    data: JValue               = JObject.empty,
+    jsonErrors: JsonErrors     = JsonErrors()
   ) = new Problem(
     problemType = problemType,
     message     = message,
@@ -130,7 +131,8 @@ object Problem {
     timestamp   = timestamp,
     logMessage  = logMessage,
     status      = status,
-    data        = JsonConfig(data)
+    data        = JsonConfig(data),
+    jsonErrors  = jsonErrors
   )
 
   def unapply(in: Problem) = Some((
@@ -167,13 +169,13 @@ object Problem {
                                                "unknown",
                                                "No messages were passed in the incoming problem.",
                                                JObject.empty,
-                                               List.empty[JsonError]
+                                               JsonErrors()
                                              ).success[JsonErrors]
                         case head :: tail => (
                                                head.errorType,
                                                head.message,
                                                head.data,
-                                               tail
+                                               JsonErrors(tail)
                                              ).success[JsonErrors]
                       }
       } yield Problem(
@@ -186,7 +188,7 @@ object Problem {
       )
   }
 
-  implicit object throwableWriter extends JsonFormat[Throwable] {
+  implicit object throwableWriter extends JsonWriter[Throwable] {
     def write(in: Throwable): JValue =
       ("typename"  -> "problem") ~
       ("timestamp" -> (new DateTime).toJson) ~

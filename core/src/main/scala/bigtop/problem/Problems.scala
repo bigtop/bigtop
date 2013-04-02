@@ -82,7 +82,7 @@ trait Problems {
       operation: String,
       cause: Option[Throwable] = None
     ) = Problem(
-      problemtype = "authorization",
+      problemType = "authorization",
       message     = "The user was not authorized to perform that action.",
       cause       = cause,
       status      = HttpStatusCodes.Forbidden,
@@ -128,6 +128,46 @@ trait Problems {
         _      <- in.checkType("exists")
         item   <- in.data.get[String]("item").toOption
       } yield item
+  }
+
+  object MalformedRequest {
+    def apply(cause: Option[Throwable] = None) =
+      Problem(
+        problemType = "malformedRequest",
+        message     = "The request was incorrectly formatted.",
+        cause       = cause
+      )
+
+    def unapply(in: Problem) =
+      in.checkType("malformedRequest").isDefined
+  }
+
+  object EmptyRequest {
+    def apply(cause: Option[Throwable] = None) =
+      Problem(
+        problemType = "emptyRequest",
+        message     = "A request was empty.",
+        cause       = cause
+      )
+
+    def unapply(in: Problem) =
+      in.checkType("emptyRequest").isDefined
+  }
+
+  object Unknown {
+    def apply(
+      message: String = "An unknown error occurred.",
+      cause: Option[Throwable] = None,
+      logMessage: Option[String] = None
+    ) = Problem(
+      problemType = "unknown",
+      message     = message,
+      logMessage  = logMessage,
+      cause       = cause
+    )
+
+    def unapply(in: Problem) =
+      in.checkType("unknown").isDefined
   }
 
 }
