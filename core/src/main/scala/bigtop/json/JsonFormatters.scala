@@ -59,14 +59,14 @@ case class JValueW(json: JValue) {
   def mandatoryMap[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Map[String, T]] =
     mandatory[JValue](path).flatMap(field => prefixErrors(path, field.asMap[T]))
 
-  // def optionalSeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Option[Seq[T]]] =
-  //   for {
-  //     optField <- optional[JValue](path)
-  //     optValue <- optField match {
-  //                   case Some(field) => prefixErrors(path, field.asSeq[T].map(Some(_)))
-  //                   case None        => Option.empty[Seq[T]].success[JsonErrors]
-  //                 }
-  //   } yield optValue
+  def optionalSeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Option[Seq[T]]] =
+    for {
+      optField <- optional[JValue](path)
+      optValue <- optField match {
+                    case Some(field) => prefixErrors(path, field.asSeq[T].map(Some(_)))
+                    case None        => Option.empty[Seq[T]].success[JsonErrors]
+                  }
+    } yield optValue
 
   // def optionalSeq[T](path: JPath, default: Seq[T])(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
   //   for {

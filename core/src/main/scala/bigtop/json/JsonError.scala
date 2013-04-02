@@ -39,7 +39,7 @@ object JsonError {
   implicit object format extends JsonFormat[JsonError] {
     def read(in: JValue) = {
       for {
-        errorType <- in.mandatory[String]("type")
+        errorType <- in.mandatory[String]("typename")
         path      <- in.mandatory[String]("path")
         message   <- in.mandatory[String]("message")
         data      <- in.optional[JValue]("data", JNothing)
@@ -47,10 +47,10 @@ object JsonError {
     }
 
     def write(in: JsonError) = {
-      ("type"    -> in.errorType) ~
-      ("path"   -> in.path) ~
-      ("message" -> in.message) ~
-      ("data"    -> in.data)
+      ("typename" -> in.errorType) ~
+      ("path"     -> in.path) ~
+      ("message"  -> in.message) ~
+      ("data"     -> in.data)
     }
   }
 }
