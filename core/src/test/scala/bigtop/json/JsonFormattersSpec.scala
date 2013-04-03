@@ -120,4 +120,26 @@ class JsonFormattersSpec extends Specification {
       )
     }
   }
+
+  "buildOptionFormat" should {
+    "distinguish between JNothing and JNull" in {
+      implicit val optFormat = buildOptionFormat[Int]
+
+      val json: JValue =
+        ("a" -> JNothing) ~
+        ("b" -> JNull) ~
+        ("c" -> 123) ~
+        ("d" -> "123")
+
+      json.optional[Option[Int]]("a") mustEqual Success(None)
+      json.optional[Option[Int]]("b") mustEqual Success(Some(None))
+      json.optional[Option[Int]]("c") mustEqual Success(Some(Some(123)))
+      json.optional[Option[Int]]("d") mustEqual Failure(JsonErrors(JsonError.Malformed("d", "expected int, found \"123\"")))
+
+      json.optional[Int]("a") mustEqual Success(None)
+      json.optional[Int]("b") mustEqual Failure(JsonErrors(JsonError.Malformed("b", "expected int, found null")))
+      json.optional[Int]("c") mustEqual Success(Some(123))
+      json.optional[Int]("d") mustEqual Failure(JsonErrors(JsonError.Malformed("d", "expected int, found \"123\"")))
+    }
+  }
 }

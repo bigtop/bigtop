@@ -207,6 +207,18 @@ trait JsonFormatters extends JsonValidationCombinators {
     def read(json: JValue) = json.success[JsonErrors]
   }
 
+  // Options --------------------------
+
+  implicit def buildOptionFormat[A](implicit format: JsonFormat[A]): JsonFormat[Option[A]] =
+    new JsonFormat[Option[A]] {
+      def write(in: Option[A]) = in.map(format.write _).getOrElse(JNull)
+      def read(in: JValue) =
+        in match {
+          case JNull => Option.empty[A].success[JsonErrors]
+          case other => format.read(other).map(Some(_))
+        }
+    }
+
   // Seqs -----------------------------
 
   implicit def buildSeqFormat[A](implicit format: JsonFormat[A]): JsonFormat[Seq[A]] =
@@ -218,7 +230,7 @@ trait JsonFormatters extends JsonValidationCombinators {
         flatMap(_.elements.map(format.read _).sequence[JsonValidation, A])
     }
 
-  // Maps ------------------------------
+  // Maps -----------------------------
 
   implicit def MapFormat[A, B](implicit keyFormat: Format[JsonErrors, A, String], valFormat: JsonFormat[B]): JsonFormat[Map[A,B]] =
     new JsonFormat[Map[A,B]] {
