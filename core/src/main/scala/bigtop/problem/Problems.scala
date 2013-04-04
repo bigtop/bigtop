@@ -131,10 +131,13 @@ trait Problems {
   }
 
   object MalformedRequest {
-    def apply(cause: Option[Throwable] = None) =
+    def apply(
+      message: String = "The request was incorrectly formatted.",
+      cause: Option[Throwable] = None
+    ) =
       Problem(
         problemType = "malformedRequest",
-        message     = "The request was incorrectly formatted.",
+        message     = message,
         cause       = cause
       )
 
