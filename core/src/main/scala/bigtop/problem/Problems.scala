@@ -60,10 +60,12 @@ trait Problems {
     def apply(
       credentials: String,
       message: String = "The user could not be authenticated.",
+      logMessage: Option[String] = None,
       cause: Option[Throwable] = None
     ) = Problem(
       problemType = "authentication",
       message     = message,
+      logMessage  = logMessage,
       cause       = cause,
       status      = HttpStatusCodes.Forbidden,
       data        = ("credentials" -> credentials)
@@ -80,10 +82,13 @@ trait Problems {
     def apply(
       credentials: String,
       operation: String,
+      message: String = "The user was not authorized to perform that action.",
+      logMessage: Option[String] = None,
       cause: Option[Throwable] = None
     ) = Problem(
       problemType = "authorization",
-      message     = "The user was not authorized to perform that action.",
+      message     = message,
+      logMessage  = logMessage,
       cause       = cause,
       status      = HttpStatusCodes.Forbidden,
       data        = ("credentials" -> credentials) ~ ("operation" -> operation)
@@ -98,10 +103,14 @@ trait Problems {
   }
 
   object NotFound {
-    def apply(item: String, cause: Option[Throwable] = None) =
+    def apply(
+      item: String,
+      message: String = "Some required data could not be found.",
+      cause: Option[Throwable] = None
+    ) =
       Problem(
         problemType = "notFound",
-        message     = "Some required data could not be found.",
+        message     = message,
         cause       = cause,
         status      = HttpStatusCodes.NotFound,
         data        = ("item" -> item)
@@ -115,10 +124,14 @@ trait Problems {
   }
 
   object Exists {
-    def apply(item: String, cause: Option[Throwable] = None) =
+    def apply(
+      item: String,
+      message: String = "Some data already exists.",
+      cause: Option[Throwable] = None
+    ) =
       Problem(
         problemType = "exists",
-        message     = "Some data already exists.",
+        message     = message,
         cause       = cause,
         data        = ("item" -> item)
       )
@@ -131,10 +144,13 @@ trait Problems {
   }
 
   object MalformedRequest {
-    def apply(cause: Option[Throwable] = None) =
+    def apply(
+      message: String = "The request was incorrectly formatted.",
+      cause: Option[Throwable] = None
+    ) =
       Problem(
         problemType = "malformedRequest",
-        message     = "The request was incorrectly formatted.",
+        message     = message,
         cause       = cause
       )
 

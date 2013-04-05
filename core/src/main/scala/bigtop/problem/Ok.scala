@@ -1,14 +1,14 @@
-package bigtop
-package problem
+// package bigtop
+// package problem
 
-import bigtop.json.JsonWriter
-import blueeyes.json.JsonDSL._
-import blueeyes.json.JsonAST.JValue
+// import bigtop.json.JsonWriter
+// import blueeyes.json.JsonDSL._
+// import blueeyes.json.JsonAST.JValue
 
-case object Ok {
+// case object Ok {
 
-  implicit val okWriter = new JsonWriter[Ok.type] {
-    def write(in: Ok.type): JValue = ("typename" -> "ok")
-  }
+//   implicit val okWriter = new JsonWriter[Ok.type] {
+//     def write(in: Ok.type): JValue = ("typename" -> "ok")
+//   }
 
-}
+// }

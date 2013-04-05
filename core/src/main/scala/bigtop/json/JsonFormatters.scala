@@ -53,8 +53,8 @@ case class JValueW(json: JValue) {
 
   // TODO: Work out if we NEED these. If we do, uncomment them and TEST THEM:
 
-  // def mandatorySeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
-  //   mandatory[JValue](path).flatMap(field => prefixErrors(path, field.asSeq[T]))
+  def mandatorySeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
+    mandatory[JValue](path).flatMap(field => prefixErrors(path, field.asSeq[T]))
 
   def mandatoryMap[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Map[String, T]] =
     mandatory[JValue](path).flatMap(field => prefixErrors(path, field.asMap[T]))

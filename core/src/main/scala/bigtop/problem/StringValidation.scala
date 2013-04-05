@@ -10,6 +10,8 @@ import scala.util.matching.Regex
 import scalaz._
 import scalaz.Scalaz._
 
+object StringImplicits extends StringImplicits
+
 trait StringImplicits {
   implicit def stringToStringValidation(str: String) =
     StringValidation(str.success[JsonErrors])
