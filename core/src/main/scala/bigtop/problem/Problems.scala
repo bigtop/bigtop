@@ -41,8 +41,8 @@ trait Problems {
   object ServerValidation {
     def apply(
       errors: JsonErrors,
-      logMessage: Option[String] = None,
       message: String = "An unknown error occurred.",
+      logMessage: Option[String] = None,
       cause: Option[Throwable] = None
     ) = Problem(
       problemType = "unknown",
@@ -106,11 +106,13 @@ trait Problems {
     def apply(
       item: String,
       message: String = "Some required data could not be found.",
+      logMessage: Option[String] = None,
       cause: Option[Throwable] = None
     ) =
       Problem(
         problemType = "notFound",
         message     = message,
+        logMessage  = logMessage,
         cause       = cause,
         status      = HttpStatusCodes.NotFound,
         data        = ("item" -> item)
@@ -127,11 +129,13 @@ trait Problems {
     def apply(
       item: String,
       message: String = "Some data already exists.",
+      logMessage: Option[String] = None,
       cause: Option[Throwable] = None
     ) =
       Problem(
         problemType = "exists",
         message     = message,
+        logMessage  = logMessage,
         cause       = cause,
         data        = ("item" -> item)
       )
@@ -146,11 +150,13 @@ trait Problems {
   object MalformedRequest {
     def apply(
       message: String = "The request was incorrectly formatted.",
+      logMessage: Option[String] = None,
       cause: Option[Throwable] = None
     ) =
       Problem(
         problemType = "malformedRequest",
         message     = message,
+        logMessage  = logMessage,
         cause       = cause
       )
 
@@ -159,10 +165,15 @@ trait Problems {
   }
 
   object EmptyRequest {
-    def apply(cause: Option[Throwable] = None) =
+    def apply(
+      message: String = "A request was empty.",
+      logMessage: Option[String] = None,
+      cause: Option[Throwable] = None
+    ) =
       Problem(
         problemType = "emptyRequest",
-        message     = "A request was empty.",
+        message     = message,
+        logMessage  = logMessage,
         cause       = cause
       )
 
@@ -173,8 +184,8 @@ trait Problems {
   object Unknown {
     def apply(
       message: String = "An unknown error occurred.",
-      cause: Option[Throwable] = None,
-      logMessage: Option[String] = None
+      logMessage: Option[String] = None,
+      cause: Option[Throwable] = None
     ) = Problem(
       problemType = "unknown",
       message     = message,
