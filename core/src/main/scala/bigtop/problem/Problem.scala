@@ -122,7 +122,7 @@ object Problem {
     timestamp: DateTime        = new DateTime,
     logMessage: Option[String] = None,
     status: HttpStatusCode     = HttpStatusCodes.BadRequest,
-    data: JValue               = JObject.empty,
+    data: JsonConfig           = JsonConfig(),
     jsonErrors: JsonErrors     = JsonErrors()
   ) = new Problem(
     problemType = problemType,
@@ -131,7 +131,7 @@ object Problem {
     timestamp   = timestamp,
     logMessage  = logMessage,
     status      = status,
-    data        = JsonConfig(data),
+    data        = data,
     jsonErrors  = jsonErrors
   )
 
@@ -183,7 +183,7 @@ object Problem {
         message     = message,
         logMessage  = logMessage,
         status      = status,
-        data        = data,
+        data        = JsonConfig(data),
         jsonErrors  = jsonErrors
       )
   }
@@ -199,8 +199,18 @@ object Problem {
       ))
   }
 
-  implicit val problemSemigroup =
-    new Semigroup[Problem] {
-      def append(a: Problem, b: => Problem): Problem = a // and b
+
+  implicit val monoid = new Monoid[Problem] {
+    val zero =
+      Problems.Unknown(message = "", logMessage = None, cause = None)
+
+    def append(a: Problem, b: => Problem): Problem = {
+      Problems.Unknown(
+        logMessage = a.logMessage |+| b.logMessage,
+        // If we prefer a over b, we'll always get Problem.monoid.zero
+        cause      = b.cause orElse a.cause,
+        data       = a.data merge b.data
+      )
     }
+  }
 }

@@ -68,14 +68,14 @@ case class JValueW(json: JValue) {
                   }
     } yield optValue
 
-  // def optionalSeq[T](path: JPath, default: Seq[T])(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
-  //   for {
-  //     optField <- optional[JValue](path)
-  //     optValue <- optField match {
-  //                   case Some(field) => prefixErrors(path, field.asSeq[T])
-  //                   case None        => default.success[JsonErrors]
-  //                 }
-  //   } yield optValue
+  def optionalSeq[T](path: JPath, default: Seq[T])(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
+    for {
+      optField <- optional[JValue](path)
+      optValue <- optField match {
+                    case Some(field) => prefixErrors(path, field.asSeq[T])
+                    case None        => default.success[JsonErrors]
+                  }
+    } yield optValue
 
   // def optionalMap[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Option[Map[String,T]]] =
   //   for {
@@ -96,9 +96,9 @@ case class JValueW(json: JValue) {
   //   } yield optValue
 }
 
-object JsonFormatters extends JsonFormatters
+object JsonFormatters extends JsonValidationCombinators with JsonFormatters
 
-trait JsonFormatters extends JsonValidationCombinators {
+trait JsonFormatters {
 
   // Default formats ------------------
 
@@ -263,4 +263,9 @@ trait JsonFormatters extends JsonValidationCombinators {
     JsonWritable[A](in)
 
   implicit def jsonToJValueW(in: JValue): JValueW = JValueW(in)
+
+  private[bigtop] def malformed(expected: String, actual: JValue): JsonErrors = {
+    import blueeyes.json.Printer._
+    JsonErrors.Malformed(JPath.Identity, "expected %s, found %s".format(expected, compact(render(actual))))
+  }
 }

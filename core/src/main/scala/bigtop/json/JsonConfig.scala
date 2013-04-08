@@ -28,4 +28,18 @@ case class JsonConfig(val data: JValue = JObject.empty) {
 
   def remove[T](path: JPath): JsonConfig =
     JsonConfig(data.set(path, JNothing).minimize.getOrElse(JObject.empty))
+
+  def merge(that: JsonConfig): JsonConfig =
+    JsonConfig {
+      that.data.flattenWithPath.foldLeft(this.data) { (memo, kvp) =>
+        memo.set(kvp._1, kvp._2)
+      }
+    }
+}
+
+object JsonConfig {
+  implicit val monoid = new Monoid[JsonConfig] {
+    def zero = JsonConfig()
+    def append(a: JsonConfig, b: => JsonConfig) = a merge b
+  }
 }

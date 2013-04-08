@@ -6,6 +6,7 @@ import akka.util.Timeout
 import akka.util.duration._
 import bigtop.concurrent.{FutureValidation, FutureImplicits}
 import bigtop.json._
+import bigtop.json.JsonFormatters._
 import bigtop.problem._
 import bigtop.problem.Problems._
 import bigtop.util.Uuid
@@ -22,7 +23,6 @@ case class SimpleUserActions[U <: User](
   val internalFormat: JsonFormat[U]
 ) extends UserActions[U]
   with ConfigurableMongo
-  with JsonFormatters
   with MongoImplicits
   with FutureImplicits
 {

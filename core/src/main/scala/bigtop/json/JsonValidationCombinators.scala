@@ -51,14 +51,6 @@ trait JsonValidationCombinators {
 
   // Other -----------------------------
 
-  def malformed(expected: String, actual: JValue): JsonErrors = {
-    import blueeyes.json.Printer._
-    JsonErrors.Malformed(JPath.Identity, "expected %s, found %s".format(expected, compact(render(actual))))
-  }
-
-  def malformed(expected: String, actual: String): JsonErrors =
-    malformed(expected, JString(actual))
-
   def prefixErrors[T](path: JPath, in: JsonValidation[T]): JsonValidation[T] =
     in match {
       case Failure(errors) => (errors prefix path).fail[T]

@@ -35,9 +35,9 @@ trait HttpRequestW[Content] {
     }
 }
 
-object RequestParameterImplicits extends RequestParameterImplicits
+object RequestParameterImplicits extends JsonValidationCombinators with RequestParameterImplicits
 
-trait RequestParameterImplicits extends JsonValidationCombinators {
+trait RequestParameterImplicits {
   implicit def httpRequestToHttpRequestW[T](req: HttpRequest[T]): HttpRequestW[T] =
     new HttpRequestW[T] {
       val request = req
@@ -73,4 +73,7 @@ trait RequestParameterImplicits extends JsonValidationCombinators {
 
   def parseDouble(str: String) =
     try { Some(str.toDouble) } catch { case exn: NumberFormatException => None }
+
+  private[bigtop] def malformed(expected: String, actual: String): JsonErrors =
+    JsonErrors.Malformed(JPath.Identity, "expected " + expected + ", found '" + actual + "'")
 }

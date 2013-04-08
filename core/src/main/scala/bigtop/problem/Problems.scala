@@ -68,7 +68,7 @@ trait Problems {
       logMessage  = logMessage,
       cause       = cause,
       status      = HttpStatusCodes.Forbidden,
-      data        = ("credentials" -> credentials)
+      data        = JsonConfig("credentials" -> credentials)
     )
 
     def unapply(in: Problem) =
@@ -91,7 +91,7 @@ trait Problems {
       logMessage  = logMessage,
       cause       = cause,
       status      = HttpStatusCodes.Forbidden,
-      data        = ("credentials" -> credentials) ~ ("operation" -> operation)
+      data        = JsonConfig(("credentials" -> credentials) ~ ("operation" -> operation))
     )
 
     def unapply(in: Problem) =
@@ -115,7 +115,7 @@ trait Problems {
         logMessage  = logMessage,
         cause       = cause,
         status      = HttpStatusCodes.NotFound,
-        data        = ("item" -> item)
+        data        = JsonConfig("item" -> item)
       )
 
     def unapply(in: Problem) =
@@ -137,7 +137,7 @@ trait Problems {
         message     = message,
         logMessage  = logMessage,
         cause       = cause,
-        data        = ("item" -> item)
+        data        = JsonConfig("item" -> item)
       )
 
     def unapply(in: Problem) =
@@ -185,12 +185,14 @@ trait Problems {
     def apply(
       message: String = "An unknown error occurred.",
       logMessage: Option[String] = None,
-      cause: Option[Throwable] = None
+      cause: Option[Throwable] = None,
+      data: JsonConfig = JsonConfig()
     ) = Problem(
       problemType = "unknown",
       message     = message,
       logMessage  = logMessage,
-      cause       = cause
+      cause       = cause,
+      data        = data
     )
 
     def unapply(in: Problem) =
