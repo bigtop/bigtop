@@ -128,14 +128,11 @@ class ProblemSpec extends Specification {
   "Problems.<foo>.{apply, unapply}" should {
     import Problems._
     "be the opposites of one another" in {
-      // Database()                      must beLike({ case Database()                      => ok })
       Authentication("dave")          must beLike({ case Authentication("dave")          => ok })
       Authorization("dave", "stuff")  must beLike({ case Authorization("dave", "stuff")  => ok })
-      NotFound("foo")                 must beLike({ case NotFound("foo")                 => ok })
-      Exists("foo")                   must beLike({ case Exists("foo")                   => ok })
-      // Missing("foo")                  must beLike({ case Missing("foo")                  => ok })
-      // Malformed("foo", "bar")         must beLike({ case Malformed("foo", "bar")         => ok })
-      EmptyRequest()                  must beLike({ case EmptyRequest()                  => ok })
+      NotFound("foo", "bar")          must beLike({ case NotFound("foo", "bar")          => ok })
+      Exists("foo", "baz")            must beLike({ case Exists("foo", "baz")            => ok })
+      MalformedRequest()              must beLike({ case MalformedRequest()              => ok })
       Unknown()                       must beLike({ case Unknown()                       => ok })
     }
   }

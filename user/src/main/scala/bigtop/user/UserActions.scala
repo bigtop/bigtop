@@ -34,11 +34,11 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
     for {
       _     <- read(user.id).fold(
                  fail = { prob => ().success },
-                 succ = { user => Problems.Exists("user").fail }
+                 succ = { user => Problems.Exists("user", user.id.toString).fail }
                ).fv
       _     <- readByUsername(user.username).fold(
                  fail = { prob => ().success },
-                 succ = { user => Problems.Exists("user").fail }
+                 succ = { user => Problems.Exists("user", user.username).fail }
                ).fv
       saved <- save(user)
     } yield saved
@@ -48,7 +48,7 @@ trait UserActions[U <: User] extends UserTypes[U] with FutureImplicits {
     def exists(user: User) =
       (for {
         _ <- read(user.id)
-      } yield ()).mapFailure(f => Problems.NotFound("user"))
+      } yield ()).mapFailure(f => Problems.NotFound("user", user.id.toString))
 
     for {
       _     <- exists(user)

@@ -122,7 +122,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
 
     "return error given bad input" in initialized {
       doPost("/api/user/v1", authorized("noel", "password")) {
-        ("froobarname" -> "noel") ~
+        ("foobarname" -> "noel") ~
         ("password" -> "secret")
       } must beProblem(beLike {
         case Problems.ClientValidation(errors) if errors.get("username").isDefined => ok
@@ -133,7 +133,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       doPost("/api/user/v1", authorized("noel", "password")) {
         noel.toJson(SimpleUser.internalFormat)
       } must beProblem(beLike {
-        case Problems.Exists("user") => ok
+        case Problems.Exists("user", "noel") => ok
       })
     }
   }

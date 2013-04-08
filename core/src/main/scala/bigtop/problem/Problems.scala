@@ -3,7 +3,7 @@ package problem
 
 import bigtop.json._
 import bigtop.json.JsonFormatters._
-import blueeyes.core.http.HttpStatusCodes
+import blueeyes.core.http.{HttpStatusCode, HttpStatusCodes}
 import blueeyes.json.JsonDSL._
 
 // Predefined problems
@@ -11,12 +11,6 @@ import blueeyes.json.JsonDSL._
 object Problems extends Problems
 
 trait Problems {
-  // Generic extractor:
-  object ProblemWithId {
-    def unapply(in: Problem) =
-      Some(in.problemType)
-  }
-
   object ClientValidation {
     def apply(
       errors: JsonErrors,
@@ -61,13 +55,14 @@ trait Problems {
       credentials: String,
       message: String = "The user could not be authenticated.",
       logMessage: Option[String] = None,
-      cause: Option[Throwable] = None
+      cause: Option[Throwable] = None,
+      status: HttpStatusCode = HttpStatusCodes.Forbidden
     ) = Problem(
       problemType = "authentication",
       message     = message,
       logMessage  = logMessage,
       cause       = cause,
-      status      = HttpStatusCodes.Forbidden,
+      status      = status,
       data        = JsonConfig("credentials" -> credentials)
     )
 
@@ -84,13 +79,14 @@ trait Problems {
       operation: String,
       message: String = "The user was not authorized to perform that action.",
       logMessage: Option[String] = None,
-      cause: Option[Throwable] = None
+      cause: Option[Throwable] = None,
+      status: HttpStatusCode = HttpStatusCodes.Forbidden
     ) = Problem(
       problemType = "authorization",
       message     = message,
       logMessage  = logMessage,
       cause       = cause,
-      status      = HttpStatusCodes.Forbidden,
+      status      = status,
       data        = JsonConfig(("credentials" -> credentials) ~ ("operation" -> operation))
     )
 
@@ -104,47 +100,56 @@ trait Problems {
 
   object NotFound {
     def apply(
+      itemType: String,
       item: String,
-      message: String = "Some required data could not be found.",
+      message: Option[String] = None,
       logMessage: Option[String] = None,
-      cause: Option[Throwable] = None
+      cause: Option[Throwable] = None,
+      status: HttpStatusCode = HttpStatusCodes.NotFound,
+      data: JsonConfig = JsonConfig.Empty
     ) =
       Problem(
         problemType = "notFound",
-        message     = message,
+        message     = message getOrElse ("That " + itemType + " could not be found."),
         logMessage  = logMessage,
         cause       = cause,
-        status      = HttpStatusCodes.NotFound,
-        data        = JsonConfig("item" -> item)
+        status      = status,
+        data        = data merge JsonConfig(("itemType" -> itemType) ~ ("item" -> item))
       )
 
     def unapply(in: Problem) =
       for {
-        _      <- in.checkType("notFound")
-        item   <- in.data.get[String]("item").toOption
-      } yield item
+        _        <- in.checkType("notFound")
+        itemType <- in.data.get[String]("itemType").toOption
+        item     <- in.data.get[String]("item").toOption
+      } yield (itemType, item)
   }
 
   object Exists {
     def apply(
+      itemType: String,
       item: String,
-      message: String = "Some data already exists.",
+      message: Option[String] = None,
       logMessage: Option[String] = None,
-      cause: Option[Throwable] = None
+      cause: Option[Throwable] = None,
+      status: HttpStatusCode = HttpStatusCodes.BadRequest,
+      data: JsonConfig = JsonConfig.Empty
     ) =
       Problem(
         problemType = "exists",
-        message     = message,
+        message     = message getOrElse ("That " + itemType + " already exists."),
         logMessage  = logMessage,
         cause       = cause,
-        data        = JsonConfig("item" -> item)
+        status      = status,
+        data        = data merge JsonConfig(("itemType" -> itemType) ~ ("item" -> item))
       )
 
     def unapply(in: Problem) =
       for {
-        _      <- in.checkType("exists")
-        item   <- in.data.get[String]("item").toOption
-      } yield item
+        _        <- in.checkType("exists")
+        itemType <- in.data.get[String]("itemType").toOption
+        item     <- in.data.get[String]("item").toOption
+      } yield (itemType, item)
   }
 
   object MalformedRequest {
@@ -162,6 +167,25 @@ trait Problems {
 
     def unapply(in: Problem) =
       in.checkType("malformedRequest").isDefined
+  }
+
+  object MalformedResponse {
+    def apply(
+      message: String = "The response was incorrectly formatted.",
+      logMessage: Option[String] = None,
+      cause: Option[Throwable] = None,
+      status: HttpStatusCode = HttpStatusCodes.InternalServerError
+    ) =
+      Problem(
+        problemType = "malformedResponse",
+        message     = message,
+        logMessage  = logMessage,
+        cause       = cause,
+        status      = status
+      )
+
+    def unapply(in: Problem) =
+      in.checkType("malformedResponse").isDefined
   }
 
   object EmptyRequest {

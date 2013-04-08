@@ -38,8 +38,10 @@ case class JsonConfig(val data: JValue = JObject.empty) {
 }
 
 object JsonConfig {
+  val Empty = JsonConfig()
+
   implicit val monoid = new Monoid[JsonConfig] {
-    def zero = JsonConfig()
+    def zero = JsonConfig.Empty
     def append(a: JsonConfig, b: => JsonConfig) = a merge b
   }
 }

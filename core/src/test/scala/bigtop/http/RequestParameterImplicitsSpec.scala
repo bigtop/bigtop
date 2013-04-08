@@ -25,7 +25,7 @@ class RequestParameterImplicitsSpec extends Specification {
     }
 
     "fail if a type conversion is impossible" in {
-      request.mandatoryParam[Int]('str) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found \"abc\""))
+      request.mandatoryParam[Int]('str) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found 'abc'"))
     }
 
     "fail if the parameter is missing" in {
@@ -39,7 +39,7 @@ class RequestParameterImplicitsSpec extends Specification {
     }
 
     "fail if a type conversion is impossible" in {
-      request.optionalParam[Int]('str) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found \"abc\""))
+      request.optionalParam[Int]('str) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found 'abc'"))
     }
 
     "succeed if the path is missing" in {
@@ -53,7 +53,7 @@ class RequestParameterImplicitsSpec extends Specification {
     }
 
     "fail if a type conversion is impossible" in {
-      request.optionalParam[Int]('str, -1) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found \"abc\""))
+      request.optionalParam[Int]('str, -1) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found 'abc'"))
     }
 
     "succeed if the path is missing" in {
