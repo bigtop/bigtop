@@ -13,7 +13,7 @@ object Problems extends Problems
 trait Problems {
   object ClientValidation {
     def apply(
-      errors: JsonErrors,
+      jsonErrors: JsonErrors,
       message: String = "Some required data was in an incorrect format.",
       logMessage: Option[String] = None,
       cause: Option[Throwable] = None
@@ -23,7 +23,7 @@ trait Problems {
       cause       = cause,
       logMessage  = logMessage,
       status      = HttpStatusCodes.BadRequest,
-      jsonErrors  = errors
+      jsonErrors  = jsonErrors
     )
 
     def unapply(in: Problem) =

@@ -80,15 +80,26 @@ class Problem(
 
   def toResponse(implicit logger: Logger, format: JsonFormat[Problem]): HttpResponse[JValue] = {
     print(msg => logger.error(msg))
-    HttpResponse[JValue](status = this.status, content = Some(this.toJson))
+    HttpResponse[JValue](
+      status = HttpStatus(this.status, this.message),
+      content = Some(this.toJson)
+    )
   }
 
   def print(print: (String) => Unit): Unit = {
+    def printPara(prefix: String, str: String) =
+      str.split("[\r\n]").foreach(line => print(prefix + line))
+
     print("Problem: " + problemType + " (status " + status + ")")
     print("  timestamp: " + timestamp)
-    printMessage(print, "  message: ")
-    printLogMessage(print, "  log: ")
-    printData(print, "  data: ")
+    printPara("  message: ", message)
+    logMessage.foreach { msg =>
+      printPara("  log: ", msg)
+    }
+    printPara("  data: ", data.toString)
+    jsonErrors.errors.foreach { error =>
+      printPara("  jsonErrors: ", error.toString)
+    }
     print("  stackTrace:")
     getStackTrace.foreach { item => print("    " + item) }
     cause.foreach { cause =>
@@ -97,20 +108,8 @@ class Problem(
     }
   }
 
-  private def printMessage(print: String => Unit, prefix: String) =
-    printLongString(message, print, prefix)
-
-  private def printLogMessage(print: String => Unit, prefix: String) =
-    logMessage.foreach(printLongString(_, print, prefix))
-
-  private def printData(print: String => Unit, prefix: String) =
-    printLongString(data.data.toString, print, prefix)
-
-  private def printLongString(str: String, print: String => Unit, prefix: String) =
-    str.split("[\r\n]").foreach(line => print(prefix + line))
-
   override def toString =
-    "Problem(" + problemType + "," + message + "," + cause + "," + timestamp + "," + logMessage + "," + status + "," + data + ")"
+    "Problem(" + problemType + "," + message + "," + cause + "," + timestamp + "," + logMessage + "," + status + "," + data + "," + jsonErrors + ")"
 }
 
 object Problem {

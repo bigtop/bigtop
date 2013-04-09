@@ -36,9 +36,9 @@ class ProblemSpec extends Specification {
         |Problem: authentication (status Forbidden)
         |  timestamp: %s
         |  message: The user could not be authenticated.
-        |  data: {
+        |  data: JsonConfig({
         |  data:   "credentials":"foo"
-        |  data: }
+        |  data: })
         |
         """.trim.stripMargin.format(problem.timestamp)
       }
@@ -100,10 +100,10 @@ class ProblemSpec extends Specification {
   //   "prefer server status to client status" in {
   //     val problem1 = ClientProblem("Dave was here")
   //     val problem2 = ServerProblem("Noel was here")
-  //     (problem1 and problem1).status mustEqual HttpStatusCodes.BadRequest
-  //     (problem1 and problem2).status mustEqual HttpStatusCodes.InternalServerError
-  //     (problem2 and problem1).status mustEqual HttpStatusCodes.InternalServerError
-  //     (problem2 and problem2).status mustEqual HttpStatusCodes.InternalServerError
+  //     (problem1 and problem1).status.code mustEqual HttpStatusCodes.BadRequest
+  //     (problem1 and problem2).status.code mustEqual HttpStatusCodes.InternalServerError
+  //     (problem2 and problem1).status.code mustEqual HttpStatusCodes.InternalServerError
+  //     (problem2 and problem2).status.code mustEqual HttpStatusCodes.InternalServerError
   //   }
   // }
 
