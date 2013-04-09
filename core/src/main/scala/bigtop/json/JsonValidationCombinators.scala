@@ -44,6 +44,15 @@ trait JsonValidationCombinators {
   def tuple[A, B, C, D, E, F, G](a: => JsonValidation[A], b: => JsonValidation[B], c: => JsonValidation[C], d: => JsonValidation[D], e: => JsonValidation[E], f: => JsonValidation[F], g: => JsonValidation[G]) =
     (a |@| b |@| c |@| d |@| e |@| f |@| g).tupled
 
+  def tuple[A, B, C, D, E, F, G, H](a: => JsonValidation[A], b: => JsonValidation[B], c: => JsonValidation[C], d: => JsonValidation[D], e: => JsonValidation[E], f: => JsonValidation[F], g: => JsonValidation[G], h: => JsonValidation[H]) =
+    (a |@| b |@| c |@| d |@| e |@| f |@| g |@| h).tupled
+
+  def tuple[A, B, C, D, E, F, G, H, I](a: => JsonValidation[A], b: => JsonValidation[B], c: => JsonValidation[C], d: => JsonValidation[D], e: => JsonValidation[E], f: => JsonValidation[F], g: => JsonValidation[G], h: => JsonValidation[H], i: => JsonValidation[I]) =
+    (a |@| b |@| c |@| d |@| e |@| f |@| g |@| h |@| i).tupled
+
+  def tuple[A, B, C, D, E, F, G, H, I, J](a: => JsonValidation[A], b: => JsonValidation[B], c: => JsonValidation[C], d: => JsonValidation[D], e: => JsonValidation[E], f: => JsonValidation[F], g: => JsonValidation[G], h: => JsonValidation[H], i: => JsonValidation[I], j: => JsonValidation[J]) =
+    (a |@| b |@| c |@| d |@| e |@| f |@| g |@| h |@| i |@| j).tupled
+
   // Conversion to problems ------------
 
   implicit def jsonValidationToJsonValidationW[T](in: JsonValidation[T]): JsonValidationW[T] =
