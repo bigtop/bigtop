@@ -205,6 +205,7 @@ object Problem {
 
     def append(a: Problem, b: => Problem): Problem = {
       Problems.Unknown(
+        message    = "Multiple errors were encountered.",
         logMessage = a.logMessage |+| b.logMessage,
         // If we prefer a over b, we'll always get Problem.monoid.zero
         cause      = b.cause orElse a.cause,
