@@ -30,7 +30,7 @@ class JsonConfigSpec extends Specification {
     }
 
     "create an empty config if no arguments specified" in {
-      JsonConfig().data mustEqual JObject.empty
+      JsonConfig().data mustEqual JNothing
     }
   }
 
@@ -71,6 +71,12 @@ class JsonConfigSpec extends Specification {
   }
 
   "set" should {
+    "set values from scratch" in {
+      JsonConfig.Empty.set("a.b.c", "d") mustEqual JsonConfig(
+        ("a" -> ("b" -> ("c" -> "d")))
+      )
+    }
+
     "overwrite single values and whole sub-objects" in {
       config.set("foo", "x").set("bar.arr", "y") mustEqual JsonConfig(
         ("foo" -> "x") ~

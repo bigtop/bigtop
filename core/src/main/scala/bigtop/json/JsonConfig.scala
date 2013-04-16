@@ -7,7 +7,7 @@ import blueeyes.json.JsonDSL._
 import scalaz._
 import scalaz.Scalaz._
 
-case class JsonConfig(val data: JValue = JObject.empty) {
+case class JsonConfig(val data: JValue = JNothing) {
   def apply[T](path: JPath)(implicit reader: JsonReader[T]): T =
     get(path) match {
       case Success(value)  => value
