@@ -197,11 +197,6 @@ trait JsonFormatters {
     def write(in: URL) = JString(in.toString)
   }
 
-  implicit val JsonConfigJsonFormat = new JsonFormat[JsonConfig] {
-    def write(in: JsonConfig) = in.data
-    def read(json: JValue) = JsonConfig(json).success[JsonErrors]
-  }
-
   implicit val JValueJsonFormat: JsonFormat[JValue] = new JsonFormat[JValue] {
     def write(in: JValue) = in
     def read(json: JValue) = json.success[JsonErrors]

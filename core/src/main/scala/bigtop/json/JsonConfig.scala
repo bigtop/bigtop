@@ -26,6 +26,15 @@ case class JsonConfig(val data: JValue = JNothing) {
   def set[T](path: JPath, value: T)(implicit writer: JsonWriter[T]): JsonConfig =
     JsonConfig(data.set(path, writer.write(value)))
 
+  def set(deltas: JsonConfigDeltas) =
+    JsonConfig(deltas.deltas.foldLeft(data) { (data, delta) =>
+      delta._2 match {
+        case JNull    => data.set(delta._1, JNothing)
+        case JNothing => data.set(delta._1, JNothing)
+        case _        => data.set(delta._1, delta._2)
+      }
+    })
+
   def remove[T](path: JPath): JsonConfig =
     JsonConfig(data.set(path, JNothing).minimize.getOrElse(JObject.empty))
 
@@ -39,6 +48,14 @@ case class JsonConfig(val data: JValue = JNothing) {
 
 object JsonConfig {
   val Empty = JsonConfig()
+
+  implicit object format extends JsonFormat[JsonConfig] {
+    def write(in: JsonConfig) =
+      in.data
+
+    def read(in: JValue) =
+      JsonConfig(in).success[JsonErrors]
+  }
 
   implicit val monoid = new Monoid[JsonConfig] {
     def zero = JsonConfig.Empty
