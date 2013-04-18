@@ -44,6 +44,22 @@ case class JsonConfig(val data: JValue = JNothing) {
         memo.set(kvp._1, kvp._2)
       }
     }
+
+  def removeNulls: JsonConfig = {
+    def visit(in: JValue): Option[JValue] =
+      in match {
+        case JObject(fields)  => Some(JObject(fields flatMap {
+                                   case JField(k, v) =>
+                                     visit(v).map(JField(k, _))
+                                 }))
+        case JArray(elements) => Some(JArray(elements.flatMap(visit)))
+        case JNothing         => None
+        case JNull            => None
+        case value            => Some(value)
+      }
+
+    JsonConfig(visit(data) getOrElse JNothing)
+  }
 }
 
 object JsonConfig {

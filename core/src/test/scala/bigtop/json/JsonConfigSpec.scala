@@ -95,4 +95,12 @@ class JsonConfigSpec extends Specification {
       )
     }
   }
+
+  "removeNulls" should {
+    "remove JNulls and JNothings" in {
+      val original = JsonConfig(("foo" -> ("missing" -> JNothing)) ~ ("deleteme" -> JNull))
+      val expected = JsonConfig(("foo" -> JObject.empty))
+      original.removeNulls mustEqual expected
+    }
+  }
 }
