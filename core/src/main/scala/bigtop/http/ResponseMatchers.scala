@@ -35,7 +35,13 @@ trait ResponseMatchers extends MustMatchers with StandardMatchResults {
     beResponse[Problem](beAny[HttpStatusCode], beTheProblem)
 
   def beOk(): Matcher[HttpResponse[JValue]] =
-    be200(beAny[JValue])
+    be200()
+
+  def beOk[T](expected: T)(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
+    be200[T](expected)
+
+  def beOk[T](beTheResult: Matcher[T])(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
+    be200[T](beTheResult)
 
   def be200(): Matcher[HttpResponse[JValue]] =
     be200(beAny[JValue])

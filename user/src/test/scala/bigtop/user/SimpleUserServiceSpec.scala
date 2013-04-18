@@ -124,7 +124,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       doPost("/api/user/v1", authorized("noel", "password")) {
         ("foobarname" -> "noel") ~
         ("password" -> "secret")
-      } must beProblem(beLike {
+      } must beProblemResponse(beLike {
         case Problems.ClientValidation(errors) if errors.get("username").isDefined => ok
       })
     }
@@ -132,7 +132,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     "refuse to allow an existing user to be created" in initialized {
       doPost("/api/user/v1", authorized("noel", "password")) {
         noel.toJson(SimpleUser.internalFormat)
-      } must beProblem(beLike {
+      } must beProblemResponse(beLike {
         case Problems.Exists("user", "noel") => ok
       })
     }
@@ -148,7 +148,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     }
 
     "fail to lookup another user" in initialized {
-      doGet("/api/user/v1/"+dave.id.toString, authorized("test", "topsecret")) must beProblem(beLike {
+      doGet("/api/user/v1/"+dave.id.toString, authorized("test", "topsecret")) must beProblemResponse(beLike {
         case Problems.Authorization("test", "user.read") => ok
       })
     }
@@ -176,7 +176,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       doPost("/api/session/v1") {
         ("username" -> "mctest") ~
         ("password" -> "topsecret")
-      } must beProblem(beLike {
+      } must beProblemResponse(beLike {
         case Problems.Authentication("mctest") => ok
       })
     }
@@ -186,7 +186,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
       doPost("/api/session/v1") {
         ("username" -> "test") ~
         ("password" -> "superwrong")
-      } must beProblem(beLike {
+      } must beProblemResponse(beLike {
         case Problems.Authentication("test") => ok
       })
     }
@@ -194,7 +194,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     "return error when missing username" in initialized {
       doPost("/api/session/v1") {
         ("password" -> "secret")
-      } must beProblem(beLike {
+      } must beProblemResponse(beLike {
         case Problems.ClientValidation(errors) if errors.get("username").isDefined => ok
       })
     }
@@ -202,7 +202,7 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     "return error when missing password" in initialized {
       doPost("/api/session/v1") {
         ("username" -> "test")
-      } must beProblem(beLike {
+      } must beProblemResponse(beLike {
         case Problems.ClientValidation(errors) if errors.get("password").isDefined => ok
       })
     }
@@ -212,12 +212,12 @@ class SimpleUserServiceSpec extends JsonServiceSpec with ConfigurableMongo {
     "return a preexisting session" in initialized {
       val sessionId = login("test", "topsecret")
 
-      doGet("/api/session/v1/%s".format(sessionId), auth(client(service), sessionId)) must beOk {
+      doGet("/api/session/v1/%s".format(sessionId), auth(client(service), sessionId)) must beOk[JValue](beEqualTo {
         ("typename" -> "session") ~
         ("id" -> sessionId.toString) ~
         ("session" -> JObject.empty) ~
         ("user" -> test.toJson(SimpleUser.externalFormat))
-      }
+      })
     }
   }
 }
