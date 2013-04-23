@@ -1,13 +1,26 @@
-package bigtop
-package json
+package bigtop.json
 
-import blueeyes.json.JsonAST.JValue
-import bigtop.util.{Reader, Writer, Updater, Format}
+import bigtop.data._
+import bigtop.util._
+import blueeyes.json.JsonAST._
+import scalaz._
+import scalaz.Scalaz._
 
-trait JsonReader[T] extends Reader[JsonErrors, T, JValue]
+trait JsonFormat[T] extends DataFormat[T, JValue] with JsonReader[T] with JsonWriter[T] {
+  self =>
 
-trait JsonWriter[T] extends Writer[T, JValue]
+  override def andThen[U](inner: DataFormat[U, T]): JsonFormat[U] =
+    new JsonFormat[U] {
+      def read(in: JValue) = self.read(in).flatMap(inner.read)
+      def write(in: U) = self.write(inner.write(in))
+    }
 
-trait JsonFormat[T] extends Format[JsonErrors, T, JValue] with JsonWriter[T] with JsonReader[T]
-
-trait JsonUpdater[T] extends Updater[JsonErrors, T, JValue] with JsonFormat[T]
+  // override def lift[M[_] : Traverse : Monad]: JsonFormat[M[T]] =
+  //   new JsonFormat[M[T]] {
+  //     val monad = implicitly[Monad[M]]
+  //     val traverse = implicitly[Traverse[M]]
+  //     val applicative = implicitly[Applicative[JsonValidation]]
+  //     def read(in: JValue) = applicative.traverse[JValue, M, T](monad.point(in))(self.read _)
+  //     def write(in: M[T]) = monad.map(in)(self.write _)
+  //   }
+}

@@ -33,6 +33,11 @@ object JsonError {
       if(in.errorType == "malformed") Some((in.path, in.message, in.data)) else None
   }
 
+  object TypeError {
+    def apply(path: JPath, expected: String, actual: JValue) =
+      JsonError("malformed", path, "Expected " + expected + ", received " + actual, JNothing)
+  }
+
   // implicit def jsonErrorToJsonErrors(in: JsonError) =
   //   JsonErrors(List(in))
 

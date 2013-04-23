@@ -34,12 +34,14 @@ object UserServiceHandler extends SafeBijectionsChunkJson
     JsonSyncService(
       name   = "Session",
       prefix = "/api/session/v1",
+      id     = 'id,
       create = sessionServices.create,
       read   = sessionServices.read
     ) ~
     JsonSyncService(
       name = "User",
       prefix = "/api/user/v1",
+      id     = 'id,
       create = userServices.create,
       read   = userServices.read,
       update = userServices.update,

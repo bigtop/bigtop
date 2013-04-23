@@ -31,16 +31,18 @@ object JsonSyncService extends JsonRequestHandlerCombinators
   type Outer = HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]
 
   def apply(
-    name   : String,
-    prefix : String,
-    create : Inner = dummyHandler,
-    read   : Inner = dummyHandler,
-    update : Inner = dummyHandler,
-    delete : Inner = dummyHandler,
-    search : Inner = dummyHandler
+    name:   String,
+    prefix: String,
+    id:     Symbol,
+    create: Inner  = dummyHandler,
+    read:   Inner  = dummyHandler,
+    update: Inner  = dummyHandler,
+    delete: Inner  = dummyHandler,
+    search: Inner  = dummyHandler
   )(implicit log: Logger) : Outer = SyncService(
     name   = name,
     prefix = prefix,
+    id     = id,
     create = json(create),
     read   = json(read),
     update = json(update),

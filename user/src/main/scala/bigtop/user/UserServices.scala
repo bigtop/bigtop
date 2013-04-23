@@ -32,6 +32,7 @@ trait UserServices[U <: User] extends Logging {
     JsonSyncService(
       name   = "user",
       prefix = "/api/user/v1",
+      id     = 'id,
       create = create,
       read   = read,
       update = update,

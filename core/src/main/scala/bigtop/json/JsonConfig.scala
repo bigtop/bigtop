@@ -23,6 +23,15 @@ case class JsonConfig(val data: JValue = JNothing) {
                        )
     }
 
+  def get[T](path: JPath, default: => T)(implicit reader: JsonReader[T]): JsonValidation[T] =
+    data.get(path) match {
+      case JNothing => default.success[JsonErrors]
+      case json     => reader.read(json).fold(
+                         succ = value => value.success[JsonErrors],
+                         fail = errors => errors.prefix(path).fail[T]
+                       )
+    }
+
   def set[T](path: JPath, value: T)(implicit writer: JsonWriter[T]): JsonConfig =
     JsonConfig(data.set(path, writer.write(value)))
 

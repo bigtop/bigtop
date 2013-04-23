@@ -15,12 +15,12 @@ trait ResponseMatchers extends MustMatchers with StandardMatchResults {
   private def beAny[T]: Matcher[T] =
     beLike[T] { case _ => ok }
 
-  def beResponse[T](beTheCode: Matcher[HttpStatusCode], beTheResult: Matcher[T])(implicit reader: JsonReader[T]) =
+  def beJsonResponse[T](beTheCode: Matcher[HttpStatusCode], beTheResult: Matcher[T])(implicit reader: JsonReader[T]) =
     beLike[HttpResponse[JValue]] {
       case HttpResponse(HttpStatus(code, _), _, Some(json), _) =>
         (code must beTheCode) and
         (json.as[T].fold(
-          succ = { problem => problem must beTheResult },
+          succ = { content => content must beTheResult },
           fail = { errors  => ko("Failed to parse JSON: " + json + "\nparse errors: " + errors) }
         ))
 
@@ -28,14 +28,14 @@ trait ResponseMatchers extends MustMatchers with StandardMatchResults {
         ko("Response did not match the correct pattern: " + response)
     }
 
-  // def beResponse[T](beTheResult: Matcher[T])(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
-  //   beResponse(beAny[HttpStatusCode], beTheResult)
+  // def beJsonResponse[T](beTheResult: Matcher[T])(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
+  //   beJsonResponse(beAny[HttpStatusCode], beTheResult)
 
   def beProblemResponse(beTheProblem: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
-    beResponse[Problem](beAny[HttpStatusCode], beTheProblem)
+    beJsonResponse[Problem](beAny[HttpStatusCode], beTheProblem)
 
-  def beOk(): Matcher[HttpResponse[JValue]] =
-    be200()
+  def beOk[T](implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
+    be200(beAny[T])
 
   def beOk[T](expected: T)(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
     be200[T](expected)
@@ -43,26 +43,45 @@ trait ResponseMatchers extends MustMatchers with StandardMatchResults {
   def beOk[T](beTheResult: Matcher[T])(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
     be200[T](beTheResult)
 
-  def be200(): Matcher[HttpResponse[JValue]] =
-    be200(beAny[JValue])
+  def be200[T](implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
+    be200(beAny[T])
 
   def be200[T](expected: T)(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
     be200[T](beEqualTo(expected))
 
   def be200[T](beTheResult: Matcher[T])(implicit reader: JsonReader[T]): Matcher[HttpResponse[JValue]] =
-    beResponse[T](beEqualTo(HttpStatusCodes.OK), beTheResult)
+    beJsonResponse[T](beEqualTo(HttpStatusCodes.OK), beTheResult)
 
   def be400(beTheProblem: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
-    beResponse(beEqualTo(HttpStatusCodes.BadRequest), beTheProblem)
+    beJsonResponse(beEqualTo(HttpStatusCodes.BadRequest), beTheProblem)
 
   def be403(beTheProblem: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
-    beResponse(beEqualTo(HttpStatusCodes.Forbidden), beTheProblem)
+    beJsonResponse(beEqualTo(HttpStatusCodes.Forbidden), beTheProblem)
 
   def be404(beTheProblem: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
-    beResponse(beEqualTo(HttpStatusCodes.NotFound), beTheProblem)
+    beJsonResponse(beEqualTo(HttpStatusCodes.NotFound), beTheProblem)
 
   def be500(beTheProblem: Matcher[Problem]): Matcher[HttpResponse[JValue]] =
-    beResponse(beEqualTo(HttpStatusCodes.InternalServerError), beTheProblem)
+    beJsonResponse(beEqualTo(HttpStatusCodes.InternalServerError), beTheProblem)
+
+  def beJsonpResponse(beTheCode: Matcher[HttpStatusCode], beTheResult: Matcher[String]) =
+    beLike[HttpResponse[String]] {
+      case HttpResponse(HttpStatus(code, _), _, Some(content), _) =>
+        (code must beTheCode) and
+        (content must beTheResult)
+
+      case response =>
+        ko("Response did not match the correct pattern: " + response)
+    }
+
+  def beJsonp200(): Matcher[HttpResponse[String]] =
+    beJsonp200(beAny[String])
+
+  def beJsonp200(expected: String): Matcher[HttpResponse[String]] =
+    beJsonp200(beEqualTo(expected))
+
+  def beJsonp200(beTheResult: Matcher[String]): Matcher[HttpResponse[String]] =
+    beJsonpResponse(beEqualTo(HttpStatusCodes.OK), beTheResult)
 
 }
 

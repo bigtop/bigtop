@@ -4,8 +4,9 @@ package user
 import akka.dispatch.Future
 import bigtop.concurrent.FutureImplicits
 import bigtop.http._
-import bigtop.http.RequestParameterImplicits._
+import bigtop.http.RequestParameterImplicits.{ tuple => reqTuple, _ }
 import bigtop.json._
+import bigtop.json.JsonFormatters._
 import bigtop.util.Uuid
 import bigtop.concurrent.FutureValidation
 import bigtop.problem._
@@ -38,6 +39,7 @@ trait SessionServices[U <: User] extends Logging
     JsonSyncService(
       "session",
       "/api/session/v1",
+      'id,
       create,
       read
     )(logger)
@@ -66,7 +68,6 @@ case class SessionServicesBuilder[U <: User](
 trait SessionService[U <: User] extends HttpRequestHandlerCombinators
   with JsonServiceImplicits
   with FutureImplicits
-  with JsonFormatters
   with Logging
 {
   implicit val log = logger
