@@ -1,8 +1,11 @@
 package bigtop
 package problem
 
-import akka.dispatch.{ExecutionContext, Promise}
-import blueeyes.bkka.AkkaDefaults
+// import akka.dispatch.{ExecutionContext, Promise}
+// import blueeyes.bkka.AkkaDefaults
+import blueeyes.json.JPath
+import blueeyes.json.JsonAST._
+import blueeyes.json.JsonDSL._
 import bigtop.concurrent._
 import bigtop.json._
 import bigtop.problem._
@@ -20,16 +23,16 @@ trait StringImplicits {
     StringValidation(sv)
 }
 
-case class StringValidation(val inner: JsonValidation[String]) extends AkkaDefaults {
+case class StringValidation(val inner: JsonValidation[String]) {
   def trim =
     StringValidation(inner.map(_.trim))
 
-  def nonBlank(field: String) =
+  def nonBlank(path: JPath) =
     inner.flatMap { str =>
       if(str.length > 0) {
         str.success[JsonErrors]
       } else {
-        JsonErrors.Missing(field).fail
+        JsonErrors.Missing(path).fail
       }
     }
 
@@ -39,37 +42,35 @@ case class StringValidation(val inner: JsonValidation[String]) extends AkkaDefau
   def uppercase =
     inner.map(_.toLowerCase)
 
-  def shorterThan(field: String, length: Int) =
-    inner.flatMap(
-      str =>
-        if(str.length < length) {
-          str.success[JsonErrors]
-        } else {
-          JsonErrors.Malformed(field, "tooLong").fail
-        }
-    )
+  def shorterThan(path: JPath, length: Int) =
+    inner.flatMap { str =>
+      if(str.length < length) {
+        str.success[JsonErrors]
+      } else {
+        JsonErrors.TypeError(path, "max length " + (length - 1), str).fail
+      }
+    }
 
-  def longerThan(field: String, length: Int) =
-    inner.flatMap(
-      str =>
-        if(str.length > length) {
-          str.success[JsonErrors]
-        } else {
-          JsonErrors.Malformed(field, "tooShort").fail
-        }
-    )
+  def longerThan(path: JPath, length: Int) =
+    inner.flatMap { str =>
+      if(str.length > length) {
+        str.success[JsonErrors]
+      } else {
+        JsonErrors.TypeError(path, "min length " + (length + 1), str).fail
+      }
+    }
 
-  def regex(rx: Regex, field: String, description: String) =
+  def regex(rx: Regex, path: JPath, expected: String) =
     inner.flatMap { str =>
       if(rx.findFirstIn(str).isDefined) {
         str.success[JsonErrors]
       } else {
-        JsonErrors.Malformed(field, description).fail
+        JsonErrors.TypeError(path, expected, str).fail
       }
     }
 
-  def email(field: String) =
-    regex("^[^@]+@[^@]+$".r, field, "notEmail")
+  def email(path: JPath) =
+    regex("^[^@]+@[^@]+$".r, path, "notEmail")
 
   def sv: StringValidation =
     this

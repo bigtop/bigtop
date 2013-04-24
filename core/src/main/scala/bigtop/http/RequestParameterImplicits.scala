@@ -19,19 +19,19 @@ trait HttpRequestW[Content] {
   def mandatoryParam[T](name: Symbol)(implicit builder: String => JsonValidation[T]): JsonValidation[T] =
     request.parameters.get(name) match {
       case None      => JsonErrors.Missing(name.name).fail[T]
-      case Some(str) => prefixErrors(name.name, builder(str))
+      case Some(str) => prefixErrors(name.name)(builder(str))
     }
 
   def optionalParam[T](name: Symbol)(implicit builder: String => JsonValidation[T]): JsonValidation[Option[T]] =
     request.parameters.get(name) match {
       case None      => Option.empty[T].success[JsonErrors]
-      case Some(str) => prefixErrors(name.name, builder(str).map(Some(_)))
+      case Some(str) => prefixErrors(name.name)(builder(str).map(Some(_)))
     }
 
   def optionalParam[T](name: Symbol, default: T)(implicit builder: String => JsonValidation[T]): JsonValidation[T] =
     request.parameters.get(name) match {
       case None      => default.success[JsonErrors]
-      case Some(str) => prefixErrors(name.name, builder(str))
+      case Some(str) => prefixErrors(name.name)(builder(str))
     }
 }
 

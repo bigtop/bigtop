@@ -38,6 +38,9 @@ object JsonErrors {
   val Empty = JsonErrors(Nil)
 
   object Missing {
+    def apply(): JsonErrors =
+      apply(JPath.Identity)
+
     def apply(path: JPath, message: String = "This value is required.", data: JValue = JNothing): JsonErrors =
       JsonErrors(JsonError("missing", path, message, data))
   }
@@ -45,6 +48,14 @@ object JsonErrors {
   object Malformed {
     def apply(path: JPath, message: String = "This value is in the wrong format.", data: JValue = JNothing): JsonErrors =
       JsonErrors(JsonError("malformed", path, message, data))
+  }
+
+  object TypeError {
+    def apply(expected: String, actual: JValue): JsonErrors =
+      apply(JPath.Identity, expected, actual)
+
+    def apply(path: JPath, expected: String, actual: JValue): JsonErrors =
+      JsonErrors(JsonError("malformed", path, "expected " + expected + ", found " + actual, ("expected" -> expected) ~ ("actual" -> actual)))
   }
 
   implicit object format extends  JsonFormat[JsonErrors] {

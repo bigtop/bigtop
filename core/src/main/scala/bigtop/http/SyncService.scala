@@ -41,37 +41,40 @@ object SyncService extends HttpRequestHandlerCombinators with AkkaDefaults {
   type HS[A,B] = HttpService[A, FR[B]]
 
   def apply[A,B](
-    name: String,
-    prefix: String,
-    create : HS[A,B],
-    read   : HS[A,B],
-    update : HS[A,B],
-    delete : HS[A,B]
+    name:      String,
+    prefix:    String,
+    uuidParam: Symbol,
+    create:    HS[A,B],
+    read:      HS[A,B],
+    update:    HS[A,B],
+    delete:    HS[A,B]
   )(implicit log: Logger): HS[A,B] = apply(
-    name   = name,
-    prefix = prefix,
-    create = create,
-    read   = read,
-    update = update,
-    delete = delete,
-    search = read
+    name      = name,
+    prefix    = prefix,
+    uuidParam = uuidParam,
+    create    = create,
+    read      = read,
+    update    = update,
+    delete    = delete,
+    search    = read
   )(log)
 
   def apply[A,B](
-    name: String,
-    prefix: String,
-    create : HS[A,B],
-    read   : HS[A,B],
-    update : HS[A,B],
-    delete : HS[A,B],
-    search : HS[A,B]
+    name:      String,
+    prefix:    String,
+    uuidParam: Symbol,
+    create:    HS[A,B],
+    read:      HS[A,B],
+    update:    HS[A,B],
+    delete:    HS[A,B],
+    search:    HS[A,B]
   )(implicit log: Logger) : HS[A,B] = {
 
     def logAndProcess(kind: String, in: HS[A,B]): HS[A,B] =
       LoggingService(name, kind, log, in)
 
     path(prefix) {
-      path("/'id") {
+      path("/'" + uuidParam.name) {
         get {
           // logAndProcess("read", read)
           read

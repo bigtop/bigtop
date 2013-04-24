@@ -30,12 +30,14 @@ trait UserServices[U <: User] extends Logging {
 
   def service =
     JsonSyncService(
-      name   = "user",
-      prefix = "/api/user/v1",
-      create = create,
-      read   = read,
-      update = update,
-      delete = delete)(logger)
+      name      = "user",
+      prefix    = "/api/user/v1",
+      uuidParam = 'id,
+      create    = create,
+      read      = read,
+      update    = update,
+      delete    = delete
+    )(logger)
 }
 
 // Implementations

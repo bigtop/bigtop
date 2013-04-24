@@ -9,6 +9,8 @@ import scalaz._
 import scalaz.Scalaz._
 
 case class JsonConfigDeltas(val deltas: List[(JPath, JValue)]) {
+  def isEmpty = deltas.isEmpty
+
   def +: (delta: (JPath, JValue)) =
     JsonConfigDeltas(delta +: deltas)
 
@@ -17,6 +19,15 @@ case class JsonConfigDeltas(val deltas: List[(JPath, JValue)]) {
 
   def ++ (that: JsonConfigDeltas) =
     JsonConfigDeltas(this.deltas ++ that.deltas)
+
+  def apply(config: JsonConfig) =
+    JsonConfig(deltas.foldLeft(config.data) { (data, delta) =>
+      delta._2 match {
+        case JNull    => data.set(delta._1, JNothing)
+        case JNothing => data.set(delta._1, JNothing)
+        case _        => data.set(delta._1, delta._2)
+      }
+    })
 }
 
 object JsonConfigDeltas {
@@ -33,9 +44,13 @@ object JsonConfigDeltas {
 
   implicit object format extends JsonFormat[JsonConfigDeltas] {
     def write(in: JsonConfigDeltas) =
-      JObject(in.deltas.map { delta =>
-        JField(delta._1.toString, delta._2)
-      })
+      if(in.deltas.isEmpty) {
+        JNothing
+      } else {
+        JObject(in.deltas.map { delta =>
+          JField(delta._1.toString, delta._2)
+        })
+      }
 
     def read(in: JValue) =
       in match {
@@ -43,10 +58,7 @@ object JsonConfigDeltas {
           apply(obj).success[JsonErrors]
 
         case other =>
-          JsonErrors.Malformed(
-            "",
-            "Expected map of paths to new values, received " + other
-          ).fail[JsonConfigDeltas]
+          JsonErrors.TypeError("object", other).fail[JsonConfigDeltas]
       }
   }
 

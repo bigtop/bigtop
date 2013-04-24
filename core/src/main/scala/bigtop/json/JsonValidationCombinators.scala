@@ -60,7 +60,7 @@ trait JsonValidationCombinators {
 
   // Other -----------------------------
 
-  def prefixErrors[T](path: JPath, in: JsonValidation[T]): JsonValidation[T] =
+  def prefixErrors[T](path: JPath)(in: JsonValidation[T]): JsonValidation[T] =
     in match {
       case Failure(errors) => (errors prefix path).fail[T]
       case success => success

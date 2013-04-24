@@ -32,18 +32,20 @@ object UserServiceHandler extends SafeBijectionsChunkJson
     implicit val log = logger
 
     JsonSyncService(
-      name   = "Session",
-      prefix = "/api/session/v1",
-      create = sessionServices.create,
-      read   = sessionServices.read
+      name      = "Session",
+      prefix    = "/api/session/v1",
+      uuidParam = 'id,
+      create    = sessionServices.create,
+      read      = sessionServices.read
     ) ~
     JsonSyncService(
-      name = "User",
-      prefix = "/api/user/v1",
-      create = userServices.create,
-      read   = userServices.read,
-      update = userServices.update,
-      delete = userServices.delete
+      name      = "User",
+      prefix    = "/api/user/v1",
+      uuidParam = 'id,
+      create    = userServices.create,
+      read      = userServices.read,
+      update    = userServices.update,
+      delete    = userServices.delete
     )
   }
 }

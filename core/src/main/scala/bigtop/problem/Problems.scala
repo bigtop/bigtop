@@ -4,6 +4,7 @@ package problem
 import bigtop.json._
 import bigtop.json.JsonFormatters._
 import blueeyes.core.http.{HttpStatusCode, HttpStatusCodes}
+import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 
 // Predefined problems
@@ -42,7 +43,7 @@ trait Problems {
       problemType = "unknown",
       message     = message,
       cause       = cause,
-      logMessage  = Some(logMessage.getOrElse("Error parsing JSON.") + "\n" + errors.toString),
+      logMessage  = Some(logMessage.getOrElse("Error parsing JSON: " + errors.toString)),
       status      = HttpStatusCodes.InternalServerError
     )
 
@@ -154,6 +155,7 @@ trait Problems {
 
   object MalformedRequest {
     def apply(
+      request: JValue = JNothing,
       message: String = "The request was incorrectly formatted.",
       logMessage: Option[String] = None,
       cause: Option[Throwable] = None
@@ -162,15 +164,20 @@ trait Problems {
         problemType = "malformedRequest",
         message     = message,
         logMessage  = logMessage,
-        cause       = cause
+        cause       = cause,
+        data        = JsonConfig("request" -> request)
       )
 
     def unapply(in: Problem) =
-      in.checkType("malformedRequest").isDefined
+      for {
+        _       <- in.checkType("malformedRequest")
+        request <- in.data.get[JValue]("request", JNothing).toOption
+      } yield request
   }
 
   object MalformedResponse {
     def apply(
+      response: JValue = JNothing,
       message: String = "The response was incorrectly formatted.",
       logMessage: Option[String] = None,
       cause: Option[Throwable] = None,
@@ -181,11 +188,15 @@ trait Problems {
         message     = message,
         logMessage  = logMessage,
         cause       = cause,
-        status      = status
+        status      = status,
+        data        = JsonConfig("response" -> response)
       )
 
     def unapply(in: Problem) =
-      in.checkType("malformedResponse").isDefined
+      for {
+        _        <- in.checkType("malformedResponse")
+        response <- in.data.get[JValue]("response", JNothing).toOption
+      } yield response
   }
 
   object EmptyRequest {

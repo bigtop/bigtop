@@ -132,7 +132,8 @@ class ProblemSpec extends Specification {
       Authorization("dave", "stuff")  must beLike({ case Authorization("dave", "stuff")  => ok })
       NotFound("foo", "bar")          must beLike({ case NotFound("foo", "bar")          => ok })
       Exists("foo", "baz")            must beLike({ case Exists("foo", "baz")            => ok })
-      MalformedRequest()              must beLike({ case MalformedRequest()              => ok })
+      MalformedRequest()              must beLike({ case MalformedRequest(JNothing)      => ok })
+      MalformedResponse()             must beLike({ case MalformedResponse(JNothing)     => ok })
       Unknown()                       must beLike({ case Unknown()                       => ok })
     }
   }

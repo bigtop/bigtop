@@ -31,29 +31,29 @@ object JsonSyncService extends JsonRequestHandlerCombinators
   type Outer = HttpService[ByteChunk,Future[HttpResponse[ByteChunk]]]
 
   def apply(
-    name   : String,
-    prefix : String,
-    create : Inner = dummyHandler,
-    read   : Inner = dummyHandler,
-    update : Inner = dummyHandler,
-    delete : Inner = dummyHandler,
-    search : Inner = dummyHandler
+    name:      String,
+    prefix:    String,
+    uuidParam: Symbol,
+    create:    Inner = dummyHandler,
+    read:      Inner = dummyHandler,
+    update:    Inner = dummyHandler,
+    delete:    Inner = dummyHandler,
+    search:    Inner = dummyHandler
   )(implicit log: Logger) : Outer = SyncService(
-    name   = name,
-    prefix = prefix,
-    create = json(create),
-    read   = json(read),
-    update = json(update),
-    delete = json(delete),
-    search = json(search)
+    name      = name,
+    prefix    = prefix,
+    uuidParam = uuidParam,
+    create    = json(create),
+    read      = json(read),
+    update    = json(update),
+    delete    = json(delete),
+    search    = json(search)
   )
 
   val dummyHandler: Inner =
     service {
       (req: HttpRequest[Future[JValue]]) =>
-        for {
-          json <- req.content.getOrElse(Future(JNull))
-        } yield {
+        for(json <- req.content.getOrElse(Future(JNull))) yield {
           HttpResponse(
             status = HttpStatusCodes.NotFound,
             content = Some(

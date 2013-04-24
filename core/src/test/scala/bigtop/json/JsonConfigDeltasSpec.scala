@@ -33,16 +33,16 @@ class JsonConfigDeltasSpec extends Specification {
     JPath("bar.arr") -> JNull
   )
 
-  "JsonConfig.set(JsonConfigDeltas)" should {
+  "JsonConfigDeltas.apply(JsonConfig)" should {
     "set values for the first time" in {
-      JsonConfig.Empty.set(stringDeltas) mustEqual JsonConfig(
+      stringDeltas(JsonConfig.Empty) mustEqual JsonConfig(
         ("foo" -> "newfoo") ~
         ("bar" -> ("baz" -> "newbaz"))
       )
     }
 
     "overwrite existing values" in {
-      JsonConfig(data).set(stringDeltas) mustEqual JsonConfig(
+      stringDeltas(JsonConfig(data)) mustEqual JsonConfig(
         ("foo" -> "newfoo") ~
         ("bar" -> {
           ("str" -> "abc") ~
@@ -53,7 +53,7 @@ class JsonConfigDeltasSpec extends Specification {
     }
 
     "set values to nothing when nothing or null specified as a value" in {
-      JsonConfig(data).set(nullDeltas) mustEqual JsonConfig(
+      nullDeltas(JsonConfig(data)) mustEqual JsonConfig(
         ("foo" -> JNothing) ~
         ("bar" -> {
           ("str" -> "abc") ~
