@@ -3,8 +3,10 @@ package bigtop.json
 import blueeyes.json._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
-import bigtop.json.JsonFormatters._
+import bigtop.json.JsonFormats._
 import bigtop.problem._
+import scalaz._
+import scalaz.Scalaz._
 
 case class JsonError(
   val errorType: String, // machine-readable error message
@@ -41,21 +43,28 @@ object JsonError {
   // implicit def jsonErrorToJsonErrors(in: JsonError) =
   //   JsonErrors(List(in))
 
-  implicit object format extends JsonFormat[JsonError] {
-    def read(in: JValue) = {
-      for {
-        errorType <- in.mandatory[String]("typename")
-        path      <- in.optional[String]("path", "")
-        message   <- in.mandatory[String]("message")
-        data      <- in.optional[JValue]("data", JNothing)
-      } yield JsonError(errorType, path, message, data)
-    }
+  implicit val format: JsonFormat[JsonError] = tupleFormat(
+    (__ \ "typename").required[String],
+    (__ \ "path"    ).nullable[JPath](JPath.Identity),
+    (__ \ "message" ).required[String],
+    (__ \ "data"    ).nullable[JValue](JNothing)
+  )(Function.tupled(JsonError.apply), Function.unlift(JsonError.unapply))
 
-    def write(in: JsonError) = {
-      ("typename" -> in.errorType) ~
-      ("path"     -> in.path) ~
-      ("message"  -> in.message) ~
-      ("data"     -> in.data)
-    }
-  }
+  // implicit object format extends JsonFormat[JsonError] {
+  //   def read(in: JValue) = {
+  //     for {
+  //       errorType <- in.mandatory[String]("typename")
+  //       path      <- in.optional[String]("path", "")
+  //       message   <- in.mandatory[String]("message")
+  //       data      <- in.optional[JValue]("data", JNothing)
+  //     } yield JsonError(errorType, path, message, data)
+  //   }
+
+  //   def write(in: JsonError) = {
+  //     ("typename" -> in.errorType) ~
+  //     ("path"     -> in.path) ~
+  //     ("message"  -> in.message) ~
+  //     ("data"     -> in.data)
+  //   }
+  // }
 }

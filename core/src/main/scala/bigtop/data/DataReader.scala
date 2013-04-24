@@ -16,22 +16,27 @@ object DataReader {
 trait DataReader[T, S] extends Reader[JsonErrors, T, S] {
   self =>
 
-  def map[U](fn: T => U): DataReader[U, S] =
-    new DataReader[U, S] {
-      def read(in: S) = self.read(in).map(fn)
-    }
-
-  def flatMap[U](fn: T => JsonValidation[U]): DataReader[U, S] =
-    new DataReader[U, S] {
-      def read(in: S) = self.read(in).flatMap(fn)
-    }
-
   def andThen[U](inner: DataReader[U, T]): DataReader[U, S] =
     new DataReader[U, S] {
       def read(in: S) = self.read(in).flatMap(inner.read _)
     }
 
-  def lift[M[_] : Traverse]: DataReader[M[T], M[S]] =
+  def apply[U](inner: DataReader[U, T]): DataReader[U, S] =
+    new DataReader[U, S] {
+      def read(in: S) = self.read(in).flatMap(inner.read _)
+    }
+
+  def apply[U](reader: T => U): DataReader[U, S] =
+    new DataReader[U, S] {
+      def read(in: S) = self.read(in).map(reader)
+    }
+
+  def flatMap[U](reader: T => JsonValidation[U]): DataReader[U, S] =
+    new DataReader[U, S] {
+      def read(in: S) = self.read(in).flatMap(reader)
+    }
+
+  def liftReader[M[_] : Traverse]: DataReader[M[T], M[S]] =
     new DataReader[M[T], M[S]] {
       val applicative = implicitly[Applicative[JsonValidation]]
       val traverse = implicitly[Traverse[M]]

@@ -22,7 +22,7 @@ trait JValueImplicits {
 
 /** A "wide" (i.e. pimped) JSON value */
 case class JValueW(json: JValue) {
-  import JsonFormatters._
+  import JsonFormats._
 
   def as[T](implicit reader: JsonReader[T]): JsonValidation[T] =
     reader.read(json)
@@ -44,34 +44,34 @@ case class JValueW(json: JValue) {
   def mandatory[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[T] =
     (json get path) match {
       case JNothing => JsonErrors.Missing(path).fail[T]
-      case other    => prefixErrors(path, reader.read(other))
+      case other    => prefix(path)(reader.read(other))
     }
 
   def optional[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Option[T]] =
     (json get path) match {
       case JNothing => Option.empty[T].success[JsonErrors]
-      case other    => prefixErrors(path, reader.read(other).map(Some(_)))
+      case other    => prefix(path)(reader.read(other).map(Some(_)))
     }
 
   def optional[T](path: JPath, default: T)(implicit reader: JsonReader[T]): JsonValidation[T] =
     (json get path) match {
       case JNothing => default.success[JsonErrors]
-      case other    => prefixErrors(path, reader.read(other))
+      case other    => prefixErrors(path)(reader.read(other))
     }
 
   // TODO: Work out if we NEED these. If we do, uncomment them and TEST THEM:
 
   def mandatorySeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
-    mandatory[JValue](path).flatMap(field => prefixErrors(path, field.asSeq[T]))
+    mandatory[JValue](path).flatMap(field => prefixErrors(path)(field.asSeq[T]))
 
   def mandatoryMap[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Map[String, T]] =
-    mandatory[JValue](path).flatMap(field => prefixErrors(path, field.asMap[T]))
+    mandatory[JValue](path).flatMap(field => prefixErrors(path)(field.asMap[T]))
 
   def optionalSeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Option[Seq[T]]] =
     for {
       optField <- optional[JValue](path)
       optValue <- optField match {
-                    case Some(field) => prefixErrors(path, field.asSeq[T].map(Some(_)))
+                    case Some(field) => prefixErrors(path)(field.asSeq[T].map(Some(_)))
                     case None        => Option.empty[Seq[T]].success[JsonErrors]
                   }
     } yield optValue
@@ -80,7 +80,7 @@ case class JValueW(json: JValue) {
     for {
       optField <- optional[JValue](path)
       optValue <- optField match {
-                    case Some(field) => prefixErrors(path, field.asSeq[T])
+                    case Some(field) => prefixErrors(path)(field.asSeq[T])
                     case None        => default.success[JsonErrors]
                   }
     } yield optValue
@@ -89,7 +89,7 @@ case class JValueW(json: JValue) {
     for {
       optField <- optional[JValue](path)
       optValue <- optField match {
-                    case Some(field) => prefixErrors(path, field.asMap[T].map(Some(_)))
+                    case Some(field) => prefixErrors(path)(field.asMap[T].map(Some(_)))
                     case None        => Option.empty[Map[String, T]].success[JsonErrors]
                   }
     } yield optValue
@@ -98,7 +98,7 @@ case class JValueW(json: JValue) {
     for {
       optField <- optional[JValue](path)
       optValue <- optField match {
-                    case Some(field) => prefixErrors(path, field.asMap[T])
+                    case Some(field) => prefixErrors(path)(field.asMap[T])
                     case None        => default.success[JsonErrors]
                   }
     } yield optValue

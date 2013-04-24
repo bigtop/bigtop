@@ -17,6 +17,15 @@ case class JsonConfigDeltas(val deltas: List[(JPath, JValue)]) {
 
   def ++ (that: JsonConfigDeltas) =
     JsonConfigDeltas(this.deltas ++ that.deltas)
+
+  def apply(config: JsonConfig): JsonConfig =
+    JsonConfig(deltas.foldRight(config.data) { (delta, data) =>
+      delta._2 match {
+        case JNull    => data.set(delta._1, JNothing)
+        case JNothing => data.set(delta._1, JNothing)
+        case _        => data.set(delta._1, delta._2)
+      }
+    })
 }
 
 object JsonConfigDeltas {
@@ -40,7 +49,7 @@ object JsonConfigDeltas {
     def read(in: JValue) =
       in match {
         case obj: JObject =>
-          apply(obj).success[JsonErrors]
+          JsonConfigDeltas(obj).success[JsonErrors]
 
         case other =>
           JsonErrors.Malformed(
