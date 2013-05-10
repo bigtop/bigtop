@@ -22,14 +22,21 @@ case class JValueW(json: JValue) {
   def asSeq[T](implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =
     for {
       arr <- (json -->? classOf[JArray]).toSuccess(malformed("array", json))
-      ans <- arr.elements.map(reader.read _).sequence[JsonValidation, T]
+      ans <- arr.elements.zipWithIndex.map {
+               case (elem, index) =>
+                 prefixErrors(JPath.Identity \ index) {
+                  reader.read(elem)
+                 }
+             }.sequence[JsonValidation, T]
     } yield ans
 
   def asMap[T](implicit reader: JsonReader[T]): JsonValidation[Map[String,T]] =
     for {
       obj <- (json -->? classOf[JObject]).toSuccess(malformed("array", json))
       ans <- obj.fields.map { case JField(name, value) =>
-               reader.read(value).map(value => name -> value)
+               prefixErrors(name) {
+                 reader.read(value).map(value => name -> value)
+               }
              }.sequence[JsonValidation, (String, T)]
     } yield Map(ans : _*)
 
@@ -188,9 +195,9 @@ trait JsonFormatters {
     def write(in: Double) = JDouble(in)
 
     def read(json: JValue) =
-      (json -->? classOf[JDouble]).
-      map(_.value).
-      toSuccess(malformed("double", json))
+      (json -->? classOf[JInt] map (_.value.toDouble)) orElse
+      (json -->? classOf[JDouble] map (_.value.toDouble)) toSuccess
+      (malformed("int", json))
   }
 
   implicit val URLJsonWriter: JsonWriter[URL] = new JsonWriter[URL] {

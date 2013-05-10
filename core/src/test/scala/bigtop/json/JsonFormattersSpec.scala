@@ -23,6 +23,14 @@ class JsonFormattersSpec extends Specification {
       JInt(123).as[Int] mustEqual Success(123)
     }
 
+    "read integers as doubles" in {
+      JInt(123).as[Double] mustEqual Success(123.0)
+    }
+
+    "read doubles as integers" in {
+      JDouble(123.0).as[Int] mustEqual Success(123)
+    }
+
     "fail if a type conversion is impossible" in {
       JString("abc").as[Int] mustEqual Failure(JsonErrors.Malformed(".", "expected int, found \"abc\""))
     }
@@ -34,7 +42,31 @@ class JsonFormattersSpec extends Specification {
     }
 
     "fail if a type conversion is impossible" in {
-      JString("abc").as[Int] mustEqual Failure(JsonErrors.Malformed(".", "expected int, found \"abc\""))
+      (List(1.0, 2.5, 3.5) : JValue).asSeq[Int] mustEqual Failure(JsonErrors(
+        JsonError.Malformed("[1]", "expected int, found 2.5"),
+        JsonError.Malformed("[2]", "expected int, found 3.5")
+      ))
+    }
+  }
+
+  "json.asMap" should {
+    "succeed in normal circumstances" in {
+      {
+        ("a" -> 1.0) ~
+        ("b" -> 2.0) ~
+        ("c" -> 3.0)
+      }.asMap[Int] mustEqual Success(Map("a" -> 1, "b" -> 2, "c" -> 3))
+    }
+
+    "fail if a type conversion is impossible" in {
+      {
+        ("a" -> 1.0) ~
+        ("b" -> 2.5) ~
+        ("c" -> 3.5)
+      }.asMap[Int] mustEqual Failure(JsonErrors(
+        JsonError.Malformed(".b", "expected int, found 2.5"),
+        JsonError.Malformed(".c", "expected int, found 3.5")
+      ))
     }
   }
 
