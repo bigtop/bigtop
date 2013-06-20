@@ -4,6 +4,7 @@ import blueeyes.json._
 import blueeyes.json.JsonAST._
 import blueeyes.json.JsonDSL._
 import bigtop.json.JsonFormatters._
+import bigtop.json.JPathImplicits._
 import bigtop.problem._
 
 case class JsonError(
@@ -48,7 +49,7 @@ object JsonError {
 
     def write(in: JsonError) = {
       ("typename" -> in.errorType) ~
-      ("path"     -> in.path) ~
+      ("path"     -> in.path.toNormalizedString) ~
       ("message"  -> in.message) ~
       ("data"     -> in.data)
     }
