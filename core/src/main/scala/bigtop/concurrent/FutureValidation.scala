@@ -1,11 +1,26 @@
 package bigtop
 package concurrent
 
-import akka.dispatch.{Future, Promise}
+import akka.dispatch.{Future, Promise, ExecutionContext}
 import blueeyes.bkka.AkkaDefaults
 import bigtop.problem._
 import scalaz._
 import scalaz.Scalaz._
+
+object FutureValidation {
+  def sequence[T](in: List[FutureValidation[T]])(implicit executor: ExecutionContext): FutureValidation[List[T]] = {
+    val seqFuture: List[Future[ProblemValidation[T]]] =
+      in.map(_.inner)
+
+    val futureSeq: Future[List[ProblemValidation[T]]] =
+      Future.sequence(seqFuture)
+
+    val futureVal: Future[ProblemValidation[List[T]]] =
+      futureSeq.map(_.sequence[ProblemValidation, T])
+
+    FutureValidation(futureVal)
+  }
+}
 
 case class FutureValidation[S](val inner: Future[Validation[Problem, S]]) extends FutureImplicits with AkkaDefaults {
 
