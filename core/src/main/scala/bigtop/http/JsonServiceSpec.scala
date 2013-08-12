@@ -37,23 +37,6 @@ trait JsonServiceSpec extends Specification
   implicit val queryDuration = Duration("3s")
   implicit val queryTimeout = Timeout(queryDuration)
 
-  private val mockSwitch = sys.props.get(Environment.MockSwitch)
-
-  private val specBefore = Step {
-    sys.props.getOrElseUpdate (Environment.MockSwitch, "true")
-  }
-
-  private val specAfter = Step {
-    def setProp(key: String, value: Option[String]) = value match{
-      case Some(x) => sys.props.put(key, x)
-      case None => sys.props.remove(key)
-    }
-    setProp(Environment.MockSwitch, mockSwitch)
-  }
-
-  override def map(fs: =>Fragments) = specBefore ^ fs ^ specAfter
-
-
   def configure(configuration: String) =
     Configuration.parse(configuration)
 
