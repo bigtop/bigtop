@@ -40,7 +40,7 @@ trait RedisSessionActions[U <: User] extends SessionActions[U] {
     ().success[Problem].fv
   }
 
-  object cache extends SimpleRedisCache[Session[U]] {
+  val cache: RedisCache[String, Session[U]] = new SimpleRedisCache[Session[U]] {
 
     val pool = redisPool
     val prefix = keyPrefix
