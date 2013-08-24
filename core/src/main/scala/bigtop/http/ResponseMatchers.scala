@@ -17,10 +17,10 @@ trait ResponseMatchers extends MustMatchers with StandardMatchResults {
 
   def beJsonResponse[T](beTheCode: Matcher[HttpStatusCode], beTheResult: Matcher[T])(implicit reader: JsonReader[T]) =
     beLike[HttpResponse[JValue]] {
-      case HttpResponse(HttpStatus(code, _), _, Some(json), _) =>
-        (code must beTheCode) and
+      case response @ HttpResponse(HttpStatus(code, _), _, Some(json), _) =>
+        (code aka ("the response code of " + response) must beTheCode) and
         (json.as[T].fold(
-          succ = { content => content must beTheResult },
+          succ = { content => (content aka ("the content of " + response)) must beTheResult },
           fail = { errors  => ko("Failed to parse JSON: " + json + "\nparse errors: " + errors) }
         ))
 
