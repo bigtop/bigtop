@@ -58,6 +58,20 @@ case class JValueW(json: JValue) {
       case other    => prefixErrors(path)(reader.read(other))
     }
 
+  def nullable[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Option[T]] =
+    (json get path) match {
+      case JNothing => Option.empty[T].success[JsonErrors]
+      case JNull    => Option.empty[T].success[JsonErrors]
+      case other    => prefixErrors(path)(reader.read(other).map(Some(_)))
+    }
+
+  def nullable[T](path: JPath, default: T)(implicit reader: JsonReader[T]): JsonValidation[T] =
+    (json get path) match {
+      case JNothing => default.success[JsonErrors]
+      case JNull    => default.success[JsonErrors]
+      case other    => prefixErrors(path)(reader.read(other))
+    }
+
   // TODO: Work out if we NEED these. If we do, uncomment them and TEST THEM:
 
   def mandatorySeq[T](path: JPath)(implicit reader: JsonReader[T]): JsonValidation[Seq[T]] =

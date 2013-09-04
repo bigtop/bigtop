@@ -110,6 +110,10 @@ class JsonFormattersSpec extends Specification {
       data.optional[Int]("foo") mustEqual Success(Option.empty[Int])
       data.optional[Int]("obj.a.b.d") mustEqual Success(Option.empty[Int])
     }
+
+    "fail if the path is null" in {
+      ( ("foo" -> JNull) : JValue ).optional[Int]("foo") mustEqual Failure(JsonErrors.Malformed("foo", "expected int, found null"))
+    }
   }
 
   "json.optional - two arguments" should {
@@ -130,6 +134,60 @@ class JsonFormattersSpec extends Specification {
     "succeed if the path is missing" in {
       data.optional[Int]("foo", -1) mustEqual Success(-1)
       data.optional[Int]("obj.a.b.d", -1) mustEqual Success(-1)
+    }
+
+    "fail if the path is null" in {
+      ( ("foo" -> JNull) : JValue ).optional[Int]("foo") mustEqual Failure(JsonErrors.Malformed("foo", "expected int, found null"))
+    }
+  }
+
+  "json.nullable - single argument" should {
+    "succeed in normal circumstances" in {
+      data.nullable[Int]("num") mustEqual Success(Some(123))
+    }
+
+    "succeed with full JPaths" in {
+      data.nullable[Int]("obj.a.b.c") mustEqual Success(Some(123))
+      data.nullable[Int]("arr[1]") mustEqual Success(Some(2))
+    }
+
+    "fail if a type conversion is impossible" in {
+      data.nullable[Int]("str") mustEqual Failure(JsonErrors.Malformed("str", "expected int, found \"abc\""))
+      data.nullable[Int]("obj.a.b") mustEqual Failure(JsonErrors.Malformed("obj.a.b", "expected int, found {\"c\":123}"))
+    }
+
+    "succeed if the path is missing" in {
+      data.nullable[Int]("foo") mustEqual Success(Option.empty[Int])
+      data.nullable[Int]("obj.a.b.d") mustEqual Success(Option.empty[Int])
+    }
+
+    "succeed if the path is null" in {
+      ( ("foo" -> JNull) : JValue ).nullable[Int]("foo") mustEqual Success(Option.empty[Int])
+    }
+  }
+
+  "json.nullable - two arguments" should {
+    "succeed in normal circumstances" in {
+      data.nullable[Int]("num", -1) mustEqual Success(123)
+    }
+
+    "succeed with full JPaths" in {
+      data.nullable[Int]("obj.a.b.c", -1) mustEqual Success(123)
+      data.nullable[Int]("arr[1]", -1) mustEqual Success(2)
+    }
+
+    "fail if a type conversion is impossible" in {
+      data.nullable[Int]("str", -1) mustEqual Failure(JsonErrors.Malformed("str", "expected int, found \"abc\""))
+      data.nullable[Int]("obj.a.b", -1) mustEqual Failure(JsonErrors.Malformed("obj.a.b", "expected int, found {\"c\":123}"))
+    }
+
+    "succeed if the path is missing" in {
+      data.nullable[Int]("foo", -1) mustEqual Success(-1)
+      data.nullable[Int]("obj.a.b.d", -1) mustEqual Success(-1)
+    }
+
+    "succeed if the path is null" in {
+      ( ("foo" -> JNull) : JValue ).nullable[Int]("foo", 123) mustEqual Success(123)
     }
   }
 
